@@ -197,12 +197,12 @@ class PTVInterface:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Parameters:
-        run_ref --
-        route_type --
-        stop_id --
+        run_ref -- the run identifier
+        route_type -- the route type of the run
+        stop_id -- include only the stop with the specified stop ID
         date_utc --
-        include_skipped_stops --
-        include_geopath --
+        include_skipped_stops -- include a list of stops that are skipped by the pattern
+        include_geopath -- include the pattern's geopath data
 
         Returned records contain these fields:
         "skipped_stops": list[dict[str, int | str]]
@@ -235,4 +235,137 @@ class PTVInterface:
         if include_geopath:
             req = self._build_arg_string("include_geopath", "true", s=req)
 
-        return self._call(req)["departures"]
+        res = self._call(req)["departures"]
+        for record in res:
+            record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"])
+            record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"])
+        return res
+
+    def list_runs(self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
+        """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
+
+        Parameters:
+        route_id -- the route ID number
+        route_type -- the route type of the specified route
+        expand -- optional data to include in returned list
+        date_utc -- return only data from the specified date
+
+        Returned records contain these fields:
+        "run_id": int
+        "run_ref": str
+        "route_id": int
+        "route_type": int
+        "final_stop_id": int
+        "destination_name": str
+        "status": str
+        "direction_id": int
+        "run_sequence": int
+        "express_stop_count": int
+        "vehicle_position": dict[str, int | str | datetime]
+        "vehicle_description": dict[str, str | bool]
+        "geopath": list[dict]
+        """
+
+        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
+
+        if isinstance(expand, Iterable):
+            for et in expand:
+                req = self._build_arg_string("expand", et.value() if isinstance(et, ExpandType) else et, s=req)
+        elif expand != ExpandType.NONE:
+            req = self._build_arg_string("expand", expand.value() if isinstance(et, ExpandType) else expand, s=req)
+
+        if date_utc is not None:
+            if isinstance(date_utc, str):
+                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
+            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+
+        res = self._call(req)["runs"]
+        for record in res:
+            if len(record["vehicle_position"]) > 0:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"])
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"])
+
+        return res
+
+    def get_run(self, run_ref: str, route_type: RouteType | int | None = None, expand: ExpandType | str = ExpandType.NONE, date_utc: datetime | str | None = None, include_geopath: bool = False) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
+        """Returns a list of all runs for the specified run identifier and, if provided, the specified route type.
+
+        Parameters:
+        run_ref -- the run identifier
+        route_type -- the route type of the specified run
+        expand -- optional data to include in returned list
+        date_utc -- return only data from the specified date
+        include_geopath -- include the run's geopath data
+
+        Returned records contain these fields:
+        "run_id": int
+        "run_ref": str
+        "route_id": int
+        "route_type": int
+        "final_stop_id": int
+        "destination_name": str
+        "status": str
+        "direction_id": int
+        "run_sequence": int
+        "express_stop_count": int
+        "vehicle_position": dict[str, int | str | datetime]
+        "vehicle_description": dict[str, str | bool]
+        "geopath": list[dict]
+        """
+
+        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
+
+        if isinstance(expand, Iterable):
+            for et in expand:
+                req = self._build_arg_string("expand", et.value() if isinstance(et, ExpandType) else et, s=req)
+        elif expand != ExpandType.NONE:
+            req = self._build_arg_string("expand", expand.value() if isinstance(et, ExpandType) else expand, s=req)
+
+        if date_utc is not None:
+            if isinstance(date_utc, str):
+                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
+            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+
+        res = self._call(req)
+        res = [res["run"]] if route_type is None else res["runs"]
+
+        for record in res:
+            if len(record["vehicle_position"]) > 0:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"])
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"])
+
+        return res
+
+    def list_stops(self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[dict[str, str | int | float | dict[str, str | bool | list[int]]]]:
+        """Returns a list of all stops on the specified route.
+
+        Parameters:
+        route_id -- the route ID number
+        route_type -- the route type of the specified route
+        direction_id -- specify a direction ID number to include stop sequence information in the list
+        stop_disruptions -- whether to include stop disruption information
+
+        Returned records contain these fields:
+        "disruption_ids": list[int]
+        "stop_suburb": str
+        "route_type": int
+        "stop_latitude": float
+        "stop_longitude": float
+        "stop_sequence": int
+        "stop_ticket": dict[str, str | bool | list[int]]
+        "stop_id": int
+        "stop_name": str
+        "stop_landmark": str
+        """
+
+        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
+
+        if direction_id is not None:
+            req = self._build_arg_string("direction_id", direction_id)
+        if stop_disruptions:
+            req = self._build_arg_string("stop_disruptions", "true")
+
+        return self._call(req)["stops"]
