@@ -7,6 +7,9 @@ from typing import Any
 import requests
 
 
+__all__ = ["PTVInterface", "RouteType", "ExpandType"]
+
+
 class RouteType(Enum):
     MET_TRAIN = METRO = 0
     TRAM = 1
@@ -127,11 +130,11 @@ class PTVInterface:
         req = "/v3/routes"
         if route_types is not None:
             for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type.value() if isinstance(route_type, RouteType) else route_type, s=req)
+                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
         if route_name is not None:
             req = self._build_arg_string("route_name", route_name, s=req)
 
-        return self._call(req)["route"]
+        return self._call(req)["routes"]
 
     def get_route(self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]:
         """Returns the details of the route with the specified route ID.
@@ -190,7 +193,7 @@ class PTVInterface:
         "route_type": int
         """
 
-        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
     def get_pattern(self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[dict[str, int | str | bool | datetime | list[int] | list[dict[str, int | str]]]]:
@@ -220,7 +223,7 @@ class PTVInterface:
         "departure_sequence": int
         """
 
-        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
         req = self._build_arg_string("expand", "None", s=req)
 
@@ -266,14 +269,14 @@ class PTVInterface:
         "geopath": list[dict]
         """
 
-        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
             for et in expand:
-                req = self._build_arg_string("expand", et.value() if isinstance(et, ExpandType) else et, s=req)
+                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
         elif expand != ExpandType.NONE:
-            req = self._build_arg_string("expand", expand.value() if isinstance(et, ExpandType) else expand, s=req)
+            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
 
         if date_utc is not None:
             if isinstance(date_utc, str):
@@ -314,14 +317,14 @@ class PTVInterface:
         "geopath": list[dict]
         """
 
-        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
             for et in expand:
-                req = self._build_arg_string("expand", et.value() if isinstance(et, ExpandType) else et, s=req)
+                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
         elif expand != ExpandType.NONE:
-            req = self._build_arg_string("expand", expand.value() if isinstance(et, ExpandType) else expand, s=req)
+            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
 
         if date_utc is not None:
             if isinstance(date_utc, str):
@@ -360,7 +363,7 @@ class PTVInterface:
         "stop_landmark": str
         """
 
-        route_type = route_type.value() if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
 
         if direction_id is not None:
