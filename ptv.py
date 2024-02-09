@@ -240,8 +240,8 @@ class PTVInterface:
 
         res = self._call(req)["departures"]
         for record in res:
-            record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"])
-            record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"])
+            record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"]) if record["scheduled_departure_utc"] is not None else None
+            record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]) if record["estimated_departure_utc"] is not None else None
         return res
 
     def list_runs(self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
@@ -285,9 +285,9 @@ class PTVInterface:
 
         res = self._call(req)["runs"]
         for record in res:
-            if len(record["vehicle_position"]) > 0:
-                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"])
-                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"])
+            if record["vehicle_position"] is not None:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
 
         return res
 
@@ -335,9 +335,9 @@ class PTVInterface:
         res = [res["run"]] if route_type is None else res["runs"]
 
         for record in res:
-            if len(record["vehicle_position"]) > 0:
-                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"])
-                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"])
+            if record["vehicle_position"] is not None:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
 
         return res
 
