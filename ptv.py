@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from hashlib import sha1
 from hmac import HMAC
-from typing import Any
+from typing import Any, Self
 import requests
 
 
@@ -32,7 +32,7 @@ class ExpandType(Enum):
 class PTVInterface:
     """Interface class with the PTV Timetable API."""
 
-    def __init__(self, dev_id: str | int, key: str) -> None:
+    def __init__(self: Self, dev_id: str | int, key: str) -> None:
         """Initialises a PTVInterface instance with the supplied credentials.
 
         Parameters:
@@ -76,7 +76,7 @@ class PTVInterface:
 
         return s
     
-    def _call(self, request: str) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
+    def _call(self: Self, request: str) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
         """Make the request to the API and format the result.
 
         Parameters:
@@ -89,7 +89,7 @@ class PTVInterface:
         result = r.json()
         return result
     
-    def _encode_url(self, request: str) -> str:
+    def _encode_url(self: Self, request: str) -> str:
         """Appends the signature and base URL to the request string.
         
         Parameters:
@@ -100,7 +100,7 @@ class PTVInterface:
         signature = HMAC(key=self.key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
 
-    def list_route_directions(self, route_id: int) -> list[dict[str, str | int]]:
+    def list_route_directions(self: Self, route_id: int) -> list[dict[str, str | int]]:
         """Returns the directions of travel for a particular route.
 
         Parameters:
@@ -116,7 +116,7 @@ class PTVInterface:
 
         return self._call(f"/v3/directions/route/{route_id}")["directions"]
 
-    def list_directions(self, direction_id: int, route_type: RouteType | int | None = None) -> list[dict[str, str | int]]:
+    def list_directions(self: Self, direction_id: int, route_type: RouteType | int | None = None) -> list[dict[str, str | int]]:
         """Returns all directions of travel in the database for all (or the specified) route type(s).
 
         Parameters:
@@ -134,7 +134,7 @@ class PTVInterface:
         route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False,include_geopath: bool = False) -> list[dict[str, int | str | bool | datetime | list[int] | list[dict[str, int | str]]]]:
+    def get_pattern(self: Self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False,include_geopath: bool = False) -> list[dict[str, int | str | bool | datetime | list[int] | list[dict[str, int | str]]]]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Parameters:
@@ -183,7 +183,7 @@ class PTVInterface:
             record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]) if record["estimated_departure_utc"] is not None else None
         return res
 
-    def get_route(self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]:
+    def get_route(self: Self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]:
         """Returns the details of the route with the specified route ID.
 
         Parameters:
@@ -209,7 +209,7 @@ class PTVInterface:
 
         return self._call(req)["route"]
 
-    def list_routes(self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]]:
+    def list_routes(self: Self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]]:
         """Returns all routes of all (or specified) types.
 
         Parameters:
@@ -235,7 +235,7 @@ class PTVInterface:
 
         return self._call(req)["routes"]
 
-    def list_route_types(self) -> list[dict[str, str | int]]:
+    def list_route_types(self: Self) -> list[dict[str, str | int]]:
         """Returns the names and IDs of all route types.
 
         Returned records contain these fields:
@@ -245,7 +245,7 @@ class PTVInterface:
 
         return self._call("/v3/route_types")["route_types"]
 
-    def get_run(self, run_ref: str, route_type: RouteType | int | None = None, expand: ExpandType | str = ExpandType.NONE, date_utc: datetime | str | None = None, include_geopath: bool = False) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
+    def get_run(self: Self, run_ref: str, route_type: RouteType | int | None = None, expand: ExpandType | str = ExpandType.NONE, date_utc: datetime | str | None = None, include_geopath: bool = False) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
         """Returns a list of all runs for the specified run identifier and, if provided, the specified route type.
 
         Parameters:
@@ -295,7 +295,7 @@ class PTVInterface:
 
         return res
 
-    def list_runs(self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
+    def list_runs(self: Self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Parameters:
@@ -342,7 +342,7 @@ class PTVInterface:
 
         return res
 
-    def list_stops(self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[dict[str, str | int | float | dict[str, str | bool | list[int]]]]:
+    def list_stops(self: Self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[dict[str, str | int | float | dict[str, str | bool | list[int]]]]:
         """Returns a list of all stops on the specified route.
 
         Parameters:
