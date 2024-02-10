@@ -99,68 +99,6 @@ class PTVInterface:
         raw = f"{request}{"&" if "?" in request else "?"}devid={self.devID}"
         signature = HMAC(key=self.key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
-    
-    def list_route_types(self) -> list[dict[str, str | int]]:
-        """Returns the names and IDs of all route types.
-
-        Returned records contain these fields:
-        "route_type_name" : str
-        "route_type" : int
-        """
-
-        return self._call("/v3/route_types")["route_types"]
-
-    def list_routes(self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]]:
-        """Returns all routes of all (or specified) types.
-
-        Parameters:
-        route_types -- return only the routes of the specified type(s)
-        route_name -- return the routes with names containing the specified substring
-
-        Returned records contain these fields:
-        "route_service_status" : dict[str, str]
-        "route_type": int
-        "route_id": int
-        "route_name": str
-        "route_number": str
-        "route_gtfs_id": str
-        "geopath": list[dict[str, str | int | list[str]]]
-        """
-
-        req = "/v3/routes"
-        if route_types is not None:
-            for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
-        if route_name is not None:
-            req = self._build_arg_string("route_name", route_name, s=req)
-
-        return self._call(req)["routes"]
-
-    def get_route(self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]:
-        """Returns the details of the route with the specified route ID.
-
-        Parameters:
-        route_id -- the route ID number
-        include_geopath -- whether to return kif geopath data
-        geopath_utc -- ISO 8601 UTC date to filter geopaths by
-
-        Returned record contains these fields:
-        "route_service_status": dict[str, str]
-        "route_type": int
-        "route_id": int
-        "route_name": str
-        "route_number": str
-        "route_gtfs_id": str
-        "geopath": list[dict[str, str | int | list[str]]]
-        """
-
-        req = f"/v3/routes/{route_id}"
-        if include_geopath:
-            req = self._build_arg_string("include_geopath", "true", s=req)
-        if geopath_utc is not None:
-            req = self._build_arg_string("geopath_utc", geopath_utc, s=req)
-
-        return self._call(req)["route"]
 
     def list_route_directions(self, route_id: int) -> list[dict[str, str | int]]:
         """Returns the directions of travel for a particular route.
@@ -196,7 +134,7 @@ class PTVInterface:
         route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[dict[str, int | str | bool | datetime | list[int] | list[dict[str, int | str]]]]:
+    def get_pattern(self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False,include_geopath: bool = False) -> list[dict[str, int | str | bool | datetime | list[int] | list[dict[str, int | str]]]]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Parameters:
@@ -231,7 +169,8 @@ class PTVInterface:
             req = self._build_arg_string("stop_id", stop_id, s=req)
         if date_utc is not None:
             if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
+                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(
+                    date_utc + "Z")
             req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
         if include_skipped_stops:
             req = self._build_arg_string("include_skipped_stops", "true", s=req)
@@ -244,52 +183,67 @@ class PTVInterface:
             record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]) if record["estimated_departure_utc"] is not None else None
         return res
 
-    def list_runs(self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
-        """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
+    def get_route(self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]:
+        """Returns the details of the route with the specified route ID.
 
         Parameters:
         route_id -- the route ID number
-        route_type -- the route type of the specified route
-        expand -- optional data to include in returned list
-        date_utc -- return only data from the specified date
+        include_geopath -- whether to return kif geopath data
+        geopath_utc -- ISO 8601 UTC date to filter geopaths by
 
-        Returned records contain these fields:
-        "run_id": int
-        "run_ref": str
-        "route_id": int
+        Returned record contains these fields:
+        "route_service_status": dict[str, str]
         "route_type": int
-        "final_stop_id": int
-        "destination_name": str
-        "status": str
-        "direction_id": int
-        "run_sequence": int
-        "express_stop_count": int
-        "vehicle_position": dict[str, int | str | datetime]
-        "vehicle_description": dict[str, str | bool]
-        "geopath": list[dict]
+        "route_id": int
+        "route_name": str
+        "route_number": str
+        "route_gtfs_id": str
+        "geopath": list[dict[str, str | int | list[str]]]
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
-        req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
+        req = f"/v3/routes/{route_id}"
+        if include_geopath:
+            req = self._build_arg_string("include_geopath", "true", s=req)
+        if geopath_utc is not None:
+            req = self._build_arg_string("geopath_utc", geopath_utc, s=req)
 
-        if isinstance(expand, Iterable):
-            for et in expand:
-                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
-        elif expand != ExpandType.NONE:
-            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
+        return self._call(req)["route"]
 
-        if date_utc is not None:
-            if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
-            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+    def list_routes(self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[dict[str, str | int | dict[str, str] | list[dict[str, str | int | list[str]]]]]:
+        """Returns all routes of all (or specified) types.
 
-        res = self._call(req)["runs"]
-        for record in res:
-            if record["vehicle_position"] is not None:
-                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
-                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
+        Parameters:
+        route_types -- return only the routes of the specified type(s)
+        route_name -- return the routes with names containing the specified substring
 
-        return res
+        Returned records contain these fields:
+        "route_service_status" : dict[str, str]
+        "route_type": int
+        "route_id": int
+        "route_name": str
+        "route_number": str
+        "route_gtfs_id": str
+        "geopath": list[dict[str, str | int | list[str]]]
+        """
+
+        req = "/v3/routes"
+        if route_types is not None:
+            for route_type in route_types:
+                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
+        if route_name is not None:
+            req = self._build_arg_string("route_name", route_name, s=req)
+
+        return self._call(req)["routes"]
+
+    def list_route_types(self) -> list[dict[str, str | int]]:
+        """Returns the names and IDs of all route types.
+
+        Returned records contain these fields:
+        "route_type_name" : str
+        "route_type" : int
+        """
+
+        return self._call("/v3/route_types")["route_types"]
 
     def get_run(self, run_ref: str, route_type: RouteType | int | None = None, expand: ExpandType | str = ExpandType.NONE, date_utc: datetime | str | None = None, include_geopath: bool = False) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
         """Returns a list of all runs for the specified run identifier and, if provided, the specified route type.
@@ -334,6 +288,53 @@ class PTVInterface:
         res = self._call(req)
         res = [res["run"]] if route_type is None else res["runs"]
 
+        for record in res:
+            if record["vehicle_position"] is not None:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
+
+        return res
+
+    def list_runs(self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[dict[str, str | int | dict[str, str | int | datetime] | dict[str, str | bool]]]:
+        """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
+
+        Parameters:
+        route_id -- the route ID number
+        route_type -- the route type of the specified route
+        expand -- optional data to include in returned list
+        date_utc -- return only data from the specified date
+
+        Returned records contain these fields:
+        "run_id": int
+        "run_ref": str
+        "route_id": int
+        "route_type": int
+        "final_stop_id": int
+        "destination_name": str
+        "status": str
+        "direction_id": int
+        "run_sequence": int
+        "express_stop_count": int
+        "vehicle_position": dict[str, int | str | datetime]
+        "vehicle_description": dict[str, str | bool]
+        "geopath": list[dict]
+        """
+
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
+
+        if isinstance(expand, Iterable):
+            for et in expand:
+                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
+        elif expand != ExpandType.NONE:
+            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
+
+        if date_utc is not None:
+            if isinstance(date_utc, str):
+                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
+            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+
+        res = self._call(req)["runs"]
         for record in res:
             if record["vehicle_position"] is not None:
                 record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
