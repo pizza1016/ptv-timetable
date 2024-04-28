@@ -3,10 +3,11 @@ from datetime import datetime
 from enum import Enum
 from hashlib import sha1
 from hmac import HMAC
+from ratelimit import limits, sleep_and_retry
 from typing import Self, overload
 import requests
 
-__all__ = ["PTVInterface", "RouteType", "ExpandType"]
+__all__ = ["PTVInterface", "Mode", "ExpandType"]
 
 type _Values = str | int | float | bool | datetime
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -23,7 +24,9 @@ type _VehicleDescriptor = dict[str, str | bool]
 type _VehiclePosition = dict[str, str | int | datetime]
 
 
-class RouteType(Enum):
+class Mode(Enum):
+    """Contains enum constants to indicate mode of travel."""
+
     MET_TRAIN = METRO = 0
     TRAM = 1
     BUS = 2
@@ -88,7 +91,9 @@ class PTVInterface:
                 raise TypeError(f"Argument {i} ({params[i]}) is not tuple or str")
 
         return s
-    
+
+    @sleep_and_retry
+    @limits(calls=1, period=5)  # 1 call every 5 seconds
     def _call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result.
 
@@ -129,7 +134,7 @@ class PTVInterface:
 
         return self._call(f"/v3/directions/route/{route_id}")["directions"]
 
-    def list_directions(self: Self, direction_id: int, route_type: RouteType | int | None = None) -> list[_Direction]:
+    def list_directions(self: Self, direction_id: int, route_type: Mode | int | None = None) -> list[_Direction]:
         """Returns all directions of travel in the database for all (or the specified) route type(s).
 
         Parameters:
@@ -144,10 +149,10 @@ class PTVInterface:
         "route_type": int
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, Mode) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self: Self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
+    def get_pattern(self: Self, run_ref: str, route_type: Mode | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Parameters:
@@ -174,7 +179,7 @@ class PTVInterface:
         "departure_sequence": int
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, Mode) else route_type
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
         req = self._build_arg_string("expand", "None", s=req)
 
@@ -222,7 +227,7 @@ class PTVInterface:
 
         return self._call(req)["route"]
 
-    def list_routes(self: Self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[_Route]:
+    def list_routes(self: Self, route_types: Iterable[Mode | int] | None = None, route_name: str | None = None) -> list[_Route]:
         """Returns all routes of all (or specified) types.
 
         Parameters:
@@ -242,7 +247,7 @@ class PTVInterface:
         req = "/v3/routes"
         if route_types is not None:
             for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
+                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, Mode) else route_type, s=req)
         if route_name is not None:
             req = self._build_arg_string("route_name", route_name, s=req)
 
@@ -287,7 +292,7 @@ class PTVInterface:
         ...
 
     @overload
-    def get_run(self: Self, run_ref: str, route_type: RouteType | int, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> _Run:
+    def get_run(self: Self, run_ref: str, route_type: Mode | int, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> _Run:
         """Returns the run with the specified run identifier and route type.
 
         Parameters:
@@ -315,7 +320,7 @@ class PTVInterface:
         ...
 
     def get_run(self, run_ref, route_type=None, expand=ExpandType.NONE, date_utc=None, include_geopath=False):
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, Mode) else route_type
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
@@ -347,7 +352,7 @@ class PTVInterface:
 
         return res
 
-    def list_runs(self: Self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[_Run]:
+    def list_runs(self: Self, route_id: int, route_type: Mode | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[_Run]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Parameters:
@@ -372,7 +377,7 @@ class PTVInterface:
         "geopath": list[dict[str, str | int | list[str]]]
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, Mode) else route_type
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
@@ -394,7 +399,7 @@ class PTVInterface:
 
         return res
 
-    def list_stops(self: Self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
+    def list_stops(self: Self, route_id: int, route_type: Mode | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
         """Returns a list of all stops on the specified route.
 
         Parameters:
@@ -416,7 +421,7 @@ class PTVInterface:
         "stop_landmark": str
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+        route_type = route_type.value if isinstance(route_type, Mode) else route_type
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
 
         if direction_id is not None:
