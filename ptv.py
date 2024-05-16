@@ -7,7 +7,7 @@ from ratelimit import limits, sleep_and_retry
 from typing import Self, overload
 import requests
 
-__all__ = ["PTVInterface", "Mode", "ExpandType"]
+__all__ = ["PTVInterface", "RouteType", "ExpandType"]
 
 type _Values = str | int | float | bool | datetime
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -19,12 +19,13 @@ type _Route = dict[str, str | int | dict[str, str] | _Geopath]
 type _RouteType = dict[str, str | int]
 type _Run = dict[str, str | int | _VehiclePosition | _VehicleDescriptor | _Geopath]
 type _SkippedStop = dict[str, str | int]
-type _Stop = dict[str, str | int | float | dict[str, str | bool | list[int]]]
-type _VehicleDescriptor = dict[str, str | bool]
-type _VehiclePosition = dict[str, str | int | datetime]
+type _Stop = dict[str, str | int | float | _TicketingInfo]
+type _TicketingInfo = dict[str, str | bool | list[int]]
+type _VehicleDescriptor = dict[str, str | bool] | None
+type _VehiclePosition = dict[str, str | int | datetime] | None
 
 
-class Mode(Enum):
+class RouteType(Enum):
     """Contains enum constants to indicate mode of travel."""
 
     MET_TRAIN = METRO = 0
@@ -53,6 +54,7 @@ class PTVInterface:
 
         :param dev_id: User ID
         :param key: API request signing key
+        :return: None
         """
         
         if not isinstance(dev_id, (str, int)):
@@ -121,11 +123,11 @@ class PTVInterface:
         """Returns the directions of travel for a particular route.
 
         Returned records contain these fields:
-        "route_direction_description": str
-        "direction_id": int
-        "direction_name": str
-        "route_id": int
-        "route_type": int
+        "route_direction_description" (str): Description of the travel direction
+        "direction_id" (int): Travel direction identifier
+        "direction_name" (str): Label of the travel direction
+        "route_id" (int): Route identifier
+        "route_type" (int): Travel mode identifier
 
         :param route_id: The route ID number
         :return: A list of records containing the aforementioned fields
@@ -133,44 +135,44 @@ class PTVInterface:
 
         return self._call(f"/v3/directions/route/{route_id}")["directions"]
 
-    def list_directions(self: Self, direction_id: int, route_type: Mode | int | None = None) -> list[_Direction]:
+    def list_directions(self: Self, direction_id: int, route_type: RouteType | int | None = None) -> list[_Direction]:
         """Returns all directions of travel in the database for all (or the specified) route type(s).
 
         Returned records contain these fields:
-        "route_direction_description": str
-        "direction_id": int
-        "direction_name": str
-        "route_id": int
-        "route_type": int
+        "route_direction_description" (str): Description of the travel direction
+        "direction_id" (int): Travel direction identifier
+        "direction_name" (str): Label of the travel direction
+        "route_id" (int): Route identifier
+        "route_type" (int): Travel mode identifier
 
         :param direction_id: The direction ID number
         :param route_type: Return only the directions with the specified route type
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, Mode) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self: Self, run_ref: str, route_type: Mode | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
+    def get_pattern(self: Self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Returned records contain these fields:
-        "skipped_stops": list[dict[str, int | str]]
-        "stop_id": int
-        "route_id": int
-        "run_id": int
-        "run_ref": str
-        "direction_id": int
-        "disruption_ids": list[int]
-        "scheduled_departure_utc": datetime
-        "estimated_departure_utc": datetime
-        "at_platform": bool
-        "platform_number": str
-        "flags": str
-        "departure_sequence": int
+        "skipped_stops" (list[dict[str, int | str]]): A list of stops skipped by this stopping pattern after this stop
+        "stop_id" (int): Stop identifier
+        "route_id" (int): Route identifier
+        "run_id" (int): Run identifier (deprecated)
+        "run_ref" (str): Run identifier
+        "direction_id" (int): Travel direction identifier
+        "disruption_ids" (list[int]): List of identifiers of disruptions that are affecting the service
+        "scheduled_departure_utc" (datetime): Scheduled time of departure from this stop per the timetable
+        "estimated_departure_utc" (datetime): Estimated actual time of departure from this stop based on real-time location data
+        "at_platform" (bool): Indicates whether the train is currently at the platform; always returns False for all other modes
+        "platform_number" (str): Identifier of the platform where the train will depart/has departed from
+        "flags" (str): Flag indicating special condition for run (e.g. RR Reservations Required, GC Guaranteed Connection, DOO Drop Off Only, PUO Pick Up Only, MO Mondays only, TU Tuesdays only, WE Wednesdays only, TH Thursdays only, FR Fridays only, SS School days only; ignore E flag)
+        "departure_sequence" (int): Sort key for the order of departures for this service
 
         :param run_ref: The run identifier
-        :param route_type: The route type of the run
+        :param route_type: The run's travel mode identifier
         :param stop_id: Include only the stop with the specified stop ID
         :param date_utc: TODO
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern
@@ -178,7 +180,7 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, Mode) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
         req = self._build_arg_string("expand", "None", s=req)
 
@@ -204,13 +206,13 @@ class PTVInterface:
         """Returns the details of the route with the specified route ID.
 
         Returned record contains these fields:
-        "route_service_status": dict[str, str]
-        "route_type": int
-        "route_id": int
-        "route_name": str
-        "route_number": str
-        "route_gtfs_id": str
-        "geopath": list[dict[str, str | int | list[str]]]
+        "route_service_status" (dict[str, str]): Status of services on the route
+        "route_type" (int): Travel mode identifier
+        "route_id" (int): Route identifier
+        "route_name" (str): Route name
+        "route_number" (str): Route number (publicly)
+        "route_gtfs_id" (str): Route identifier in the General Transit Feed Specification
+        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
 
         :param route_id: The route ID number
         :param include_geopath: Include the route's geopath data
@@ -226,17 +228,17 @@ class PTVInterface:
 
         return self._call(req)["route"]
 
-    def list_routes(self: Self, route_types: Iterable[Mode | int] | None = None, route_name: str | None = None) -> list[_Route]:
+    def list_routes(self: Self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[_Route]:
         """Returns all routes of all (or specified) types.
 
         Returned records contain these fields:
-        "route_service_status" : dict[str, str]
-        "route_type": int
-        "route_id": int
-        "route_name": str
-        "route_number": str
-        "route_gtfs_id": str
-        "geopath": list[dict[str, str | int | list[str]]]
+        "route_service_status" (dict[str, str]): Status of services on the route
+        "route_type" (int): Travel mode identifier
+        "route_id" (int): Route identifier
+        "route_name" (str): Route name
+        "route_number" (str): Route number (publicly)
+        "route_gtfs_id" (str): Route identifier in the General Transit Feed Specification
+        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
 
         :param route_types: Return only the routes of the specified type(s)
         :param route_name: Return the routes with names containing the specified substring
@@ -246,7 +248,7 @@ class PTVInterface:
         req = "/v3/routes"
         if route_types is not None:
             for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, Mode) else route_type, s=req)
+                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
         if route_name is not None:
             req = self._build_arg_string("route_name", route_name, s=req)
 
@@ -256,8 +258,8 @@ class PTVInterface:
         """Returns the names and IDs of all route types.
 
         Returned records contain these fields:
-        "route_type_name" : str
-        "route_type" : int
+        "route_type_name" (str):
+        "route_type" (int):
 
         :return: A list of records containing the aforementioned fields
         """
@@ -269,19 +271,19 @@ class PTVInterface:
         """Returns a list of all runs for the specified run identifier.
 
         Returned records contain these fields:
-        "run_id": int
-        "run_ref": str
-        "route_id": int
-        "route_type": int
-        "final_stop_id": int
-        "destination_name": str
-        "status": str
-        "direction_id": int
-        "run_sequence": int
-        "express_stop_count": int
-        "vehicle_position": dict[str, str | int | datetime]
-        "vehicle_descriptor": dict[str, str | bool]
-        "geopath": list[dict[str, str | int | list[str]]]
+        "run_id" (int): Run identifier (deprecated)
+        "run_ref" (str): Run identifier
+        "route_id" (int): Route identifier
+        "route_type" (int): Travel mode identifier
+        "final_stop_id" (int): Identifier of final stop on run
+        "destination_name" (str): Destination label
+        "status" (str): Current status of run (i.e. whether the service is on time, delayed, etc.); "scheduled" if status unavailable
+        "direction_id" (int): Travel direction identifier
+        "run_sequence" (int): Sort key for chronological order in a list of runs having the same route and direction of travel
+        "express_stop_count" (int): Number of stations skipped by this run
+        "vehicle_position" (dict[str, str | int | datetime] | None): TODO
+        "vehicle_descriptor" (dict[str, str | bool] | None): TODO
+        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
 
         :param run_ref: The run identifier
         :param route_type: Not used (but see overloaded variant)
@@ -293,23 +295,23 @@ class PTVInterface:
         ...
 
     @overload
-    def get_run(self: Self, run_ref: str, route_type: Mode | int, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> _Run:
+    def get_run(self: Self, run_ref: str, route_type: RouteType | int, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> _Run:
         """Returns the run with the specified run identifier and route type.
 
-        The returned record contain these fields:
-        "run_id": int
-        "run_ref": str
-        "route_id": int
-        "route_type": int
-        "final_stop_id": int
-        "destination_name": str
-        "status": str
-        "direction_id": int
-        "run_sequence": int
-        "express_stop_count": int
-        "vehicle_position": dict[str, str | int | datetime]
-        "vehicle_descriptor": dict[str, str | bool]
-        "geopath": list[dict[str, str | int | list[str]]]
+        Returned record contain these fields:
+        "run_id" (int): Run identifier (deprecated)
+        "run_ref" (str): Run identifier
+        "route_id" (int): Route identifier
+        "route_type" (int): Travel mode identifier
+        "final_stop_id" (int): Identifier of final stop on run
+        "destination_name" (str): Destination label
+        "status" (str): Current status of run (i.e. whether the service is on time, delayed, etc.); "scheduled" if status unavailable
+        "direction_id" (int): Travel direction identifier
+        "run_sequence" (int): Sort key for chronological order in a list of runs having the same route and direction of travel
+        "express_stop_count" (int): Number of stations skipped by this run
+        "vehicle_position" (dict[str, str | int | datetime] | None): TODO
+        "vehicle_descriptor" (dict[str, str | bool] | None): TODO
+        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
 
         :param run_ref: The run identifier
         :param route_type: The route type of the specified run
@@ -321,7 +323,7 @@ class PTVInterface:
         ...
 
     def get_run(self, run_ref, route_type=None, expand=ExpandType.NONE, date_utc=None, include_geopath=False):
-        route_type = route_type.value if isinstance(route_type, Mode) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
@@ -353,23 +355,23 @@ class PTVInterface:
 
         return res
 
-    def list_runs(self: Self, route_id: int, route_type: Mode | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[_Run]:
+    def list_runs(self: Self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[_Run]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Returned records contain these fields:
-        "run_id": int
-        "run_ref": str
-        "route_id": int
-        "route_type": int
-        "final_stop_id": int
-        "destination_name": str
-        "status": str
-        "direction_id": int
-        "run_sequence": int
-        "express_stop_count": int
-        "vehicle_position": dict[str, int | str | datetime]
-        "vehicle_descriptor": dict[str, str | bool]
-        "geopath": list[dict[str, str | int | list[str]]]
+        "run_id" (int): Run identifier (deprecated)
+        "run_ref" (str): Run identifier
+        "route_id" (int): Route identifier
+        "route_type" (int): Travel mode identifier
+        "final_stop_id" (int): Identifier of final stop on run
+        "destination_name" (str): Destination label
+        "status" (str): Current status of run (i.e. whether the service is on time, delayed, etc.); "scheduled" if status unavailable
+        "direction_id" (int): Travel direction identifier
+        "run_sequence" (int): Sort key used to arrange this stop in chronological order in a list of runs on this route
+        "express_stop_count" (int): Number of stations skipped by this run
+        "vehicle_position" (dict[str, str | int | datetime] | None): TODO
+        "vehicle_descriptor" (dict[str, str | bool] | None): TODO
+        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
 
         :param route_id: The route ID number
         :param route_type: The route type of the specified route
@@ -378,7 +380,7 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, Mode) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
@@ -400,20 +402,20 @@ class PTVInterface:
 
         return res
 
-    def list_stops(self: Self, route_id: int, route_type: Mode | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
+    def list_stops(self: Self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
         """Returns a list of all stops on the specified route.
 
         Returned records contain these fields:
-        "disruption_ids": list[int]
-        "stop_suburb": str
-        "route_type": int
-        "stop_latitude": float
-        "stop_longitude": float
-        "stop_sequence": int
-        "stop_ticket": dict[str, str | bool | list[int]]
-        "stop_id": int
-        "stop_name": str
-        "stop_landmark": str
+        "disruption_ids" (list[int]): List of disruption identifiers related to this stop
+        "stop_suburb" (str): Locality of stop
+        "route_type" (int): Transport mode identifier
+        "stop_latitude" (float): Stop location's latitude coordinate
+        "stop_longitude" (float): Stop location's longitude coordinate
+        "stop_sequence" (int): Sort key used to arrange this stop in a list of stops on this route sequentially
+        "stop_ticket" (dict[str, str | bool | list[int]]): Ticketing information for this stop
+        "stop_id" (int): Stop identifier
+        "stop_name" (str): Stop label
+        "stop_landmark" (str): Description of nearby significant landmark(s)
 
         :param route_id: The route ID number
         :param route_type: The route type of the specified route
@@ -422,7 +424,7 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, Mode) else route_type
+        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
 
         if direction_id is not None:
