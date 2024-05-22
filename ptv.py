@@ -1,13 +1,16 @@
 from collections.abc import Iterable
 from datetime import datetime
+from defusedxml import ElementTree as element_tree
 from enum import Enum
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from typing import Self, overload
+from typing import Final, overload, Self
+from xml.etree.ElementTree import Element
+import re
 import requests
 
-__all__ = ["PTVInterface", "RouteType", "ExpandType"]
+__all__ = ["PTVInterface", "RouteType", "ExpandType", "TramTrackerInterface"]
 
 type _Values = str | int | float | bool | datetime
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -23,6 +26,8 @@ type _Stop = dict[str, str | int | float | _TicketingInfo]
 type _TicketingInfo = dict[str, str | bool | list[int]]
 type _VehicleDescriptor = dict[str, str | bool] | None
 type _VehiclePosition = dict[str, str | int | datetime] | None
+
+UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
 
 
 class RouteType(Enum):
@@ -53,7 +58,7 @@ class PTVInterface:
         """Initialises a PTVInterface instance with the supplied credentials.
 
         :param dev_id: User ID
-        :param key: API request signing key
+        :param key: API request signing key (a UUID)
         :return: None
         """
         
@@ -62,9 +67,11 @@ class PTVInterface:
         elif not isinstance(key, str):
             raise TypeError(f"key must be type str ({type(key)} provided)")
 
-        self.devID: str = str(dev_id)
-        self.key: bytes = key.encode(encoding="ascii")
-        self.last_req = None
+        if UUID_PATTERN.fullmatch(key) is None:
+            raise ValueError(f"Key is not a UUID string: {key}")
+
+        self._devID: Final[str] = str(dev_id)
+        self._key: Final[bytes] = key.encode(encoding="ascii")
         return
 
     @staticmethod
@@ -94,7 +101,7 @@ class PTVInterface:
         return s
 
     @sleep_and_retry
-    @limits(calls=1, period=5)  # 1 call every 5 seconds
+    @limits(calls=1, period=10)  # 1 call every 10 seconds
     def _call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result.
 
@@ -115,8 +122,8 @@ class PTVInterface:
         :return: API request URL
         """
 
-        raw = f"{request}{"&" if "?" in request else "?"}devid={self.devID}"
-        signature = HMAC(key=self.key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
+        raw = f"{request}{"&" if "?" in request else "?"}devid={self._devID}"
+        signature = HMAC(key=self._key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
 
     def list_route_directions(self: Self, route_id: int) -> list[_Direction]:
@@ -433,3 +440,77 @@ class PTVInterface:
             req = self._build_arg_string("stop_disruptions", "true")
 
         return self._call(req)["stops"]
+
+
+class TramTrackerInterface:
+    """Interface class with the TramTracker PIDS Web Service."""
+
+    _NAMESPACES: Final[dict[str, str]] = {"soap": "http://www.w3.org/2003/05/soap-envelope", "tramtracker": "http://www.yarratrams.com.au/pidsservice/"}
+    CLIENT_TYPE: Final[str] = "WEBPID"
+    CLIENT_VERSION: Final[str] = "1.0"
+    CLIENT_WEB_SERVICE_VERSION: Final[str] = "6.4.0.0"
+
+    def __init__(self, uuid: str | None = None) -> None:
+        """
+        Creates a TramTrackerInterface instance, requesting a new UUID from the service if one is not provided.
+
+        :param uuid: The UUID for client authentication, or None to request one from the service
+        :return: None
+        """
+        self.uuid: Final[str] = self._get_new_uuid() if uuid is None else uuid
+        return
+
+    @classmethod
+    @sleep_and_retry
+    @limits(calls=1, period=10)
+    def _post(cls: Self, data: str) -> str:
+        """
+        Send the specified data to the service, appending the necessary HTTP and XML headers.
+
+        :param data: The data to send
+        :return: The response from the service
+        """
+        r = requests.post(url="http://webpids.tramtracker.com.au/pidsservice/pids.asmx", data=f"<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">{data}</soap:Body></soap:Envelope>", headers={"Content-Type": "application/soap+xml; charset=utf-8"})
+        r.raise_for_status()
+        r.encoding = "utf-8"
+        return r.text
+
+    @classmethod
+    def _get_new_uuid(cls: Self) -> str:
+        """
+        Request a new UUID for client identification from the service. Raises a ConnectionError if an unexpected response is received.
+
+        :return: The new UUID
+        """
+        r = cls._post("<soap:Body><GetNewClientGuid xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
+        tree: Element = element_tree.fromstring(r)
+        result = tree.find("./soap:Body/tramtracker:GetNewClientGuidResponse/tramtracker:GetNewClientGuidResult", cls._NAMESPACES)
+        if result is None:
+            raise ConnectionError("Service error: service responded successfully but did not return a UUID; check with developer")
+        if UUID_PATTERN.fullmatch(result.text) is None:
+            raise ConnectionError(f"Service error: service responded successfully but returned an unexpected value: \"{result.text}\"; check with developer")
+        return result.text
+
+    def _call(self: Self, request: str) -> str:
+        """
+        Make the request to the web service, appending the necessary headers to the request.
+
+        :param request: XML request string
+        :return: Result of request
+        """
+        return self._post(f"<soap:Header><PidsClientHeader xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><ClientGuid>{self.uuid}</ClientGuid><ClientType>{self.CLIENT_TYPE}</ClientType><ClientVersion>{self.CLIENT_VERSION}</ClientVersion><ClientWebServiceVersion>{self.CLIENT_WEB_SERVICE_VERSION}</ClientWebServiceVersion></PidsClientHeader></soap:Header><soap:Body>{request}</soap:Body>")
+
+    def list_destinations(self: Self):
+        self._post("<GetDestinationsForAllRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
+
+    def get_destinations(self: Self, route: str | int):
+        self._post(f"<GetDestinationsForRoute xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}</routeNo></GetDestinationsForRoute>")
+
+    def list_routes(self: Self):
+        self._post("<GetMainRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
+
+    def list_stops(self: Self, route: str | int, up_direction: bool):
+        self._post(f"<GetListOfStopsByRouteNoAndDirection xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}/routeNo><isUpDirection>{up_direction}</isUpDirection></GetListOfStopsByRouteNoAndDirection>")
+
+    def get_stop(self: Self, stop_id: int):
+        self._post(f"<GetStopInformation xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><stopNo>{stop_id}</stopNo></GetStopInformation>")
