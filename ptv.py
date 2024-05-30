@@ -1,16 +1,16 @@
 from collections.abc import Iterable
 from datetime import datetime
-from defusedxml import ElementTree as element_tree
-from enum import Enum
+from defusedxml.ElementTree import XML
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from typing import Final, overload, Self
+from sys import stderr
+from typing import Final, Literal, overload, Self
 from xml.etree.ElementTree import Element
 import re
 import requests
 
-__all__ = ["PTVInterface", "RouteType", "ExpandType", "TramTrackerInterface"]
+__all__ = ["PTVInterface", "TramTrackerInterface", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "ALL", "STOP", "ROUTE", "RUN", "DIRECTION", "DISRUPTION", "VEHICLE_DESCRIPTOR", "VEHICLE_POSITION", "NONE"]
 
 type _Values = str | int | float | bool | datetime
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -27,28 +27,44 @@ type _TicketingInfo = dict[str, str | bool | list[int]]
 type _VehicleDescriptor = dict[str, str | bool] | None
 type _VehiclePosition = dict[str, str | int | datetime] | None
 
+type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
+type RouteType = Literal[0, 1, 2, 3]
+
 UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
 
+MET_TRAIN: Literal[0] = 0
+"""Metropolitan trains"""
+METRO: Literal[0] = 0
+"""Metropolitan trains"""
+TRAM: Literal[1] = 1
+"""Metropolitan trams"""
+BUS: Literal[2] = 2
+"""Metropolitan & regional buses"""
+REG_TRAIN: Literal[3] = 3
+"""Regional trains & coaches"""
+COACH: Literal[3] = 3
+"""Regional trains & coaches"""
+VLINE: Literal[3] = 3
+"""Regional trains & coaches"""
 
-class RouteType(Enum):
-    """Contains enum constants to indicate mode of travel."""
-
-    MET_TRAIN = METRO = 0
-    TRAM = 1
-    BUS = 2
-    REG_TRAIN = COACH = VLINE = 3
-
-
-class ExpandType(Enum):
-    ALL = "All"
-    STOP = "Stop"
-    ROUTE = "Route"
-    RUN = "Run"
-    DIRECTION = "Direction"
-    DISRUPTION = "Disruption"
-    VEHICLE_DESCRIPTOR = "VehicleDescriptor"
-    VEHICLE_POSITION = "VehiclePosition"
-    NONE = "None"
+ALL: Literal["All"] = "All"
+"""Return all object properties in full"""
+STOP: Literal["Stop"] = "Stop"
+"""Return stop properties"""
+ROUTE: Literal["Route"] = "Route"
+"""Return route properties"""
+RUN: Literal["Run"] = "Run"
+"""Return run properties"""
+DIRECTION: Literal["Direction"] = "Direction"
+"""Return direction properties"""
+DISRUPTION: Literal["Disruption"] = "Disruption"
+"""Return disruption properties"""
+VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
+"""Return vehicle descriptor properties"""
+VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
+"""Return vehicle position properties"""
+NONE: Literal["None"] = "None"
+"""Don't return any object properties"""
     
 
 class PTVInterface:
@@ -75,8 +91,8 @@ class PTVInterface:
         return
 
     @staticmethod
-    def _build_arg_string(*params: tuple[str, str | int] | str | int, s: str = "") -> str:
-        """Builds a URL argument string using the specified parameter-value pairs.
+    def _build_arg_string(*params: tuple[str, str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None] | str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None, s: str = "") -> str:
+        """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are Iterable. Ignores values that are None.
 
         :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
         :param s: Optionally, the string to append to
@@ -86,14 +102,24 @@ class PTVInterface:
         i = 0
         while i < len(params):
             if isinstance(params[i], tuple):
-                s += f"{"&" if "?" in s else "?"}{params[i][0]}={params[i][1]}"
+                if isinstance(params[i][1], str | int):
+                    s += f"{"&" if "?" in s else "?"}{params[i][0]}={params[i][1]}"
+                elif isinstance(params[i][1], Iterable):
+                    for value in params[i][1]:
+                        s += f"{"&" if "?" in s else "?"}{params[i][0]}={value}"
+                elif params[i][1] is not None:
+                    raise TypeError(f"Argument {i} ({params[i]}) contains unsupported types")
                 i += 1
             elif isinstance(params[i], str):
                 if i + 1 >= len(params):
                     raise ValueError(f"Not enough arguments provided (missing value for {params[i]})")
-                if not isinstance(params[i + 1], (str, int)):
-                    raise TypeError(f"Argument {i + 1} ({params[i + 1]}) is not str or int")
-                s += f"{"&" if "?" in s else "?"}{params[i]}={params[i + 1]}"
+                elif isinstance(params[i + 1], str | int):
+                    s += f"{"&" if "?" in s else "?"}{params[i]}={params[i + 1]}"
+                elif isinstance(params[i + 1], Iterable):
+                    for value in params[i + 1]:
+                        s += f"{"&" if "?" in s else "?"}{params[i]}={value}"
+                elif params[i + 1] is not None:
+                    raise TypeError(f"Argument {i + 1} ({params[i + 1]}) is not str, int or Iterable[str | int]")
                 i += 2
             else:
                 raise TypeError(f"Argument {i} ({params[i]}) is not tuple or str")
@@ -142,7 +168,7 @@ class PTVInterface:
 
         return self._call(f"/v3/directions/route/{route_id}")["directions"]
 
-    def list_directions(self: Self, direction_id: int, route_type: RouteType | int | None = None) -> list[_Direction]:
+    def list_directions(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[_Direction]:
         """Returns all directions of travel in the database for all (or the specified) route type(s).
 
         Returned records contain these fields:
@@ -157,10 +183,9 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self: Self, run_ref: str, route_type: RouteType | int, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
+    def get_pattern(self: Self, run_ref: str, route_type: RouteType, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Returned records contain these fields:
@@ -187,7 +212,6 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
         req = self._build_arg_string("expand", "None", s=req)
 
@@ -235,7 +259,7 @@ class PTVInterface:
 
         return self._call(req)["route"]
 
-    def list_routes(self: Self, route_types: Iterable[RouteType | int] | None = None, route_name: str | None = None) -> list[_Route]:
+    def list_routes(self: Self, route_types: Iterable[RouteType] | None = None, route_name: str | None = None) -> list[_Route]:
         """Returns all routes of all (or specified) types.
 
         Returned records contain these fields:
@@ -255,7 +279,7 @@ class PTVInterface:
         req = "/v3/routes"
         if route_types is not None:
             for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type.value if isinstance(route_type, RouteType) else route_type, s=req)
+                req = self._build_arg_string("route_types", route_type, s=req)
         if route_name is not None:
             req = self._build_arg_string("route_name", route_name, s=req)
 
@@ -274,7 +298,7 @@ class PTVInterface:
         return self._call("/v3/route_types")["route_types"]
 
     @overload
-    def get_run(self: Self, run_ref: str, route_type: None, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> list[_Run]:
+    def get_run(self: Self, run_ref: str, route_type: None, expand: ExpandType, date_utc: datetime | str, include_geopath: bool) -> list[_Run]:
         """Returns a list of all runs for the specified run identifier.
 
         Returned records contain these fields:
@@ -302,7 +326,7 @@ class PTVInterface:
         ...
 
     @overload
-    def get_run(self: Self, run_ref: str, route_type: RouteType | int, expand: ExpandType | str, date_utc: datetime | str, include_geopath: bool) -> _Run:
+    def get_run(self: Self, run_ref: str, route_type: RouteType, expand: ExpandType, date_utc: datetime | str, include_geopath: bool) -> _Run:
         """Returns the run with the specified run identifier and route type.
 
         Returned record contain these fields:
@@ -329,15 +353,14 @@ class PTVInterface:
         """
         ...
 
-    def get_run(self, run_ref, route_type=None, expand=ExpandType.NONE, date_utc=None, include_geopath=False):
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
+    def get_run(self, run_ref, route_type=None, expand=NONE, date_utc=None, include_geopath=False):
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
             for et in expand:
-                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
-        elif expand != ExpandType.NONE:
-            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
+                req = self._build_arg_string("expand", et, s=req)
+        elif expand != NONE:
+            req = self._build_arg_string("expand", expand, s=req)
 
         if date_utc is not None:
             if isinstance(date_utc, str):
@@ -348,9 +371,9 @@ class PTVInterface:
             req = self._build_arg_string("include_geopath", "true", s=req)
 
         res = self._call(req)
-        res = res["run"] if route_type is None else res["runs"]
+        res = res["runs"]  # if route_type is None else res["run"]
 
-        if route_type is None:
+        if type(res) is list:  # route_type is None:
             for record in res:
                 if record["vehicle_position"] is not None:
                     record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
@@ -360,9 +383,12 @@ class PTVInterface:
                 res["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(res["vehicle_position"]["datetime_utc"]) if res["vehicle_position"]["datetime_utc"] is not None else None
                 res["vehicle_position"]["expiry_time"] = datetime.fromisoformat(res["vehicle_position"]["expiry_time"]) if res["vehicle_position"]["expiry_time"] is not None else None
 
+        if len(res) == 1:
+            res = res[0]
+
         return res
 
-    def list_runs(self: Self, route_id: int, route_type: RouteType | int | None = None, expand: ExpandType | str | Iterable[ExpandType | str] = ExpandType.NONE, date_utc: datetime | str | None = None) -> list[_Run]:
+    def list_runs(self: Self, route_id: int, route_type: RouteType | None = None, expand: ExpandType | Iterable[ExpandType] = NONE, date_utc: datetime | str | None = None) -> list[_Run]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Returned records contain these fields:
@@ -387,18 +413,17 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(expand, Iterable):
             for et in expand:
-                req = self._build_arg_string("expand", et.value if isinstance(et, ExpandType) else et, s=req)
-        elif expand != ExpandType.NONE:
-            req = self._build_arg_string("expand", expand.value if isinstance(expand, ExpandType) else expand, s=req)
+                req = self._build_arg_string("expand", et, s=req)
+        elif expand != NONE:
+            req = self._build_arg_string("expand", expand, s=req)
 
         if date_utc is not None:
             if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
+                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")  # TODO "Z" not used if offset provided
             req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
 
         res = self._call(req)["runs"]
@@ -409,7 +434,7 @@ class PTVInterface:
 
         return res
 
-    def list_stops(self: Self, route_id: int, route_type: RouteType | int, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
+    def list_stops(self: Self, route_id: int, route_type: RouteType, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
         """Returns a list of all stops on the specified route.
 
         Returned records contain these fields:
@@ -431,7 +456,6 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        route_type = route_type.value if isinstance(route_type, RouteType) else route_type
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
 
         if direction_id is not None:
@@ -441,13 +465,65 @@ class PTVInterface:
 
         return self._call(req)["stops"]
 
+    def list_departures(self, route_type: RouteType, stop_id: int, route_id: int | None = None, platform_numbers: Iterable[str | int] | None = None, direction_id: int | None = None, include_advertised_interchange: bool = False, date: datetime | str | None = None, max_results: int | None = None, include_cancelled: bool = False, look_backwards: bool = False, expand: Iterable[ExpandType] | ExpandType = NONE, include_geopath: bool = False) -> list[_Departure]:
+        """
 
+
+        :param route_type:
+        :param stop_id:
+        :param route_id:
+        :param platform_numbers:
+        :param direction_id:
+        :param include_advertised_interchange:
+        :param date:
+        :param max_results:
+        :param include_cancelled:
+        :param look_backwards:
+        :param expand:
+        :param include_geopath:
+        :return:
+        """
+
+        req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
+
+        if platform_numbers is not None:
+            for value in platform_numbers:
+                req = self._build_arg_string("platform_numbers", value)
+        if direction_id is not None:
+            req = self._build_arg_string("direction_id", direction_id)
+        if include_advertised_interchange:
+            req = self._build_arg_string("include_advertised_interchange", "true")
+        if datetime is not None:
+            if isinstance(date, str):
+                date = datetime.fromisoformat(date) if "Z" in date else datetime.fromisoformat(date + "Z")
+            req = self._build_arg_string("date_utc", date.isoformat(), s=req)
+        if max_results is not None:
+            req = self._build_arg_string("max_results", max_results)
+        if include_cancelled:
+            req = self._build_arg_string("include_cancelled", "true")
+        if look_backwards:
+            req = self._build_arg_string("look_backwards", "true")
+        if isinstance(expand, Iterable):
+            for et in expand:
+                req = self._build_arg_string("expand", et, s=req)
+        elif expand != NONE:
+            req = self._build_arg_string("expand", expand, s=req)
+        if include_geopath:
+            req = self._build_arg_string("include_geopath", "true")
+
+        res = self._call(req)
+
+        return res["departures"]
+
+
+# Thanks to Lucas Martin-King for providing the general idea for the following code
+# https://github.com/lmartinking/melbourne-tramtracker/
 class TramTrackerInterface:
     """Interface class with the TramTracker PIDS Web Service."""
 
     _NAMESPACES: Final[dict[str, str]] = {"soap": "http://www.w3.org/2003/05/soap-envelope", "tramtracker": "http://www.yarratrams.com.au/pidsservice/"}
     CLIENT_TYPE: Final[str] = "WEBPID"
-    CLIENT_VERSION: Final[str] = "1.0"
+    CLIENT_VERSION: Final[str] = "0.1"
     CLIENT_WEB_SERVICE_VERSION: Final[str] = "6.4.0.0"
 
     def __init__(self, uuid: str | None = None) -> None:
@@ -457,12 +533,16 @@ class TramTrackerInterface:
         :param uuid: The UUID for client authentication, or None to request one from the service
         :return: None
         """
+        if type(uuid) not in (str, type(None)):
+            raise TypeError("UUID must be str or None")
+        if uuid is not None and UUID_PATTERN.fullmatch(uuid) is None:
+            raise ValueError("Invalid UUID - UUIDs must take the form 00000000-0000-0000-0000-000000000000")
         self.uuid: Final[str] = self._get_new_uuid() if uuid is None else uuid
         return
 
     @classmethod
     @sleep_and_retry
-    @limits(calls=1, period=10)
+    @limits(calls=1, period=30)
     def _post(cls: Self, data: str) -> str:
         """
         Send the specified data to the service, appending the necessary HTTP and XML headers.
@@ -470,7 +550,8 @@ class TramTrackerInterface:
         :param data: The data to send
         :return: The response from the service
         """
-        r = requests.post(url="http://webpids.tramtracker.com.au/pidsservice/pids.asmx", data=f"<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">{data}</soap:Body></soap:Envelope>", headers={"Content-Type": "application/soap+xml; charset=utf-8"})
+        print(data, file=stderr)
+        r = requests.post(url="http://webpids.tramtracker.com.au/pidsservice/pids.asmx", data=f"<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">{data}</soap:Envelope>", headers={"Content-Type": "application/soap+xml; charset=utf-8"})
         r.raise_for_status()
         r.encoding = "utf-8"
         return r.text
@@ -482,8 +563,8 @@ class TramTrackerInterface:
 
         :return: The new UUID
         """
-        r = cls._post("<soap:Body><GetNewClientGuid xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
-        tree: Element = element_tree.fromstring(r)
+        r = cls._post("<soap:Body><GetNewClientGuid xmlns=\"http://www.yarratrams.com.au/pidsservice/\" /><soap:Body />")
+        tree: Element = XML(r)
         result = tree.find("./soap:Body/tramtracker:GetNewClientGuidResponse/tramtracker:GetNewClientGuidResult", cls._NAMESPACES)
         if result is None:
             raise ConnectionError("Service error: service responded successfully but did not return a UUID; check with developer")
@@ -501,16 +582,18 @@ class TramTrackerInterface:
         return self._post(f"<soap:Header><PidsClientHeader xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><ClientGuid>{self.uuid}</ClientGuid><ClientType>{self.CLIENT_TYPE}</ClientType><ClientVersion>{self.CLIENT_VERSION}</ClientVersion><ClientWebServiceVersion>{self.CLIENT_WEB_SERVICE_VERSION}</ClientWebServiceVersion></PidsClientHeader></soap:Header><soap:Body>{request}</soap:Body>")
 
     def list_destinations(self: Self):
-        self._post("<GetDestinationsForAllRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
+        self._call("<GetDestinationsForAllRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
 
     def get_destinations(self: Self, route: str | int):
-        self._post(f"<GetDestinationsForRoute xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}</routeNo></GetDestinationsForRoute>")
+        self._call(f"<GetDestinationsForRoute xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}</routeNo></GetDestinationsForRoute>")
 
     def list_routes(self: Self):
-        self._post("<GetMainRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
+        self._call("<GetMainRoutes xmlns=\"http://www.yarratrams.com.au/pidsservice/\" />")
 
-    def list_stops(self: Self, route: str | int, up_direction: bool):
-        self._post(f"<GetListOfStopsByRouteNoAndDirection xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}/routeNo><isUpDirection>{up_direction}</isUpDirection></GetListOfStopsByRouteNoAndDirection>")
+    def list_stops(self: Self, route: str | int) -> list[dict[str, str | int]]:
+        response = self._call(f"<GetRouteStopsByRoute xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}</routeNo></GetRouteStopsByRoute>")
+        result: Element = XML(response).find("./soap:Body/tt:GetRouteStopsByRouteResponse/tt:GetRouteStopsByRouteResult/diffgr:diffgram/DocumentElement", namespaces={"soap": "http://www.w3.org/2003/05/soap-envelope", "tt": "http://www.yarratrams.com.au/pidsservice/", "diffgr": "urn:schemas-microsoft-com:xml-diffgram-v1"})
+        return [{"tt_id": int(element.find("./TID").text), "stop_name": element.find("./Description").text, "full_stop_name": element.find("./StopName").text, "locality": element.find("./SuburbName").text, "latitude": element.find("./Latitude").text, "longitude": element.find("./Longitude").text} for element in result]
 
     def get_stop(self: Self, stop_id: int):
-        self._post(f"<GetStopInformation xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><stopNo>{stop_id}</stopNo></GetStopInformation>")
+        self._call(f"<GetStopInformation xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><stopNo>{stop_id}</stopNo></GetStopInformation>")
