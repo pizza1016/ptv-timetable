@@ -1,11 +1,11 @@
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from defusedxml.ElementTree import XML
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
 from sys import stderr
-from typing import Final, Literal, overload, Self
+from typing import Final, Literal, Self
 from xml.etree.ElementTree import Element
 import re
 import requests
@@ -91,7 +91,7 @@ class PTVInterface:
         return
 
     @staticmethod
-    def _build_arg_string(*params: tuple[str, str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None] | str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None, s: str = "") -> str:
+    def build_arg_string(*params: tuple[str, str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None] | str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None, s: str = "") -> str:
         """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are Iterable. Ignores values that are None.
 
         :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
@@ -128,7 +128,7 @@ class PTVInterface:
 
     @sleep_and_retry
     @limits(calls=1, period=10)  # 1 call every 10 seconds
-    def _call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
+    def call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result.
 
         :param request: API request string
@@ -166,7 +166,7 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        return self._call(f"/v3/directions/route/{route_id}")["directions"]
+        return self.call(f"/v3/directions/route/{route_id}")["directions"]
 
     def list_directions(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[_Direction]:
         """Returns all directions of travel in the database for all (or the specified) route type(s).
@@ -183,9 +183,9 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        return self._call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
+        return self.call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self: Self, run_ref: str, route_type: RouteType, stop_id: int | None = None, date_utc: datetime | str | None = None, include_skipped_stops: bool = False, include_geopath: bool = False) -> list[_Departure]:
+    def get_pattern(self: Self, run_ref: str, route_type: RouteType, stop_id: int | None = None, date: datetime | str | None = None, include_skipped_stops: bool = False, expand: ExpandType | Iterable[ExpandType] = NONE, include_geopath: bool = False) -> list[_Departure]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Returned records contain these fields:
@@ -206,28 +206,23 @@ class PTVInterface:
         :param run_ref: The run identifier
         :param route_type: The run's travel mode identifier
         :param stop_id: Include only the stop with the specified stop ID
-        :param date_utc: TODO
+        :param date: TODO
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern
+        :param expand: TODO
         :param include_geopath: Include the pattern's geopath data
         :return: A list of records containing the aforementioned fields
         """
 
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
-        req = self._build_arg_string("expand", "None", s=req)
 
-        if stop_id is not None:
-            req = self._build_arg_string("stop_id", stop_id, s=req)
-        if date_utc is not None:
-            if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(
-                    date_utc + "Z")
-            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
-        if include_skipped_stops:
-            req = self._build_arg_string("include_skipped_stops", "true", s=req)
-        if include_geopath:
-            req = self._build_arg_string("include_geopath", "true", s=req)
+        if isinstance(date, str):
+            date = datetime.fromisoformat(date)
+        if date.tzinfo is None:
+            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
 
-        res = self._call(req)["departures"]
+        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.isoformat(), "include_skipped_stops", "true" if include_skipped_stops else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
+
+        res = self.call(req)["departures"]
         for record in res:
             record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"]) if record["scheduled_departure_utc"] is not None else None
             record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]) if record["estimated_departure_utc"] is not None else None
@@ -251,13 +246,8 @@ class PTVInterface:
         :return: A record containing the aforementioned fields
         """
 
-        req = f"/v3/routes/{route_id}"
-        if include_geopath:
-            req = self._build_arg_string("include_geopath", "true", s=req)
-        if geopath_utc is not None:
-            req = self._build_arg_string("geopath_utc", geopath_utc, s=req)
-
-        return self._call(req)["route"]
+        req = self.build_arg_string("include_geopath", "true" if include_geopath else None, "geopath_utc", geopath_utc, s=f"/v3/routes/{route_id}")
+        return self.call(req)["route"]
 
     def list_routes(self: Self, route_types: Iterable[RouteType] | None = None, route_name: str | None = None) -> list[_Route]:
         """Returns all routes of all (or specified) types.
@@ -276,14 +266,7 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        req = "/v3/routes"
-        if route_types is not None:
-            for route_type in route_types:
-                req = self._build_arg_string("route_types", route_type, s=req)
-        if route_name is not None:
-            req = self._build_arg_string("route_name", route_name, s=req)
-
-        return self._call(req)["routes"]
+        return self.call(self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes"))["routes"]
 
     def list_route_types(self: Self) -> list[_RouteType]:
         """Returns the names and IDs of all route types.
@@ -295,11 +278,10 @@ class PTVInterface:
         :return: A list of records containing the aforementioned fields
         """
 
-        return self._call("/v3/route_types")["route_types"]
+        return self.call("/v3/route_types")["route_types"]
 
-    @overload
-    def get_run(self: Self, run_ref: str, route_type: None, expand: ExpandType, date_utc: datetime | str, include_geopath: bool) -> list[_Run]:
-        """Returns a list of all runs for the specified run identifier.
+    def get_run(self: Self, run_ref: str, route_type: RouteType | None = None, expand: ExpandType = NONE, date: datetime | str | None = None, include_geopath: bool = False) -> list[_Run]:
+        """Returns a list of all runs for the specified run identifier and, optionally, the specified route type.
 
         Returned records contain these fields:
         "run_id" (int): Run identifier (deprecated)
@@ -319,76 +301,30 @@ class PTVInterface:
         :param run_ref: The run identifier
         :param route_type: Not used (but see overloaded variant)
         :param expand: Optional data to include in returned list
-        :param date_utc: Return only data from the specified date
+        :param date: Return only data from the specified date
         :param include_geopath: Include the run's geopath data
         :return: A list of records containing the aforementioned fields
         """
-        ...
 
-    @overload
-    def get_run(self: Self, run_ref: str, route_type: RouteType, expand: ExpandType, date_utc: datetime | str, include_geopath: bool) -> _Run:
-        """Returns the run with the specified run identifier and route type.
-
-        Returned record contain these fields:
-        "run_id" (int): Run identifier (deprecated)
-        "run_ref" (str): Run identifier
-        "route_id" (int): Route identifier
-        "route_type" (int): Travel mode identifier
-        "final_stop_id" (int): Identifier of final stop on run
-        "destination_name" (str): Destination label
-        "status" (str): Current status of run (i.e. whether the service is on time, delayed, etc.); "scheduled" if status unavailable
-        "direction_id" (int): Travel direction identifier
-        "run_sequence" (int): Sort key for chronological order in a list of runs having the same route and direction of travel
-        "express_stop_count" (int): Number of stations skipped by this run
-        "vehicle_position" (dict[str, str | int | datetime] | None): TODO
-        "vehicle_descriptor" (dict[str, str | bool] | None): TODO
-        "geopath" (list[dict[str, str | int | list[str]]]): The route's geometry as a sequence of coordinates
-
-        :param run_ref: The run identifier
-        :param route_type: The route type of the specified run
-        :param expand: Optional data to include in returned list
-        :param date_utc: Return only data from the specified date
-        :param include_geopath: Include the run's geopath data
-        :return: A record containing the aforementioned fields
-        """
-        ...
-
-    def get_run(self, run_ref, route_type=None, expand=NONE, date_utc=None, include_geopath=False):
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
-        if isinstance(expand, Iterable):
-            for et in expand:
-                req = self._build_arg_string("expand", et, s=req)
-        elif expand != NONE:
-            req = self._build_arg_string("expand", expand, s=req)
+        if isinstance(date, str):
+            date = datetime.fromisoformat(date)
+        if date.tzinfo is None:
+            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
 
-        if date_utc is not None:
-            if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")
-            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "include_geopath", "true" if include_geopath else None, "date_utc", date.isoformat(), s=req)
 
-        if include_geopath:
-            req = self._build_arg_string("include_geopath", "true", s=req)
+        res = self.call(req)["runs"]
 
-        res = self._call(req)
-        res = res["runs"]  # if route_type is None else res["run"]
-
-        if type(res) is list:  # route_type is None:
-            for record in res:
-                if record["vehicle_position"] is not None:
-                    record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
-                    record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
-        else:
-            if res["vehicle_position"] is not None:
-                res["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(res["vehicle_position"]["datetime_utc"]) if res["vehicle_position"]["datetime_utc"] is not None else None
-                res["vehicle_position"]["expiry_time"] = datetime.fromisoformat(res["vehicle_position"]["expiry_time"]) if res["vehicle_position"]["expiry_time"] is not None else None
-
-        if len(res) == 1:
-            res = res[0]
+        for record in res:
+            if record["vehicle_position"] is not None:
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
 
         return res
 
-    def list_runs(self: Self, route_id: int, route_type: RouteType | None = None, expand: ExpandType | Iterable[ExpandType] = NONE, date_utc: datetime | str | None = None) -> list[_Run]:
+    def list_runs(self: Self, route_id: int, route_type: RouteType | None = None, expand: ExpandType | Iterable[ExpandType] = NONE, date: datetime | str | None = None) -> list[_Run]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Returned records contain these fields:
@@ -409,24 +345,20 @@ class PTVInterface:
         :param route_id: The route ID number
         :param route_type: The route type of the specified route
         :param expand: Optional data to include in returned list
-        :param date_utc: Return only data from the specified date
+        :param date: Return only data from the specified date
         :return: A list of records containing the aforementioned fields
         """
 
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
-        if isinstance(expand, Iterable):
-            for et in expand:
-                req = self._build_arg_string("expand", et, s=req)
-        elif expand != NONE:
-            req = self._build_arg_string("expand", expand, s=req)
+        if isinstance(date, str):
+            date = datetime.fromisoformat(date)
+        if date.tzinfo is None:
+            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
 
-        if date_utc is not None:
-            if isinstance(date_utc, str):
-                date_utc = datetime.fromisoformat(date_utc) if "Z" in date_utc else datetime.fromisoformat(date_utc + "Z")  # TODO "Z" not used if offset provided
-            req = self._build_arg_string("date_utc", date_utc.isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "date_utc", date.isoformat(), s=req)
 
-        res = self._call(req)["runs"]
+        res = self.call(req)["runs"]
         for record in res:
             if record["vehicle_position"] is not None:
                 record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
@@ -457,13 +389,8 @@ class PTVInterface:
         """
 
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
-
-        if direction_id is not None:
-            req = self._build_arg_string("direction_id", direction_id)
-        if stop_disruptions:
-            req = self._build_arg_string("stop_disruptions", "true")
-
-        return self._call(req)["stops"]
+        req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", "true" if stop_disruptions else None, s=req)
+        return self.call(req)["stops"]
 
     def list_departures(self, route_type: RouteType, stop_id: int, route_id: int | None = None, platform_numbers: Iterable[str | int] | None = None, direction_id: int | None = None, include_advertised_interchange: bool = False, date: datetime | str | None = None, max_results: int | None = None, include_cancelled: bool = False, look_backwards: bool = False, expand: Iterable[ExpandType] | ExpandType = NONE, include_geopath: bool = False) -> list[_Departure]:
         """
@@ -484,34 +411,15 @@ class PTVInterface:
         :return:
         """
 
+        if isinstance(date, str):
+            date = datetime.fromisoformat(date)
+        if date.tzinfo is None:
+            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
+
         req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
+        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "include_advertised_interchange", "true" if include_advertised_interchange else None, "date_utc", date.isoformat(), "max_results", max_results, "include_cancelled", "true" if include_cancelled else None, "look_backwards", "true" if look_backwards else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
 
-        if platform_numbers is not None:
-            for value in platform_numbers:
-                req = self._build_arg_string("platform_numbers", value)
-        if direction_id is not None:
-            req = self._build_arg_string("direction_id", direction_id)
-        if include_advertised_interchange:
-            req = self._build_arg_string("include_advertised_interchange", "true")
-        if datetime is not None:
-            if isinstance(date, str):
-                date = datetime.fromisoformat(date) if "Z" in date else datetime.fromisoformat(date + "Z")
-            req = self._build_arg_string("date_utc", date.isoformat(), s=req)
-        if max_results is not None:
-            req = self._build_arg_string("max_results", max_results)
-        if include_cancelled:
-            req = self._build_arg_string("include_cancelled", "true")
-        if look_backwards:
-            req = self._build_arg_string("look_backwards", "true")
-        if isinstance(expand, Iterable):
-            for et in expand:
-                req = self._build_arg_string("expand", et, s=req)
-        elif expand != NONE:
-            req = self._build_arg_string("expand", expand, s=req)
-        if include_geopath:
-            req = self._build_arg_string("include_geopath", "true")
-
-        res = self._call(req)
+        res = self.call(req)
 
         return res["departures"]
 
