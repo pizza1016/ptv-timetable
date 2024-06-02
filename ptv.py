@@ -7,8 +7,11 @@ from ratelimit import limits, sleep_and_retry
 from sys import stderr
 from typing import Final, Literal, Self
 from xml.etree.ElementTree import Element
+from zoneinfo import ZoneInfo
 import re
 import requests
+# noinspection PyUnresolvedReferences
+import tzdata
 
 __all__ = ["PTVInterface", "TramTrackerInterface", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "ALL", "STOP", "ROUTE", "RUN", "DIRECTION", "DISRUPTION", "VEHICLE_DESCRIPTOR", "VEHICLE_POSITION", "NONE"]
 
@@ -17,6 +20,7 @@ type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
 
 type _Departure = dict[str, str | int | bool | datetime | list[int] | list[_SkippedStop]]
 type _Direction = dict[str, str | int]
+type _Disruption = dict[str, str | int | datetime | list[_Route] | list[_Stop]]
 type _Geopath = list[dict[str, str | int | list[str]]]
 type _Route = dict[str, str | int | dict[str, str] | _Geopath]
 type _RouteType = dict[str, str | int]
@@ -30,6 +34,7 @@ type _VehiclePosition = dict[str, str | int | datetime] | None
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
 
+TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
 UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
 
 MET_TRAIN: Literal[0] = 0
@@ -65,7 +70,7 @@ VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 """Return vehicle position properties"""
 NONE: Literal["None"] = "None"
 """Don't return any object properties"""
-    
+
 
 class PTVInterface:
     """Interface class with the PTV Timetable API."""
@@ -185,7 +190,15 @@ class PTVInterface:
 
         return self.call(f"/v3/directions/{direction_id}{f"/route_type/{route_type}" if route_type is not None else ""}")["directions"]
 
-    def get_pattern(self: Self, run_ref: str, route_type: RouteType, stop_id: int | None = None, date: datetime | str | None = None, include_skipped_stops: bool = False, expand: ExpandType | Iterable[ExpandType] = NONE, include_geopath: bool = False) -> list[_Departure]:
+    def get_pattern(self: Self,
+                    run_ref: str,
+                    route_type: RouteType,
+                    stop_id: int | None = None,
+                    date: datetime | str | None = None,
+                    include_skipped_stops: bool = False,
+                    expand: ExpandType | Iterable[ExpandType] = NONE,
+                    include_geopath: bool = False
+                    ) -> list[_Departure]:
         """Returns the stopping pattern of the specified run of the specified route type.
 
         Returned records contain these fields:
@@ -218,14 +231,14 @@ class PTVInterface:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date.tzinfo is None:
-            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
+            date = date.replace(tzinfo=timezone.utc)
 
-        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.isoformat(), "include_skipped_stops", "true" if include_skipped_stops else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
+        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat(), "include_skipped_stops", "true" if include_skipped_stops else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
 
         res = self.call(req)["departures"]
         for record in res:
-            record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"]) if record["scheduled_departure_utc"] is not None else None
-            record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]) if record["estimated_departure_utc"] is not None else None
+            record["scheduled_departure_utc"] = datetime.fromisoformat(record["scheduled_departure_utc"]).astimezone(TZ_MELBOURNE) if record["scheduled_departure_utc"] is not None else None
+            record["estimated_departure_utc"] = datetime.fromisoformat(record["estimated_departure_utc"]).astimezone(TZ_MELBOURNE) if record["estimated_departure_utc"] is not None else None
         return res
 
     def get_route(self: Self, route_id: int, include_geopath: bool = False, geopath_utc: str | None = None) -> _Route:
@@ -280,7 +293,13 @@ class PTVInterface:
 
         return self.call("/v3/route_types")["route_types"]
 
-    def get_run(self: Self, run_ref: str, route_type: RouteType | None = None, expand: ExpandType = NONE, date: datetime | str | None = None, include_geopath: bool = False) -> list[_Run]:
+    def get_run(self: Self,
+                run_ref: str,
+                route_type: RouteType | None = None,
+                expand: ExpandType = NONE,
+                date: datetime | str | None = None,
+                include_geopath: bool = False
+                ) -> list[_Run]:
         """Returns a list of all runs for the specified run identifier and, optionally, the specified route type.
 
         Returned records contain these fields:
@@ -311,20 +330,25 @@ class PTVInterface:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date.tzinfo is None:
-            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
+            date = date.replace(tzinfo=timezone.utc)
 
-        req = self.build_arg_string("expand", expand, "include_geopath", "true" if include_geopath else None, "date_utc", date.isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "include_geopath", "true" if include_geopath else None, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
 
         res = self.call(req)["runs"]
 
         for record in res:
             if record["vehicle_position"] is not None:
-                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
-                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]).astimezone(TZ_MELBOURNE) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]).astimezone(TZ_MELBOURNE) if record["vehicle_position"]["expiry_time"] is not None else None
 
         return res
 
-    def list_runs(self: Self, route_id: int, route_type: RouteType | None = None, expand: ExpandType | Iterable[ExpandType] = NONE, date: datetime | str | None = None) -> list[_Run]:
+    def list_runs(self: Self,
+                  route_id: int,
+                  route_type: RouteType | None = None,
+                  expand: ExpandType | Iterable[ExpandType] = NONE,
+                  date: datetime | str | None = None
+                  ) -> list[_Run]:
         """Returns a list of all runs for the specified route ID and, if provided, the specified route type.
 
         Returned records contain these fields:
@@ -354,19 +378,24 @@ class PTVInterface:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date.tzinfo is None:
-            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
+            date = date.replace(tzinfo=timezone.utc)
 
-        req = self.build_arg_string("expand", expand, "date_utc", date.isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
 
         res = self.call(req)["runs"]
         for record in res:
             if record["vehicle_position"] is not None:
-                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]) if record["vehicle_position"]["datetime_utc"] is not None else None
-                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]) if record["vehicle_position"]["expiry_time"] is not None else None
+                record["vehicle_position"]["datetime_utc"] = datetime.fromisoformat(record["vehicle_position"]["datetime_utc"]).astimezone(TZ_MELBOURNE) if record["vehicle_position"]["datetime_utc"] is not None else None
+                record["vehicle_position"]["expiry_time"] = datetime.fromisoformat(record["vehicle_position"]["expiry_time"]).astimezone(TZ_MELBOURNE) if record["vehicle_position"]["expiry_time"] is not None else None
 
         return res
 
-    def list_stops(self: Self, route_id: int, route_type: RouteType, direction_id: int | None = None, stop_disruptions: bool = False) -> list[_Stop]:
+    def list_stops(self: Self,
+                   route_id: int,
+                   route_type: RouteType,
+                   direction_id: int | None = None,
+                   stop_disruptions: bool = False
+                   ) -> list[_Stop]:
         """Returns a list of all stops on the specified route.
 
         Returned records contain these fields:
@@ -392,36 +421,49 @@ class PTVInterface:
         req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", "true" if stop_disruptions else None, s=req)
         return self.call(req)["stops"]
 
-    def list_departures(self, route_type: RouteType, stop_id: int, route_id: int | None = None, platform_numbers: Iterable[str | int] | None = None, direction_id: int | None = None, include_advertised_interchange: bool = False, date: datetime | str | None = None, max_results: int | None = None, include_cancelled: bool = False, look_backwards: bool = False, expand: Iterable[ExpandType] | ExpandType = NONE, include_geopath: bool = False) -> list[_Departure]:
+    def list_departures(self: Self,
+                        route_type: RouteType,
+                        stop_id: int,
+                        route_id: int | None = None,
+                        platform_numbers: Iterable[str | int] | None = None,
+                        direction_id: int | None = None,
+                        include_advertised_interchange: bool = False,
+                        date: datetime | str | None = None,
+                        max_results: int | None = None,
+                        include_cancelled: bool = False,
+                        look_backwards: bool = False,
+                        expand: Iterable[ExpandType] | ExpandType = NONE,
+                        include_geopath: bool = False
+                        ) -> dict[str, list[_Departure] | dict[str, _Stop] | dict[str, _Route] | dict[str, _Run] | dict[str, _Direction] | dict[str, _Disruption]]:
         """
+        Returns a list of departures from the specified stop.
 
-
-        :param route_type:
-        :param stop_id:
-        :param route_id:
-        :param platform_numbers:
-        :param direction_id:
-        :param include_advertised_interchange:
-        :param date:
-        :param max_results:
-        :param include_cancelled:
-        :param look_backwards:
-        :param expand:
-        :param include_geopath:
+        :param route_type: Transport mode identifier
+        :param stop_id: Stop identifier
+        :param route_id: If specified, show only departures for the specified route. Only one of 'route_id' and 'platform_numbers' should be specified.
+        :param platform_numbers: If specified, show only departures from the specified platform numbers. Only one of 'route_id' and 'platform_numbers' should be specified.
+        :param direction_id: If specified, show only departures travelling towards the specified direction
+        :param include_advertised_interchange: Whether to include stop interchange information in result
+        :param date: If specified, show departures from the specified date and time. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date and time instead. Defaults to UTC if timezone not specified
+        :param max_results: Return only this number of departures
+        :param include_cancelled: Whether to include departures that are cancelled
+        :param look_backwards: If set to True, departures that arrive at their terminating destinations prior to the date and time specified in 'date' are returned instead
+        :param expand: TODO
+        :param include_geopath: Whether to include route geometry data
         :return:
         """
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date.tzinfo is None:
-            date = datetime(date.year, date.month, date.day, date.hour, date.minute, date.second, date.microsecond, timezone.utc)
+            date = date.replace(tzinfo=timezone.utc)
 
         req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
-        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "include_advertised_interchange", "true" if include_advertised_interchange else None, "date_utc", date.isoformat(), "max_results", max_results, "include_cancelled", "true" if include_cancelled else None, "look_backwards", "true" if look_backwards else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
+        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "include_advertised_interchange", "true" if include_advertised_interchange else None, "date_utc", date.astimezone(timezone.utc).isoformat(), "max_results", max_results, "include_cancelled", "true" if include_cancelled else None, "look_backwards", "true" if look_backwards else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
 
         res = self.call(req)
 
-        return res["departures"]
+        return res
 
 
 # Thanks to Lucas Martin-King for providing the general idea for the following code
@@ -501,7 +543,14 @@ class TramTrackerInterface:
     def list_stops(self: Self, route: str | int) -> list[dict[str, str | int]]:
         response = self._call(f"<GetRouteStopsByRoute xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><routeNo>{route}</routeNo></GetRouteStopsByRoute>")
         result: Element = XML(response).find("./soap:Body/tt:GetRouteStopsByRouteResponse/tt:GetRouteStopsByRouteResult/diffgr:diffgram/DocumentElement", namespaces={"soap": "http://www.w3.org/2003/05/soap-envelope", "tt": "http://www.yarratrams.com.au/pidsservice/", "diffgr": "urn:schemas-microsoft-com:xml-diffgram-v1"})
-        return [{"tt_id": int(element.find("./TID").text), "stop_name": element.find("./Description").text, "full_stop_name": element.find("./StopName").text, "locality": element.find("./SuburbName").text, "latitude": element.find("./Latitude").text, "longitude": element.find("./Longitude").text} for element in result]
+
+        return [{"tt_id": int(element.find("./TID").text),
+                 "stop_name": element.find("./Description").text,
+                 "full_stop_name": element.find("./StopName").text,
+                 "locality": element.find("./SuburbName").text,
+                 "latitude": element.find("./Latitude").text,
+                 "longitude": element.find("./Longitude").text
+                 } for element in result]
 
     def get_stop(self: Self, stop_id: int):
         self._call(f"<GetStopInformation xmlns=\"http://www.yarratrams.com.au/pidsservice/\"><stopNo>{stop_id}</stopNo></GetStopInformation>")
