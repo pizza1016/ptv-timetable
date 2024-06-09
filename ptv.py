@@ -711,6 +711,231 @@ class APIClient:
 
         return res  # TODO
 
+    @overload
+    def list_disruptions(self: Self,
+                         *,
+                         route_types: Iterable[RouteType] | None = None,
+                         disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | None = None,
+                         disruption_status: Literal["current", "planned"] | None = None
+                         ):
+        """
+        Returns a list of all disruptions.
+
+        :param route_types: If specified, list only disruptions for the specified travel modes
+        :param disruption_modes: If specified, list only disruptions for the specified disruption modes
+        :param disruption_status: If specified, list only disruptions with the specified status
+        :return:
+        """
+        ...
+
+    @overload
+    def list_disruptions(self: Self,
+                         route_id: int | None = None,
+                         stop_id: int | None = None,
+                         *,
+                         disruption_status: Literal["current", "planned"] | None = None
+                         ):
+        """
+        Returns a list of all disruptions for the specified route and/or stop.
+
+        :param route_id: If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param stop_id: If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param disruption_status: If specified, list only disruptions with the specified status
+        :return:
+        """
+        ...
+
+    def list_disruptions(self: Self,
+                         route_id: int | None = None,
+                         stop_id: int | None = None,
+                         *,
+                         route_types: Iterable[RouteType] | None = None,
+                         disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | None = None,
+                         disruption_status: Literal["current", "planned"] | None = None
+                         ):
+        """
+        Returns a list of all disruptions or, if specified, the disruptions for the specified route and/or stop.
+
+        :param route_id: If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param stop_id: If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param route_types: If specified, list only disruptions for the specified travel modes
+        :param disruption_modes: If specified, list only disruptions for the specified disruption modes
+        :param disruption_status: If specified, list only disruptions with the specified status
+        :return:
+        """
+
+        req = "/v3/disruptions" + (f"/route/{route_id}" if route_id is not None else "") + (f"/stop/{stop_id}" if stop_id is not None else "")
+        req = self.build_arg_string("route_types", route_types, "disruption_modes", disruption_modes, "disruption_status", disruption_status, s=req)
+
+        res: dict = self.call(req)
+        return res
+
+    def get_disruption(self: Self, disruption_id: int):
+        """
+        Retrieves the details of the disruption with the specified disruption identifier
+
+        :param disruption_id: Disruption identifier
+        :return:
+        """
+
+        res: dict = self.call(f"/v3/disruptions/{disruption_id}")
+        return res
+
+    def list_disruption_modes(self: Self):
+        """
+        Returns the names and identifiers of all disruption modes.
+
+        :return:
+        """
+
+        res: dict = self.call("/v3/disruptions/modes")
+        return res
+
+    def fare_estimate(self: Self,
+                      zone_a: int,
+                      zone_b: int,
+                      touch_on: datetime | str | None = None,
+                      touch_off: datetime | str | None = None,
+                      is_free_tram_zone: bool | None = None,
+                      route_types: Iterable[RouteType] | None = None
+                      ):
+        """
+        Returns the estimated fare for the specified journey details.
+
+        :param zone_a:
+        :param zone_b:
+        :param touch_on:
+        :param touch_off:
+        :param is_free_tram_zone:
+        :param route_types:
+        :return:
+        """
+
+        if type(touch_on) is str:
+            touch_on = datetime.fromisoformat(touch_on)
+        if touch_on is not None and touch_on.tzinfo is None:
+            touch_on = touch_on.replace(tzinfo=timezone.utc)
+        if type(touch_off) is str:
+            touch_off = datetime.fromisoformat(touch_off)
+        if touch_off is not None and touch_off.tzinfo is None:
+            touch_off = touch_off.replace(tzinfo=timezone.utc)
+
+        req = f"/v3/fare_estimate/min_zone/{min(zone_a, zone_b)}/max_zone/{max(zone_a, zone_b)}"
+        req = self.build_arg_string("touch_on", touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, "touch_off", touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, is_free_tram_zone, "true" if is_free_tram_zone else None, "route_types", route_types, s=req)
+
+        res = self.call(req)
+        return res
+
+    @overload
+    def list_outlets(self: Self,
+                     *,
+                     max_results: int | None = None
+                     ):
+        ...
+
+    @overload
+    def list_outlets(self: Self,
+                     latitude: float,
+                     longitude: float,
+                     max_distance: float | None = None,
+                     max_results: int | None = None
+                     ):
+        ...
+
+    def list_outlets(self: Self,
+                     latitude: float | None = None,
+                     longitude: float | None = None,
+                     max_distance: float | None = None,
+                     max_results: int | None = None
+                     ):
+        """
+
+
+        :param latitude:
+        :param longitude:
+        :param max_distance:
+        :param max_results:
+        :return:
+        """
+
+        req = "/v3/outlets" + (f"/location/{latitude},{longitude}" if latitude is not None and longitude is not None else "")
+        req = self.build_arg_string("max_distance", max_distance, "max_results", max_results, s=req)
+
+        res = self.call(req)
+        return res
+
+    @overload
+    def search(self: Self,
+               search_term: str,
+               route_types: Iterable[RouteType] | None = None,
+               *,
+               include_outlets: bool | None = None,
+               match_stop_by_suburb: bool | None = None,
+               match_route_by_suburb: bool | None = None,
+               match_stop_by_gtfs_stop_id: bool | None = None
+               ):
+        ...
+
+    @overload
+    def search(self: Self,
+               search_term: str,
+               *,
+               latitude: float,
+               longitude: float,
+               max_distance: float | None = None,
+               include_outlets: bool | None = None,
+               match_stop_by_suburb: bool | None = None,
+               match_route_by_suburb: bool | None = None,
+               match_stop_by_gtfs_stop_id: bool | None = None
+               ):
+        ...
+
+    @overload
+    def search(self: Self,
+               search_term: str,
+               route_types: Iterable[RouteType] | None,
+               latitude: float,
+               longitude: float,
+               max_distance: float | None = None,
+               include_outlets: bool | None = None,
+               match_stop_by_suburb: bool | None = None,
+               match_route_by_suburb: bool | None = None,
+               match_stop_by_gtfs_stop_id: bool | None = None
+               ):
+        ...
+
+    def search(self: Self,
+               search_term: str,
+               route_types: Iterable[RouteType] | None = None,
+               latitude: float | None = None,
+               longitude: float | None = None,
+               max_distance: float | None = None,
+               include_outlets: bool | None = None,
+               match_stop_by_suburb: bool | None = None,
+               match_route_by_suburb: bool | None = None,
+               match_stop_by_gtfs_stop_id: bool | None = None
+               ):
+        """
+
+
+        :param search_term:
+        :param route_types:
+        :param latitude:
+        :param longitude:
+        :param max_distance:
+        :param include_outlets: server default true
+        :param match_stop_by_suburb: server default true
+        :param match_route_by_suburb: server default true
+        :param match_stop_by_gtfs_stop_id: server default false
+        :return:
+        """
+
+        req = f"/v3/search/{search_term}"
+        req = self.build_arg_string("route_types", route_types, "latitude", latitude, "longitude", longitude, "max_distance", max_distance, "include_outlets", include_outlets, "match_stop_by_suburb", match_stop_by_suburb, "match_route_by_suburb", match_route_by_suburb, "match_stop_by_gtfs_stop_id", match_stop_by_gtfs_stop_id, s=req)
+
+        res = self.call(req)
+        return res
+
 
 # Thanks to Lucas Martin-King for providing the general idea for the following code
 # https://github.com/lmartinking/melbourne-tramtracker/
