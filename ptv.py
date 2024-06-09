@@ -1,19 +1,25 @@
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from defusedxml.ElementTree import XML
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from sys import stderr
-from typing import Final, Literal, Self
+from sys import stderr, stdout
+from typing import Any, Final, Literal, overload, Self, TypeVar
 from xml.etree.ElementTree import Element
 from zoneinfo import ZoneInfo
+import logging
+import platform
 import re
 import requests
-# noinspection PyUnresolvedReferences
-import tzdata
+if platform.system() == "Windows":
+    # noinspection PyUnresolvedReferences
+    import tzdata
 
-__all__ = ["PTVInterface", "TramTrackerInterface", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "ALL", "STOP", "ROUTE", "RUN", "DIRECTION", "DISRUPTION", "VEHICLE_DESCRIPTOR", "VEHICLE_POSITION", "NONE"]
+__all__ = ["APIClient", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "ALL", "STOP", "ROUTE", "RUN", "DIRECTION", "DISRUPTION", "VEHICLE_DESCRIPTOR", "VEHICLE_POSITION", "NONE"]
+
+_T = TypeVar("_T")
 
 type _Values = str | int | float | bool | datetime
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -71,8 +77,142 @@ VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 NONE: Literal["None"] = "None"
 """Don't return any object properties"""
 
+logger = logging.getLogger("ptv")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(stdout))
 
-class PTVInterface:
+
+class APIDataClass:
+    def __init__(self: Self, **kwargs: Any): ...
+
+
+@dataclass(kw_only=True)
+class Geopath(APIDataClass):
+    direction_id: int
+    valid_from: str
+    valid_to: str
+    paths: list[str]
+
+
+@dataclass(kw_only=True)
+class Departure(APIDataClass):
+    """Represents a specific departure from a specific stop."""
+
+    stop_id: int
+    route_id: int
+    direction_id: int
+    run_ref: str
+    disruption_ids: list[int]
+    scheduled_departure: datetime
+    estimated_departure: datetime | None
+    at_platform: bool
+    platform_number: str
+    flags: str
+    departure_sequence: int
+
+
+@dataclass(kw_only=True)
+class Stop(APIDataClass):
+    stop_distance: float
+    stop_suburb: str
+    stop_name: str
+    stop_id: int
+    route_type: int
+    stop_latitude: float
+    stop_longitude: float
+    stop_landmark: str
+    stop_sequence: int
+
+
+@dataclass(kw_only=True)
+class Route(APIDataClass):
+    route_type: int
+    route_id: int
+    route_name: str
+    route_number: str
+    route_gtfs_id: str
+    geopath: list[Geopath]
+
+
+@dataclass(kw_only=True)
+class VehiclePosition(APIDataClass):
+    latitude: float | None
+    longitude: float | None
+    easting: float | None
+    northing: float | None
+    direction: str
+    bearing: float | None
+    supplier: str
+    as_of: datetime
+    expires: datetime
+
+
+@dataclass(kw_only=True)
+class VehicleDescriptor(APIDataClass):
+    operator: str
+    id: str
+    low_floor: bool | None
+    air_conditioned: bool | None
+    description: str
+    supplier: str
+    length: str
+
+
+@dataclass(kw_only=True)
+class Run(APIDataClass):
+    run_ref: str
+    route_id: int
+    route_type: int
+    final_stop_id: int
+    destination_name: str
+    status: str
+    direction_id: int
+    run_sequence: int
+    express_stop_count: int
+    vehicle_position: VehiclePosition | None
+    vehicle_descriptor: VehicleDescriptor | None
+    geopath: list[Geopath]
+    interchange: dict
+
+
+@dataclass(kw_only=True)
+class Direction(APIDataClass):
+    direction_id: int
+    direction_name: str
+    route_id: int
+    route_type: int
+
+
+@dataclass(kw_only=True)
+class Disruption(APIDataClass):
+    disruption_id: int
+    title: str
+    url: str
+    description: str
+    disruption_status: str
+    disruption_type: str
+    published_on: datetime
+    last_updated: datetime
+    from_date: datetime
+    to_date: datetime
+    routes: list[Route]
+    stops: list[Stop]
+    colour: str
+    display_on_board: bool
+    display_status: bool
+
+
+@dataclass(kw_only=True)
+class DeparturesResponse(APIDataClass):
+    departures: list[Departure]
+    stops: dict[int, Stop]
+    routes: dict[int, Route]
+    runs: dict[str, Run]
+    directions: dict[int, Direction]
+    disruptions: dict[int, Disruption]
+
+
+class APIClient:
     """Interface class with the PTV Timetable API."""
 
     def __init__(self: Self, dev_id: str | int, key: str) -> None:
@@ -109,6 +249,8 @@ class PTVInterface:
             if isinstance(params[i], tuple):
                 if isinstance(params[i][1], str | int):
                     s += f"{"&" if "?" in s else "?"}{params[i][0]}={params[i][1]}"
+                elif isinstance(params[i][1], bool):
+                    s += f"{"&" if "?" in s else "?"}{params[i][0]}={"true" if params[i][1] else "false"}"
                 elif isinstance(params[i][1], Iterable):
                     for value in params[i][1]:
                         s += f"{"&" if "?" in s else "?"}{params[i][0]}={value}"
@@ -120,6 +262,8 @@ class PTVInterface:
                     raise ValueError(f"Not enough arguments provided (missing value for {params[i]})")
                 elif isinstance(params[i + 1], str | int):
                     s += f"{"&" if "?" in s else "?"}{params[i]}={params[i + 1]}"
+                elif isinstance(params[i + 1], bool):
+                    s += f"{"&" if "?" in s else "?"}{params[i]}={"true" if params[i + 1] else "false"}"
                 elif isinstance(params[i + 1], Iterable):
                     for value in params[i + 1]:
                         s += f"{"&" if "?" in s else "?"}{params[i]}={value}"
@@ -141,9 +285,11 @@ class PTVInterface:
         """
 
         url = self._encode_url(request)
+        logger.debug(url)
         r = requests.get(url)
         r.raise_for_status()
         result = r.json()
+        logger.debug(str(result))
         return result
     
     def _encode_url(self: Self, request: str) -> str:
@@ -156,6 +302,41 @@ class PTVInterface:
         raw = f"{request}{"&" if "?" in request else "?"}devid={self._devID}"
         signature = HMAC(key=self._key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
+
+    def _convert_fields(self: Self, obj: _T) -> _T:
+        if type(obj) is dict:  # Only convert fields of dicts; everything else passes through unchanged
+            single_record_t9n_table = {}
+            multi_record_t9n_table = {"stops": Stop, "routes": Route, "directions": Direction, "disruptions": Disruption, "geopath": Geopath}
+            time_fields = {"scheduled_departure_utc": "scheduled_departure", "estimated_departure_utc": "estimated_departure", "published_on": "published_on", "last_updated": "last_updated", "from_date": "from_date", "to_date": "to_date"}  # maps keys used by servers to keys used in this module's data structures
+            time_fields_to_update = []
+
+            for key in obj:
+                # Convert children first - this is the recursive case; base case is when type is not dict or list (do nothing)
+                if type(obj[key]) is list:
+                    for i in range(len(obj[key])):
+                        if type(obj[key][i]) is dict:
+                            obj[key][i] = self._convert_fields(obj[key][i])  # Convert children fields regardless of type
+                            if key in multi_record_t9n_table:  # Then if item type is a specified dataclass, convert the item
+                                obj[key][i] = multi_record_t9n_table[key](**obj[key][i])
+                    continue  # Don't convert the list itself
+                elif type(obj[key]) is dict:
+                    if key in multi_record_t9n_table:  # If the dict is a mapping of identifiers to objects
+                        for item_key in obj[key]:
+                            obj[key][item_key] = self._convert_fields(obj[key][item_key])  # Convert children fields
+                            obj[key][item_key] = multi_record_t9n_table[key](obj[key][item_key])  # Then convert item itself
+                    else:  # If the dict is a single object
+                        obj[key] = self._convert_fields(obj[key])
+                        if key in single_record_t9n_table:
+                            obj[key] = single_record_t9n_table[key](obj[key])
+                    continue
+                elif key in time_fields.keys():  # update timestamps to datetime objects
+                    time_fields_to_update.append(key)  # can't add or remove fields while dict is being iterated, so postpone update
+
+            for key in time_fields_to_update:
+                obj[time_fields[key]] = datetime.fromisoformat(obj[key]).astimezone(TZ_MELBOURNE) if obj[key] is not None else None
+                del obj[key]
+
+        return obj
 
     def list_route_directions(self: Self, route_id: int) -> list[_Direction]:
         """Returns the directions of travel for a particular route.
@@ -282,7 +463,7 @@ class PTVInterface:
         return self.call(self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes"))["routes"]
 
     def list_route_types(self: Self) -> list[_RouteType]:
-        """Returns the names and IDs of all route types.
+        """Returns the names and identifiers of all route types.
 
         Returned records contain these fields:
         "route_type_name" (str):
@@ -298,7 +479,7 @@ class PTVInterface:
                 route_type: RouteType | None = None,
                 expand: ExpandType = NONE,
                 date: datetime | str | None = None,
-                include_geopath: bool = False
+                include_geopath: bool | None = None
                 ) -> list[_Run]:
         """Returns a list of all runs for the specified run identifier and, optionally, the specified route type.
 
@@ -321,18 +502,18 @@ class PTVInterface:
         :param route_type: Not used (but see overloaded variant)
         :param expand: Optional data to include in returned list
         :param date: Return only data from the specified date
-        :param include_geopath: Include the run's geopath data
+        :param include_geopath: Include the run's geopath data (server default: false)
         :return: A list of records containing the aforementioned fields
         """
 
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
-        if isinstance(date, str):
+        if type(date) is str:
             date = datetime.fromisoformat(date)
-        if date.tzinfo is None:
+        if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=timezone.utc)
 
-        req = self.build_arg_string("expand", expand, "include_geopath", "true" if include_geopath else None, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "include_geopath", include_geopath, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
 
         res = self.call(req)["runs"]
 
@@ -377,10 +558,10 @@ class PTVInterface:
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
-        if date.tzinfo is None:
+        if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=timezone.utc)
 
-        req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
+        req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, s=req)
 
         res = self.call(req)["runs"]
         for record in res:
@@ -390,11 +571,45 @@ class PTVInterface:
 
         return res
 
+    def get_stop(self: Self,
+                 stop_id: int,
+                 route_type: RouteType,
+                 stop_location: bool | None = None,
+                 stop_amenities: bool | None = None,
+                 stop_accessibility: bool | None = None,
+                 stop_contact: bool | None = None,
+                 stop_ticket: bool | None = None,
+                 gtfs: bool | None = None,
+                 stop_staffing: bool | None = None,
+                 stop_disruptions: bool | None = None
+                 ):
+        """
+
+
+        :param stop_id:
+        :param route_type:
+        :param stop_location:
+        :param stop_amenities:
+        :param stop_accessibility:
+        :param stop_contact:
+        :param stop_ticket:
+        :param gtfs:
+        :param stop_staffing:
+        :param stop_disruptions:
+        :return:
+        """
+
+        req = f"/v3/stops/{stop_id}/route_type/{route_type}"
+        req = self.build_arg_string("stop_location", stop_location, "stop_amenities", stop_amenities, "stop_accessibility", stop_accessibility, "stop_contact", stop_contact, "stop_ticket", stop_ticket, "gtfs", gtfs, "stop_staffing", stop_staffing, "stop_disruptions", stop_disruptions, s=req)
+
+        res = self.call(req)
+        return res
+
     def list_stops(self: Self,
                    route_id: int,
                    route_type: RouteType,
                    direction_id: int | None = None,
-                   stop_disruptions: bool = False
+                   stop_disruptions: bool | None = None
                    ) -> list[_Stop]:
         """Returns a list of all stops on the specified route.
 
@@ -418,8 +633,34 @@ class PTVInterface:
         """
 
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
-        req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", "true" if stop_disruptions else None, s=req)
+        req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", stop_disruptions, s=req)
         return self.call(req)["stops"]
+
+    def list_stops_by_location(self: Self,
+                               latitude: float,
+                               longitude: float,
+                               route_types: Iterable[RouteType] | None = None,
+                               max_results: int | None = None,
+                               max_distance: float | None = None,
+                               stop_disruptions: bool | None = None
+                               ):
+        """
+
+
+        :param latitude:
+        :param longitude:
+        :param route_types:
+        :param max_results:
+        :param max_distance:
+        :param stop_disruptions:
+        :return:
+        """
+
+        req = f"/v3/stops/location/{latitude},{longitude}"
+        req = self.build_arg_string("route_types", route_types, "max_results", max_results, "max_distance", max_distance, stop_disruptions, "true" if stop_disruptions else None, s=req)
+
+        res = self.call(req)
+        return res
 
     def list_departures(self: Self,
                         route_type: RouteType,
@@ -427,14 +668,14 @@ class PTVInterface:
                         route_id: int | None = None,
                         platform_numbers: Iterable[str | int] | None = None,
                         direction_id: int | None = None,
-                        include_advertised_interchange: bool = False,
+                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
-                        include_cancelled: bool = False,
-                        look_backwards: bool = False,
+                        include_cancelled: bool | None = None,
+                        look_backwards: bool | None = None,
                         expand: Iterable[ExpandType] | ExpandType = NONE,
-                        include_geopath: bool = False
-                        ) -> dict[str, list[_Departure] | dict[str, _Stop] | dict[str, _Route] | dict[str, _Run] | dict[str, _Direction] | dict[str, _Disruption]]:
+                        include_geopath: bool | None = None
+                        ) -> DeparturesResponse:
         """
         Returns a list of departures from the specified stop.
 
@@ -455,15 +696,20 @@ class PTVInterface:
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
-        if date.tzinfo is None:
+        if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=timezone.utc)
 
         req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
-        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "include_advertised_interchange", "true" if include_advertised_interchange else None, "date_utc", date.astimezone(timezone.utc).isoformat(), "max_results", max_results, "include_cancelled", "true" if include_cancelled else None, "look_backwards", "true" if look_backwards else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
+        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "include_advertised_interchange", "true" if include_advertised_interchange else None, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "max_results", max_results, "include_cancelled", "true" if include_cancelled else None, "look_backwards", "true" if look_backwards else None, "expand", expand, "include_geopath", "true" if include_geopath else None, s=req)
 
-        res = self.call(req)
+        res: dict = self.call(req)
+        res["stops"] = {int(key): Stop(**value) for key, value in res["stops"].items()}
+        res["routes"] = {int(key): Route(**value) for key, value in res["routes"].items()}
+        res["runs"] = {key: Run(**value) for key, value in res["runs"].items()}
+        res["directions"] = {int(key): Direction(**value) for key, value in res["directions"].items()}
+        res["disruptions"] = {int(key): Disruption(**value) for key, value in res["disruptions"].items()}
 
-        return res
+        return res  # TODO
 
 
 # Thanks to Lucas Martin-King for providing the general idea for the following code
