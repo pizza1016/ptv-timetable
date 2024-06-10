@@ -321,11 +321,11 @@ class APIClient:
                     if key in multi_record_t9n_table:  # If the dict is a mapping of identifiers to objects
                         for item_key in obj[key]:
                             obj[key][item_key] = self._convert_fields(obj[key][item_key])  # Convert children fields
-                            obj[key][item_key] = multi_record_t9n_table[key](obj[key][item_key])  # Then convert item itself
+                            obj[key][item_key] = multi_record_t9n_table[key](**obj[key][item_key])  # Then convert item itself
                     else:  # If the dict is a single object
                         obj[key] = self._convert_fields(obj[key])
                         if key in single_record_t9n_table:
-                            obj[key] = single_record_t9n_table[key](obj[key])
+                            obj[key] = single_record_t9n_table[key](**obj[key])
                     continue
                 elif key in time_fields.keys():  # update timestamps to datetime objects
                     time_fields_to_update.append(key)  # can't add or remove fields while dict is being iterated, so postpone update
