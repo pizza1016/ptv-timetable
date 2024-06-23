@@ -20,7 +20,16 @@ UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}
 
 logger = logging.getLogger("tramtracker")
 logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler(stderr))
+logger.addHandler(logging.FileHandler("tramtracker.log", encoding="utf-8"))
+
+
+class APIError(OSError):
+    """Raised when the TramTracker API returns an error."""
+
+    def __init__(self: Self, server_error_msg: str, *args: object) -> None:
+        self.server_error_msg = server_error_msg
+        super().__init__(server_error_msg, *args)
+        return
 
 
 # Thanks to Lucas Martin-King for providing the general idea for the following code
@@ -59,7 +68,15 @@ class TramTrackerClient:
         """
         logger.debug(data)
         r = requests.post(url="http://webpids.tramtracker.com.au/pidsservice/pids.asmx", data=f"<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">{data}</soap:Envelope>", headers={"Content-Type": "application/soap+xml; charset=utf-8"})
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            logger.error(r.text)
+            error: Element = XML(r.text).find("./soap:Body/soap:Fault/soap:Reason/soap:Text", namespaces=cls._NAMESPACES)
+            if error is not None and error.text is not None:
+                raise e from APIError("Server traceback below\n" + error.text)
+            else:
+                raise
         r.encoding = "utf-8"
         return r.text
 
