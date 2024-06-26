@@ -1,21 +1,22 @@
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from sys import stdout
-from typing import Final, Literal, overload, Self
+from typing import Final, Literal, overload, override, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
 import re
 import requests
+import urllib.parse
 if platform.system() == "Windows":
     # noinspection PyUnresolvedReferences
     import tzdata
 
-__all__ = ["APIClient", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "ALL", "STOP", "ROUTE", "RUN", "DIRECTION", "DISRUPTION", "VEHICLE_DESCRIPTOR", "VEHICLE_POSITION", "NONE"]
+__all__ = ["APIClient", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
 type _Values = str | int | float | bool | datetime | _Record
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -41,32 +42,43 @@ COACH: Literal[3] = 3
 VLINE: Literal[3] = 3
 """Regional trains & coaches"""
 
-ALL: Literal["All"] = "All"
+EXPAND_ALL: Literal["All"] = "All"
 """Return all object properties in full"""
-STOP: Literal["Stop"] = "Stop"
+EXPAND_STOP: Literal["Stop"] = "Stop"
 """Return stop properties"""
-ROUTE: Literal["Route"] = "Route"
+EXPAND_ROUTE: Literal["Route"] = "Route"
 """Return route properties"""
-RUN: Literal["Run"] = "Run"
+EXPAND_RUN: Literal["Run"] = "Run"
 """Return run properties"""
-DIRECTION: Literal["Direction"] = "Direction"
+EXPAND_DIRECTION: Literal["Direction"] = "Direction"
 """Return direction properties"""
-DISRUPTION: Literal["Disruption"] = "Disruption"
+EXPAND_DISRUPTION: Literal["Disruption"] = "Disruption"
 """Return disruption properties"""
-VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
+EXPAND_VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
 """Return vehicle descriptor properties"""
-VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
+EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 """Return vehicle position properties"""
-NONE: Literal["None"] = "None"
+EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties"""
 
 logger = logging.getLogger("ptv")
 logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler(stdout))
+logger.addHandler(logging.FileHandler("ptv.log", encoding="utf-8"))
 
 
-class APIData:
-    pass
+@dataclass(kw_only=True)
+class APIData(metaclass=ABCMeta):
+
+    @classmethod
+    @abstractmethod
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        """
+        Constructs a new instance of this ``APIData`` subclass by converting the specified API response data.
+
+        :param kwargs: A dictionary unpacking with the data to instantiate
+        :return: The newly constructed instance
+        """
+        ...
 
 
 @dataclass(kw_only=True)
@@ -81,6 +93,11 @@ class PathGeometry(APIData):
     """Date geometry is valid to"""
     paths: list[str]
     """Strings of coordinate pairs that draws the path"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
 
 
 @dataclass(kw_only=True)
@@ -102,152 +119,270 @@ class StopTicket(APIData):
     ticket_zones: list[int]
     """Ticketing zone(s) this stop is in"""
 
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
+
 
 @dataclass(kw_only=True)
 class StopContact(APIData):
-    lost_property_contact_number: str | None
+    """Operator contact details for the attached stop."""
+
     phone: str | None
+    """Main phone number of stop"""
     lost_property: str | None
+    """Phone number for lost property"""
     feedback: str | None
+    """Phone number to provide feedback"""
+    lost_property_contact_number: None
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
 
 
 @dataclass(kw_only=True)
 class StopLocation(APIData):
-    postcode: int
-    municipality: str
-    municipality_id: int
-    primary_stop_name: str
-    road_type_primary: str
-    second_stop_name: str
-    road_type_second: str
-    bay_number: int
-    bay_nbr: InitVar[int]
-    locality: str
-    suburb: InitVar[str]
-    latitude: float
-    longitude: float
-    gps: InitVar[dict[Literal["latitude", "longitude"], float]]
+    """Location details for the attached stop."""
 
-    def __post_init__(self: Self, bay_nbr: int, suburb: str, gps: dict[Literal["latitude", "longitude"], float]) -> None:
-        self.bay_number = bay_nbr
-        self.locality = suburb
-        self.latitude = gps["latitude"]
-        self.longitude = gps["longitude"]
-        return
+    postcode: int
+    """Postcode of stop"""
+    municipality: str
+    """Municipality (local government area) of location"""
+    municipality_id: int
+    """Municipality identifier"""
+    locality: str
+    """Locality/suburb/town of the stop"""
+    primary_stop_name: str
+    """Name of one of the roads near the stop (usually the crossing road, or "at" road), or a nearby landmark"""
+    road_type_primary: str
+    """Road name suffix for 'primary_stop_name'"""
+    second_stop_name: str
+    """Name of one of the roads near the stop (usually the road of travel, or "on" road); may be empty"""
+    road_type_second: str
+    """Road name suffix for 'second_stop_name'"""
+    bay_number: int
+    """For bus interchanges, the bay number of the particular stop"""
+    latitude: float
+    """Latitude coordinate of the stop's location"""
+    longitude: float
+    """Longitude coordinate of the stop's location"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        bay_number = kwargs.pop("bay_nbr")
+        locality = kwargs.pop("suburb")
+        gps = kwargs.pop("gps")
+        latitude = gps["latitude"]
+        longitude = gps["longitude"]
+        return cls(bay_number=bay_number, locality=locality, latitude=latitude, longitude=longitude, **kwargs)
 
 
 @dataclass(kw_only=True)
 class StopAmenities(APIData):
+    """Amenities at the attached stop."""
+
     seat_type: str
     pay_phone: bool
+    """Whether there is a public telephone at the stop"""
     indoor_waiting_area: bool
+    """Whether there is an indoor waiting lounge at the stop"""
     sheltered_waiting_area: bool
+    """Whether there is a sheltered waiting area at the stop"""
     bicycle_rack: int
+    """Number of public bicycle racks at the stop"""
     bicycle_cage: bool
+    """Whether there is a secure bicycle cage at the stop"""
     bicycle_locker: int
+    """Number of bicycle lockers at the stop"""
     luggage_locker: int
     kiosk: bool
     seat: str
+    """"""  # TODO - empty string
     stairs: str
+    """"""  # TODO - empty string
     baby_change_facility: str
     parkiteer: None
-    replacement_bus_stop_loc: str
+    """Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at the stop; None if not applicable or information unavailable"""
+    replacement_bus_stop_location: str
+    """Location of the replacement bus stop"""
     QTEM: None
     bike_storage: None
     PID: bool
+    """Whether there are passenger information displays at the stop"""
     ATM: None
+    """Whether there is an automated teller machine at the stop"""
     travellers_aid: bool
     premium_stop: None
     PSOs: None
+    """Whether Protective Services Officers patrol the stop; None if not applicable"""
     melb_bike_share: None
+    """Defunct. Whether there are Melbourne Bike Share bicycle rentals available at the stop; None if not applicable or information unavailable"""
     luggage_storage: None
+    """Whether luggage storage services are available at the stop; None if not applicable or information unavailable"""
     luggage_check_in: None
+    """Whether luggage check-in facilities are available at the stop; None if not applicable or information unavailable"""
     toilet: bool
+    """Whether there is a public toilet at or near the stop"""
     taxi_rank: bool
-    car_parking: str
+    """Whether there is a taxi rank at or near the stop"""
+    car_parking: int
+    """Number of fee-free parking spaces at the stop"""
     cctv: bool
+    """Whether there are closed-circuit television cameras at the stop"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        replacement_bus_stop_location = kwargs.pop("replacement_bus_stop_loc")
+        car_parking = int(kwargs.pop("car_parking"))
+        return cls(replacement_bus_stop_location=replacement_bus_stop_location, car_parking=car_parking, **kwargs)
 
 
 @dataclass(kw_only=True)
 class Wheelchair(APIData):
-    accessible_ramp: bool
-    parking: bool
-    telephone: bool
-    toilet: bool
-    low_ticket_counter: None
-    manoeuvring: None
-    manouvering: InitVar[None]
-    raised_platform: None
-    ramp: None
-    secondary_path: None
-    raised_platform_shelter: None
-    raised_platform_shelther: InitVar[None]
-    steep_ramp: None
+    """Wheelchair accessibility information for the attached stop."""
 
-    def __post_init__(self: Self, manouvering: None, raised_platform_shelther: None) -> None:
-        self.manoeuvring = manouvering
-        self.raised_platform_shelter = raised_platform_shelther
-        return
+    accessible_ramp: bool
+    """"""  # TODO
+    parking: bool
+    """Whether there is DDA-compliant parking at the stop"""
+    telephone: bool
+    """Whether there is a DDA-compliant telephone at the stop"""
+    toilet: bool
+    """Whether there is a DDA-compliant toilet at the stop"""
+    low_ticket_counter: bool | None
+    """Whether there is a DDA-compliant low ticket counter at the stop; None if not applicable"""
+    manoeuvring: bool | None
+    """Whether there is enough space for mobility devices to board or alight a public transport vehicle; None if not applicable or information unavailable"""
+    raised_platform: bool | None
+    """Whether the platform at the stop is raised to the height of the vehicle's floor; None if not applicable or information unavailable"""
+    raised_platform_shelter: bool | None
+    """Whether there is shelter near the raised platform; None if not applicable or information unavailable"""
+    ramp: bool | None
+    """Whether there are ramps with a height to length ratio less than 1:14 at the stop; None if not applicable or information unavailable"""
+    secondary_path: bool | None
+    """Whether there is a path outside the stop perimeter or boundary connecting to the stop that is accessible; None if not applicable or information unavailable"""
+    steep_ramp: bool | None
+    """Whether there are ramps with a height to length ratio greater than 1:14 at the stop; None if not applicable or information unavailable"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        manoeuvring = kwargs.pop("manouvering")
+        raised_platform_shelter = kwargs.pop("raised_platform_shelther")
+        return cls(manoeuvring=manoeuvring, raised_platform_shelter=raised_platform_shelter, **kwargs)
 
 
 @dataclass(kw_only=True)
 class StopAccessibility(APIData):
-    lighting: bool
-    platform_number: None
-    audio_customer_information: None
-    escalator: bool
-    hearing_loop: bool
-    lift: bool
-    stairs: bool
-    stop_accessible: None
-    tactile_ground_surface_indicator: bool
-    waiting_room: None
-    wheelchair: Wheelchair
-    wheelchair: InitVar[dict[str, bool | None]]
+    """Accessibility information for the attached stop."""
 
-    def __post_init__(self: Self, wheelchair: dict[str, bool | None]) -> None:
-        self.wheelchair = Wheelchair(**wheelchair)
-        return
+    platform_number: int | None
+    """The platform number of the stop that data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
+    lighting: bool
+    """Whether there is lighting at this stop"""
+    audio_customer_information: bool | None
+    """Whether there is at least one facility that provides audio passenger information at this stop; None if not applicable"""
+    escalator: bool
+    """Whether there is at least one escalator that complies with the Disability Discrimination Act 1992 (Cth)"""
+    hearing_loop: bool
+    """Whether hearing loops are available at this stop"""
+    lift: bool
+    """Whether there are lifts at this stop"""
+    stairs: bool
+    """Whether there are stairs at this stop"""
+    stop_accessible: bool | None
+    """Whether the stop is "accessible"; None if not applicable"""
+    tactile_ground_surface_indicator: bool
+    """Whether there are tactile guide tiles or paving at this stop"""
+    waiting_room: bool | None
+    """Whether there is a designated waiting lounge at this stop; None if not applicable"""
+    wheelchair: Wheelchair
+    """Wheelchair accessibility information for this stop"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        wheelchair = kwargs.pop("wheelchair")
+        return cls(wheelchair=Wheelchair.load(**wheelchair), **kwargs)
 
 
 @dataclass(kw_only=True)
 class StopStaffing(APIData):
-    mon_am_from: str
-    mon_am_to: str
-    mon_pm_from: str
-    mon_pm_to: str
-    tue_am_from: str
-    tue_am_to: str
-    tue_pm_from: str
-    tue_pm_to: str
-    wed_am_from: str
-    wed_am_to: str
-    wed_pm_from: str
-    wed_pm_to: str
-    wed_pm_To: InitVar[str]
-    thu_am_from: str
-    thu_am_to: str
-    thu_pm_from: str
-    thu_pm_to: str
-    fri_am_from: str
-    fri_am_to: str
-    fri_pm_from: str
-    fri_pm_to: str
-    sat_am_from: str
-    sat_am_to: str
-    sat_pm_from: str
-    sat_pm_to: str
-    sun_am_from: str
-    sun_am_to: str
-    sun_pm_from: str
-    sun_pm_to: str
-    ph_from: str
-    ph_to: str
-    ph_additional_text: str
+    """Staffing hours for the attached stop"""
 
-    def __post_init__(self: Self, wed_pm_To: str) -> None:
-        self.wed_pm_to = wed_pm_To
-        return
+    mon_am_from: str
+    """Monday morning staffing hours start time"""
+    mon_am_to: str
+    """Monday morning staffing hours end time"""
+    mon_pm_from: str
+    """Monday evening staffing hours start time"""
+    mon_pm_to: str
+    """Monday evening staffing hours end time"""
+    tue_am_from: str
+    """Tuesday morning staffing hours start time"""
+    tue_am_to: str
+    """Tuesday morning staffing hours end time"""
+    tue_pm_from: str
+    """Tuesday evening staffing hours start time"""
+    tue_pm_to: str
+    """Tuesday evening staffing hours end time"""
+    wed_am_from: str
+    """Wednesday morning staffing hours start time"""
+    wed_am_to: str
+    """Wednesday morning staffing hours end time"""
+    wed_pm_from: str
+    """Wednesday evening staffing hours start time"""
+    wed_pm_to: str
+    """Wednesday evening staffing hours end time"""
+    thu_am_from: str
+    """Thursday morning staffing hours start time"""
+    thu_am_to: str
+    """Thursday morning staffing hours end time"""
+    thu_pm_from: str
+    """Thursday evening staffing hours start time"""
+    thu_pm_to: str
+    """Thursday evening staffing hours end time"""
+    fri_am_from: str
+    """Friday morning staffing hours start time"""
+    fri_am_to: str
+    """Friday morning staffing hours end time"""
+    fri_pm_from: str
+    """Friday evening staffing hours start time"""
+    fri_pm_to: str
+    """Friday evening staffing hours end time"""
+    sat_am_from: str
+    """Saturday morning staffing hours start time"""
+    sat_am_to: str
+    """Saturday morning staffing hours end time"""
+    sat_pm_from: str
+    """Saturday evening staffing hours start time"""
+    sat_pm_to: str
+    """Saturday evening staffing hours end time"""
+    sun_am_from: str
+    """Sunday morning staffing hours start time"""
+    sun_am_to: str
+    """Sunday morning staffing hours end time"""
+    sun_pm_from: str
+    """Sunday evening staffing hours start time"""
+    sun_pm_to: str
+    """Sunday evening staffing hours end time"""
+    ph_from: str
+    """Public holiday staffing hours start time"""
+    ph_to: str
+    """Public holiday staffing hours end time"""
+    ph_additional_text: str
+    """Additional details about staffing on public holidays"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        wed_pm_to = kwargs.pop("wed_pm_To")
+        return cls(wed_pm_to=wed_pm_to, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -266,15 +401,17 @@ class Route(APIData):
     """Identifier for this route in the General Transit Feed Specification"""
     geometry: list[PathGeometry] | None = None
     """Physical geometry of this route"""
-    geopath: InitVar[list[dict] | None]
     route_service_status: dict[Literal["description", "timestamp"], str]
     """Service status of the route"""
 
-    def __post_init__(self: Self, geopath: list[dict] | None = None) -> None:
-        self.route_name = self.route_name.strip()
-        if self.geometry is None and geopath is not None:
-            self.geometry = [PathGeometry(**item) for item in geopath]
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        route_name = kwargs.pop("route_name").strip()
+        geometry = kwargs.pop("geopath") if "geopath" in kwargs else None
+        if geometry is not None:
+            geometry = [PathGeometry(**item) for item in geometry]
+        return cls(route_name=route_name, geometry=geometry, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -287,13 +424,12 @@ class Stop(APIData):
     """Identifier of the travel mode of this stop"""
     stop_name: str
     """Name of this stop"""
-    locality: str
-    """Locality (suburb/town) this stop is in"""
-    stop_suburb: InitVar[str]
-    stop_latitude: float
-    """Latitude coordinate of the stop's location"""
-    stop_longitude: float
-    """Longitude coordinate of the stop's location"""
+    locality: str | None = None
+    """Locality (suburb/town) this stop is in; None if the API response did not return this information"""
+    stop_latitude: float | None = None
+    """Latitude coordinate of the stop's location; None if the API response did not return this information"""
+    stop_longitude: float | None = None
+    """Longitude coordinate of the stop's location; None if the API response did not return this information"""
     stop_distance: float | None = None
     """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or None"""
     stop_landmark: str
@@ -302,7 +438,6 @@ class Stop(APIData):
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | None = None
     """Ticketing information for this stop; None if the API response did not return this information"""
-    stop_ticket: InitVar[dict | None]
 
     # From /v3/stops/...
     point_id: int | None = None
@@ -318,44 +453,34 @@ class Stop(APIData):
     station_details_id: int | None = None
     """"""  # TODO
     flexible_stop_opening_hours: str | None = None
-    """"""  # TODO
+    """"""  # TODO - empty string
     stop_contact: StopContact | None = None
     """Operator contact information for this stop; None if not requested from API"""
-    stop_contact: InitVar[dict[str, str | None] | None]
     stop_location: StopLocation | None = None
     """Location information about this stop; None if not requested from API"""
-    stop_location: InitVar[dict[str, str | int | dict[str, float]] | None]
     stop_amenities: StopAmenities | None = None
     """Facilities available at this stop; None if not requested from API"""
-    stop_amenities: InitVar[dict[str, str | bool | None] | None]
     stop_accessibility: StopAccessibility | None = None
     """Information about accessibility features available at this stop; None if not requested from API"""
-    stop_accessibility: InitVar[dict[str, bool | dict[str, bool | None] | None]]
     stop_staffing: StopStaffing | None = None
     """Staffing information for this stop; None if not requested from API"""
-    stop_staffing: InitVar[dict[str, str] | None]
     station_type: str | None = None
     """"""  # TODO
     station_description: str | None = None
-    """"""  # TODO
+    """Additional information about the stop"""
 
-    def __post_init__(self: Self, stop_suburb: str, stop_ticket: dict | None = None, stop_contact: dict[str, str | None] | None = None, stop_location: dict[str, str | int | dict[str, float]] | None = None, stop_amenities: dict[str, str | bool | None] | None = None, stop_accessibility: dict[str, bool | dict[str, bool | None] | None] = None, stop_staffing: dict[str, str] | None = None) -> None:
-        self.stop_name = self.stop_name.strip()
-        if not hasattr(self, "locality"):
-            self.locality = stop_suburb
-        if self.stop_ticket is None and stop_ticket is not None:
-            self.stop_ticket = StopTicket(**stop_ticket)
-        if self.stop_contact is None and stop_contact is not None:
-            self.stop_contact = StopContact(**stop_contact)
-        if self.stop_location is None and stop_location is not None:
-            self.stop_location = StopLocation(**stop_location)
-        if self.stop_amenities is None and stop_amenities is not None:
-            self.stop_amenities = StopAmenities(**stop_amenities)
-        if self.stop_accessibility is None and stop_accessibility is not None:
-            self.stop_accessibility = StopAccessibility(**stop_amenities)
-        if self.stop_staffing is None and stop_staffing is not None:
-            self.stop_staffing = StopStaffing(**stop_staffing)
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        stop_name = kwargs.pop("stop_name").strip()
+        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
+        stop_ticket = StopTicket.load(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", None)
+        stop_contact = StopContact.load(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", None)
+        stop_location = StopLocation.load(**kwargs.pop("stop_location")) if "stop_location" in kwargs and kwargs["stop_location"] is not None else kwargs.pop("stop_location", None)
+        stop_amenities = StopAmenities.load(**kwargs.pop("stop_amenities")) if "stop_amenities" in kwargs and kwargs["stop_amenities"] is not None else kwargs.pop("stop_amenities", None)
+        stop_accessibility = StopAccessibility.load(**kwargs.pop("stop_accessibility")) if "stop_accessibility" in kwargs and kwargs["stop_accessibility"] is not None else kwargs.pop("stop_accessibility", None)
+        stop_staffing = StopStaffing.load(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", None)
+        return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -374,10 +499,8 @@ class Departure(APIData):
     """List of identifiers of disruptions affecting this stop and/or service"""
     scheduled_departure: datetime
     """Departure time of service as timetabled"""
-    scheduled_departure_utc: InitVar[str]
     estimated_departure: datetime | None
     """Estimated real-time departure time; None if real-time departure time is unavailable"""
-    estimated_departure_utc: InitVar[str | None]
     at_platform: bool
     """Whether the train servicing this run is stopped at the platform"""
     platform_number: str
@@ -390,16 +513,14 @@ class Departure(APIData):
     # From /v3/pattern/...
     skipped_stops: list[Stop] | None = None
     """After departing from this stop, a sequence of stops that are skipped prior to arriving at the next departure point"""
-    skipped_stops: InitVar[list[dict] | None]
 
-    def __post_init__(self: Self, scheduled_departure_utc: str, estimated_departure_utc: str | None, skipped_stops: list[dict] | None = None) -> None:
-        if not hasattr(self, "scheduled_departure"):
-            self.scheduled_departure = datetime.fromisoformat(scheduled_departure_utc).astimezone(TZ_MELBOURNE)
-        if not hasattr(self, "estimated_departure"):
-            self.estimated_departure = datetime.fromisoformat(estimated_departure_utc).astimezone(TZ_MELBOURNE) if estimated_departure_utc is not None else None
-        if self.skipped_stops is None:
-            self.skipped_stops = [Stop(**item) for item in skipped_stops] if skipped_stops is not None else None
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
+        estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
+        skipped_stops = [Stop(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
+        return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -421,17 +542,15 @@ class VehiclePosition(APIData):
     """Source of vehicle information"""
     as_of: datetime | None
     """Date and time at which this position information is current"""
-    datetime_utc: InitVar[str | None]
     expires: datetime | None
     """Date and time at which this position information is no longer valid"""
-    expiry_time: InitVar[str | None]
 
-    def __post_init__(self: Self, datetime_utc: str, expiry_time: str) -> None:
-        if not hasattr(self, "as_of"):
-            self.as_of = datetime.fromisoformat(datetime_utc).astimezone(TZ_MELBOURNE)
-        if not hasattr(self, "expires"):
-            self.expires = datetime.fromisoformat(expiry_time).astimezone(TZ_MELBOURNE)
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        as_of = datetime.fromisoformat(kwargs.pop("datetime_utc")).astimezone(TZ_MELBOURNE) if kwargs["datetime_utc"] is not None else kwargs.pop("datetime_utc")
+        expires = datetime.fromisoformat(kwargs.pop("expiry_time")).astimezone(TZ_MELBOURNE) if kwargs["expiry_time"] is not None else kwargs.pop("expiry_time")
+        return cls(as_of=as_of, expires=expires, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -452,6 +571,11 @@ class VehicleDescriptor(APIData):
     """Source of vehicle information"""
     length: str | None
     """Length of the vehicle; None if this information is unavailable"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
 
 
 @dataclass(kw_only=True)
@@ -478,29 +602,22 @@ class Run(APIData):
     """Number of skipped stops in this run"""
     vehicle_position: VehiclePosition | None
     """Real-time vehicle position information where available; None if this information was not requested from the API"""
-    vehicle_position: InitVar[dict | None]
     vehicle_descriptor: VehicleDescriptor | None
     """Information on the vehicle operating this service, where available; None if this information was not requested from the API"""
-    vehicle_descriptor: InitVar[dict | None]
     geometry: list[PathGeometry]
     """Physical geometry of this run's journey; [] (empty list) if not requested from API"""
-    geopath: InitVar[list[dict[str, str | int | list[str]]]]
     interchange: dict | None
     """Indicates, if any, the run this service will operate after terminating; None if this information was not requested from the API"""
 
-    run_id: InitVar[int | None]
-
-    def __post_init__(self: Self, vehicle_position: dict | None, vehicle_descriptor: dict | None, geopath: list[dict[str, str | int | list[str]]], run_id: int | None = None):
-        self.destination_name = self.destination_name.strip()
-        if not hasattr(self, "geometry"):
-            self.geometry = [PathGeometry(**item) for item in geopath]
-        if not hasattr(self, "vehicle_position"):
-            self.vehicle_position = VehiclePosition(**vehicle_position) if vehicle_position is not None else None
-        if not hasattr(self, "vehicle_descriptor"):
-            self.vehicle_descriptor = VehicleDescriptor(**vehicle_descriptor) if vehicle_descriptor is not None else None
-        # noinspection PyStatementEffect
-        run_id
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        kwargs.pop("run_id")
+        destination_name = kwargs.pop("destination_name").strip()
+        geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
+        vehicle_position = VehiclePosition.load(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
+        vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
+        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -517,6 +634,11 @@ class Direction(APIData):
     """Identifier for the route specified by this direction of travel"""
     route_type: int
     """Identifier for the mode of travel of this route and destination"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
 
 
 @dataclass(kw_only=True)
@@ -537,22 +659,16 @@ class Disruption(APIData):
     """Type of disruption"""
     published_on: datetime
     """Date and time this disruption was published"""
-    published_on: InitVar[str]
     last_updated: datetime
     """Date and time information about this disruption was last updated"""
-    last_updated: InitVar[str]
     from_date: datetime
     """Date and time this disruption began/will begin"""
-    from_date: InitVar[str]
     to_date: datetime | None
     """Date and time this disruption will end; None if unknown or uncertain"""
-    to_date: InitVar[str | None]
     routes: list[Route]
     """Routes affected by this disruption"""
-    routes: InitVar[list[dict]]
     stops: list[Stop]
     """Stops affected by this disruption"""
-    stops: InitVar[list[dict]]
     colour: str
     """Hex code for the alert colour on the disruption website"""
     display_on_board: bool
@@ -560,47 +676,45 @@ class Disruption(APIData):
     display_status: bool
     """Indicates if this disruption updates the service status of the affected routes on the disruption boards (presumably)"""
 
-    def __post_init__(self: Self, published_on: str, last_updated: str, from_date: str, to_date: str | None, routes: list[dict], stops: list[dict]) -> None:
-        self.published_on = datetime.fromisoformat(published_on).astimezone(TZ_MELBOURNE)
-        self.last_updated = datetime.fromisoformat(last_updated).astimezone(TZ_MELBOURNE)
-        self.from_date = datetime.fromisoformat(from_date).astimezone(TZ_MELBOURNE)
-        self.to_date = datetime.fromisoformat(to_date).astimezone(TZ_MELBOURNE) if to_date is not None else None
-        self.routes = [Route(**item) for item in routes]
-        self.stops = [Stop(**item) for item in stops]
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
+        last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
+        from_date = datetime.fromisoformat(kwargs.pop("from_date")).astimezone(TZ_MELBOURNE)
+        to_date = datetime.fromisoformat(kwargs.pop("to_date")).astimezone(TZ_MELBOURNE) if kwargs["to_date"] is not None else kwargs.pop("to_date")
+        routes = [Route.load(**item) for item in kwargs.pop("routes")]
+        stops = [Stop.load(**item) for item in kwargs.pop("stops")]
+        return cls(published_on=published_on, last_updated=last_updated, from_date=from_date, to_date=to_date, routes=routes, stops=stops, **kwargs)
 
 
 @dataclass(kw_only=True)
 class StoppingPattern(APIData):
-    """Represents a stopping pattern for a particular run. Sequence specified in 'departures' field."""
+    """Represents a stopping pattern for a particular run. Sequence specified in departures field."""
 
     disruptions: list[Disruption]
     """List of disruptions affecting this run or the relevant routes and stops"""
-    disruptions: InitVar[list[dict]]
     departures: list[Departure]
     """Sequence of departures from stops made by this run"""
-    departures: InitVar[list[dict]]
     stops: dict[int, Stop]
     """Mapping of the relevant stop identifiers to Stop objects"""
-    stops: InitVar[dict[str, dict]]
     routes: dict[int, Route]
     """Mapping of the relevant route identifiers to Route objects"""
-    routes: InitVar[dict[str, dict]]
     runs: dict[str, Run]
     """Mapping of the relevant run identifiers to Run objects"""
-    runs: InitVar[dict[str, dict]]
     directions: dict[int, Direction]
     """Mapping of the relevant travel direction identifiers to Direction objects"""
-    directions: InitVar[dict[str, dict]]
 
-    def __post_init__(self: Self, disruptions: list[dict], departures: list[dict], stops: dict[str, dict], routes: dict[str, dict], runs: dict[str, dict], directions: dict[str, dict]) -> None:
-        self.disruptions = [Disruption(**item) for item in disruptions]
-        self.departures = [Departure(**item) for item in departures]
-        self.stops = {int(key): Stop(**value) for key, value in stops.items()}
-        self.routes = {int(key): Route(**value) for key, value in routes.items()}
-        self.runs = {key: Run(**value) for key, value in runs.items()}
-        self.directions = {int(key): Direction(**value) for key, value in directions.items()}
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        disruptions = [Disruption.load(**item) for item in kwargs.pop("disruptions")]
+        departures = [Departure.load(**item) for item in kwargs.pop("departures")]
+        stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()}
+        routes = {int(key): Route.load(**value) for key, value in kwargs.pop("routes").items()}
+        runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()}
+        directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
+        return cls(disruptions=disruptions, departures=departures, stops=stops, routes=routes, runs=runs, directions=directions)
 
 
 @dataclass(kw_only=True)
@@ -609,35 +723,28 @@ class DeparturesResponse(APIData):
 
     departures: list[Departure]
     """Departures returned from the API request"""
-    departures: InitVar[list[dict]]
     stops: dict[int, Stop]
     """Mapping of stop identifiers to stop objects related to the returned departures"""
-    stops: InitVar[dict[str, dict]]
     routes: dict[int, Route]
     """Mapping of route identifiers to route objects related to the returned departures"""
-    routes: InitVar[dict[str, dict]]
     runs: dict[str, Run]
     """Mapping of run identifiers to run objects related to the returned departures"""
-    runs: InitVar[dict[str, dict]]
     directions: dict[int, Direction]
     """Mapping of direction identifiers to direction objects related to the returned departures"""
-    directions: InitVar[dict[str, dict]]
     disruptions: dict[int, Disruption]
     """Mapping of disruption identifiers to disruption objects related to the returned departures"""
-    disruptions: InitVar[dict[str, dict]]
 
-    status: InitVar[dict[str, str | int]]
-
-    def __post_init__(self: Self, departures: list[dict], stops: dict[str, dict], routes: dict[str, dict], runs: dict[str, dict], directions: dict[str, dict], disruptions: dict[str, dict], status: dict[str, str | int]) -> None:
-        self.departures = [Departure(**item) for item in departures]
-        self.stops = {int(key): Stop(**value) for key, value in stops.items()}
-        self.routes = {int(key): Route(**value) for key, value in routes.items()}
-        self.runs = {key: Run(**value) for key, value in runs.items()}
-        self.directions = {int(key): Direction(**value) for key, value in directions.items()}
-        self.disruptions = {int(key): Disruption(**value) for key, value in disruptions.items()}
-        # noinspection PyStatementEffect
-        status
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        departures = [Departure.load(**item) for item in kwargs.pop("departures")]
+        stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()}
+        routes = {int(key): Route.load(**value) for key, value in kwargs.pop("routes").items()}
+        runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()}
+        directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
+        disruptions = {int(key): Disruption.load(**value) for key, value in kwargs.pop("disruptions").items()}
+        kwargs.pop("status")
+        return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
 
 
 @dataclass(kw_only=True)
@@ -654,10 +761,8 @@ class Outlet(APIData):
     """Longitude coordinate of the outlet's position"""
     street_address: str
     """Street address of the outlet"""
-    outlet_name: InitVar[str]
     locality: str
     """Locality/suburb/town of the outlet"""
-    outlet_suburb: InitVar[str]
     outlet_postcode: int
     """Postcode of the outlet"""
     outlet_business_hour_mon: str | None
@@ -679,10 +784,13 @@ class Outlet(APIData):
     outlet_distance: float | None = None
     """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, None if the operation doesn't use this field"""
 
-    def __post_init__(self: Self, outlet_name: str, outlet_suburb: str) -> None:
-        self.street_address = outlet_name
-        self.locality = outlet_suburb
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        street_address = kwargs.pop("outlet_name")
+        locality = kwargs.pop("outlet_suburb")
+        outlet_business_hour_thu = kwargs.pop("outlet_business_hour_thur")
+        return cls(street_address=street_address, locality=locality, outlet_business_hour_thu=outlet_business_hour_thu, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -691,15 +799,12 @@ class FareEstimate(APIData):
 
     early_bird_travel: bool
     """Whether the touch on and off are made at metropolitan train stations on a non-public-holiday weekday before 7:15 am Melbourne time"""
-    IsEarlyBird: InitVar[bool]
     free_fare_zone: bool
     """Whether this journey is entirely within a free fare zone"""
-    IsJourneyInFreeTramZone: InitVar[bool]
     weekend: bool
     """Whether this journey is made on a weekend or public holiday"""
     zones: list[int]
     """List of fare zones this fare estimate is valid for"""
-    ZoneInfo: InitVar[dict[str, int | list[int]]]
 
     full_2_hour_peak: float
     """
@@ -749,7 +854,7 @@ class FareEstimate(APIData):
     """
     concession_weekday_cap_peak: float
     """Concession daily cap for travel across the network at any time of day on weekdays"""
-    concession_weekday_cap_peak: float
+    concession_weekday_cap_off_peak: float
     """Concession daily cap for travel across the network on weekdays if tap on occurs entirely outside designated peak periods"""
     concession_weekend_cap: float
     """Concession daily cap for travel across the network on weekends"""
@@ -791,46 +896,46 @@ class FareEstimate(APIData):
     """Senior fare, per day, for unlimited travel for 28 to 69 days"""
     senior_pass_70_plus_days: float
     """Senior fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
-    PassengerFares: InitVar[list[dict[str, str | float]]]
 
-    # noinspection PyPep8Naming,PyShadowingNames
-    def __post_init__(self: Self, IsEarlyBird: bool, IsJourneyInFreeTramZone: bool, ZoneInfo: dict[str, int | list[int]], PassengerFares: list[dict[str, str | float]]) -> None:
-        self.early_bird_travel = IsEarlyBird
-        self.free_fare_zone = IsJourneyInFreeTramZone
-        self.zones = ZoneInfo["UniqueZones"]
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list[dict] | dict | None) -> Self:
+        early_bird_travel = kwargs.pop("IsEarlyBird")
+        free_fare_zone = kwargs.pop("IsJourneyInFreeTramZone")
+        zones = kwargs.pop("ZoneInfo")["UniqueZones"]
 
-        for item in PassengerFares:
+        for item in kwargs.pop("PassengerFares"):
             if item["PassengerType"] == "fullFare":
-                self.full_2_hour_peak = item["Fare2HourPeak"]
-                self.full_2_hour_off_peak = item["Fare2HourOffPeak"]
-                self.full_weekday_cap_peak = item["FareDailyPeak"]
-                self.full_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                self.full_weekend_cap = item["WeekendCap"]
-                self.full_holiday_cap = item["HolidayCap"]
-                self.full_pass_7_days_total = item["Pass7Days"]
-                self.full_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                self.full_pass_70_plus_days = item["Pass70PlusDayPerDay"]
+                full_2_hour_peak = item["Fare2HourPeak"]
+                full_2_hour_off_peak = item["Fare2HourOffPeak"]
+                full_weekday_cap_peak = item["FareDailyPeak"]
+                full_weekday_cap_off_peak = item["FareDailyOffPeak"]
+                full_weekend_cap = item["WeekendCap"]
+                full_holiday_cap = item["HolidayCap"]
+                full_pass_7_days_total = item["Pass7Days"]
+                full_pass_28_to_69_days = item["Pass28To69DayPerDay"]
+                full_pass_70_plus_days = item["Pass70PlusDayPerDay"]
             elif item["PassengerType"] == "concession":
-                self.concession_2_hour_peak = item["Fare2HourPeak"]
-                self.concession_2_hour_off_peak = item["Fare2HourOffPeak"]
-                self.concession_weekday_cap_peak = item["FareDailyPeak"]
-                self.concession_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                self.concession_weekend_cap = item["WeekendCap"]
-                self.concession_holiday_cap = item["HolidayCap"]
-                self.concession_pass_7_days_total = item["Pass7Days"]
-                self.concession_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                self.concession_pass_70_plus_days = item["Pass70PlusDayPerDay"]
+                concession_2_hour_peak = item["Fare2HourPeak"]
+                concession_2_hour_off_peak = item["Fare2HourOffPeak"]
+                concession_weekday_cap_peak = item["FareDailyPeak"]
+                concession_weekday_cap_off_peak = item["FareDailyOffPeak"]
+                concession_weekend_cap = item["WeekendCap"]
+                concession_holiday_cap = item["HolidayCap"]
+                concession_pass_7_days_total = item["Pass7Days"]
+                concession_pass_28_to_69_days = item["Pass28To69DayPerDay"]
+                concession_pass_70_plus_days = item["Pass70PlusDayPerDay"]
             elif item["PassengerType"] == "senior":
-                self.senior_2_hour_peak = item["Fare2HourPeak"]
-                self.senior_2_hour_off_peak = item["Fare2HourOffPeak"]
-                self.senior_weekday_cap_peak = item["FareDailyPeak"]
-                self.senior_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                self.senior_weekend_cap = item["WeekendCap"]
-                self.senior_holiday_cap = item["HolidayCap"]
-                self.senior_pass_7_days_total = item["Pass7Days"]
-                self.senior_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                self.senior_pass_70_plus_days = item["Pass70PlusDayPerDay"]
-        return
+                senior_2_hour_peak = item["Fare2HourPeak"]
+                senior_2_hour_off_peak = item["Fare2HourOffPeak"]
+                senior_weekday_cap_peak = item["FareDailyPeak"]
+                senior_weekday_cap_off_peak = item["FareDailyOffPeak"]
+                senior_weekend_cap = item["WeekendCap"]
+                senior_holiday_cap = item["HolidayCap"]
+                senior_pass_7_days_total = item["Pass7Days"]
+                senior_pass_28_to_69_days = item["Pass28To69DayPerDay"]
+                senior_pass_70_plus_days = item["Pass70PlusDayPerDay"]
+        return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -839,23 +944,19 @@ class SearchResult(APIData):
 
     stops: list[Stop]
     """Stops matching the search parameters"""
-    stops: InitVar[list[dict]]
     routes: list[Route]
     """Routes matching the search parameters"""
-    routes: InitVar[list[dict]]
     outlets: list[Outlet]
     """Outlets matching the search parameters, if requested; [] (empty list) otherwise"""
-    outlets: InitVar[list[dict]]
 
-    status: InitVar[dict[str, str | int]]
-
-    def __post_init__(self: Self, stops: list[dict], routes: list[dict], outlets: list[dict], status: dict[str, str | int]) -> None:
-        self.stops = [Stop(**item) for item in stops]
-        self.routes = [Route(**item) for item in routes]
-        self.outlets = [Outlet(**item) for item in outlets]
-        # noinspection PyStatementEffect
-        status
-        return
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        stops = [Stop.load(**item) for item in kwargs.pop("stops")]
+        routes = [Route.load(**item) for item in kwargs.pop("routes")]
+        outlets = [Outlet.load(**item) for item in kwargs.pop("outlets")]
+        kwargs.pop("status")
+        return cls(stops=stops, routes=routes, outlets=outlets)
 
 
 class APIClient:
@@ -866,7 +967,7 @@ class APIClient:
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
-        :return: None
+        :return: ``None``
         """
         
         if not isinstance(dev_id, (str, int)):
@@ -883,7 +984,7 @@ class APIClient:
 
     @staticmethod
     def build_arg_string(*params: tuple[str, str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None] | str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None, s: str = "") -> str:
-        """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are Iterable. Ignores values that are None.
+        """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are ``Iterable``. Ignores values that are ``None``.
 
         :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
         :param s: Optionally, the string to append to
@@ -927,7 +1028,7 @@ class APIClient:
         """Make the request to the API and format the result.
 
         :param request: API request string
-        :return: Result of API request as a dict
+        :return: Result of API request as a ``dict``
         """
 
         url = self._encode_url(request)
@@ -952,22 +1053,22 @@ class APIClient:
     def list_route_directions(self: Self, route_id: int) -> list[Direction]:
         """Returns the directions of travel for a particular route.
 
-        :param route_id: The route ID number
-        :return: A list of directions
+        :param route_id: The route identifier
+        :return: List of directions
         """
 
-        return [Direction(**item) for item in self.call(f"/v3/directions/route/{route_id}")["directions"]]
+        return [Direction.load(**item) for item in self.call(f"/v3/directions/route/{route_id}")["directions"]]
 
     def list_directions(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
         """Returns all directions of travel in the database with the specified identifier for all (or the specified) route type(s).
 
-        :param direction_id: The direction ID number
+        :param direction_id: The direction identifier
         :param route_type: Return only the directions with the specified route type
-        :return: A list of directions
+        :return: List of directions
         """
 
         req = f"/v3/directions/{direction_id}" + ("/route_type/{route_type}" if route_type is not None else "")
-        return [Direction(**item) for item in self.call(req)["directions"]]
+        return [Direction.load(**item) for item in self.call(req)["directions"]]
 
     def get_pattern(self: Self,
                     run_ref: str,
@@ -975,7 +1076,7 @@ class APIClient:
                     stop_id: int | None = None,
                     date: datetime | str | None = None,
                     include_skipped_stops: bool | None = None,
-                    expand: ExpandType | Iterable[ExpandType] = NONE,
+                    expand: ExpandType | Iterable[ExpandType] = EXPAND_NONE,
                     include_geopath: bool | None = None
                     ) -> StoppingPattern:
         """Returns the stopping pattern of the specified run of the specified route type.
@@ -984,9 +1085,9 @@ class APIClient:
         :param route_type: The run's travel mode identifier
         :param stop_id: Include only the stop with the specified stop ID
         :param date: TODO
-        :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is False)
+        :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is ``False``)
         :param expand: TODO
-        :param include_geopath: Include the pattern's path geometry (server default is False)
+        :param include_geopath: Include the pattern's path geometry (server default is ``False``)
         :return: The stopping pattern of the specified run
         """
 
@@ -1000,19 +1101,19 @@ class APIClient:
         req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat(), "include_skipped_stops", include_skipped_stops, "expand", expand, "include_geopath", include_geopath, s=req)
 
         res = self.call(req)
-        return StoppingPattern(**res)
+        return StoppingPattern.load(**res)
 
     def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_utc: str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 
         :param route_id: The route identifier
-        :param include_geopath: Include the route's path geometry (server default is False)
+        :param include_geopath: Include the route's path geometry (server default is ``False``)
         :param geopath_utc: Retrieve the path geometry valid at the specified date (ISO 8601 formatted)
         :return: Details of the specified route
         """
 
         req = self.build_arg_string("include_geopath", include_geopath, "geopath_utc", geopath_utc, s=f"/v3/routes/{route_id}")
-        return Route(**self.call(req)["route"])
+        return Route.load(**self.call(req)["route"])
 
     def list_routes(self: Self, route_types: Iterable[RouteType] | None = None, route_name: str | None = None) -> list[Route]:
         """Returns all routes of all (or specified) types.
@@ -1023,7 +1124,7 @@ class APIClient:
         """
 
         req = self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes")
-        return [Route(**item) for item in self.call(req)["routes"]]
+        return [Route.load(**item) for item in self.call(req)["routes"]]
 
     def list_route_types(self: Self) -> list[dict[str, str | int]]:
         """Returns the names and identifiers of all route types.
@@ -1040,7 +1141,7 @@ class APIClient:
     def get_run(self: Self,
                 run_ref: str,
                 route_type: RouteType | None = None,
-                expand: ExpandType = NONE,
+                expand: ExpandType = EXPAND_NONE,
                 date: datetime | str | None = None,
                 include_geopath: bool | None = None
                 ) -> list[Run]:
@@ -1050,7 +1151,7 @@ class APIClient:
         :param route_type: Return runs of the specified type only
         :param expand: Optional data to include in returned list
         :param date: Return only data from the specified date
-        :param include_geopath: Include the run's path geometry (server default is false)
+        :param include_geopath: Include the run's path geometry (server default is ``False``)
         :return: A list of runs (this will still be a list even if there's only one exact match)
         """
 
@@ -1063,12 +1164,12 @@ class APIClient:
 
         req = self.build_arg_string("expand", expand, "include_geopath", include_geopath, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
 
-        return [Run(**item) for item in self.call(req)["runs"]]
+        return [Run.load(**item) for item in self.call(req)["runs"]]
 
     def list_runs(self: Self,
                   route_id: int,
                   route_type: RouteType | None = None,
-                  expand: ExpandType | Iterable[ExpandType] = NONE,
+                  expand: ExpandType | Iterable[ExpandType] = EXPAND_NONE,
                   date: datetime | str | None = None
                   ) -> list[Run]:
         """Returns a list of all runs for the specified route identifier and, if provided, the specified route type.
@@ -1089,7 +1190,7 @@ class APIClient:
 
         req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, s=req)
 
-        return [Run(**item) for item in self.call(req)["runs"]]
+        return [Run.load(**item) for item in self.call(req)["runs"]]
 
     @overload
     def get_stop(self: Self,
@@ -1104,21 +1205,6 @@ class APIClient:
                  stop_staffing: bool | None = None,
                  stop_disruptions: bool | None = None
                  ) -> Stop:
-        """
-        Returns the stop with the specified stop identifier and route type.
-
-        :param stop_id: The stop identifier
-        :param route_type: The transport type of the specified stop
-        :param stop_location: Whether to include stop location information in the result (server default is False)
-        :param stop_amenities: Whether to include stop amenities information in the result (server default is False)
-        :param stop_accessibility: Whether to include stop accessibility information in the result (server default is False)
-        :param stop_contact: Whether to include operator contact details in the result (server default is False)
-        :param stop_ticket: Whether to include ticketing information in the result (server default is False)
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is False)
-        :param stop_staffing: Whether to include stop staffing information in the result (server default is False)
-        :param stop_disruptions: Whether to include information about disruptions affecting the stop in the result (server default is False)
-        :return: Details of the specified stop
-        """
         ...
 
     @overload
@@ -1135,21 +1221,6 @@ class APIClient:
                  stop_staffing: bool | None = None,
                  stop_disruptions: bool | None = None
                  ) -> Stop:
-        """
-        Returns the stop with the specified stop identifier and route type.
-
-        :param stop_id: The stop identifier
-        :param route_type: The transport type of the specified stop
-        :param stop_location: Whether to include stop location information in the result (server default is False)
-        :param stop_amenities: Whether to include stop amenities information in the result (server default is False)
-        :param stop_accessibility: Whether to include stop accessibility information in the result (server default is False)
-        :param stop_contact: Whether to include operator contact details in the result (server default is False)
-        :param stop_ticket: Whether to include ticketing information in the result (server default is False)
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is False)
-        :param stop_staffing: Whether to include stop staffing information in the result (server default is False)
-        :param stop_disruptions: Whether to include information about disruptions affecting the stop in the result (server default is False)
-        :return: Details of the specified stop
-        """
         ...
 
     @overload
@@ -1165,21 +1236,6 @@ class APIClient:
                  stop_staffing: bool | None = None,
                  stop_disruptions: bool | None = None
                  ) -> Stop:
-        """
-        Returns the stop with the specified stop identifier and route type.
-
-        :param stop_id: The stop identifier
-        :param route_type: The transport type of the specified stop
-        :param stop_location: Whether to include stop location information in the result (server default is False)
-        :param stop_amenities: Whether to include stop amenities information in the result (server default is False)
-        :param stop_accessibility: Whether to include stop accessibility information in the result (server default is False)
-        :param stop_contact: Whether to include operator contact details in the result (server default is False)
-        :param stop_ticket: Whether to include ticketing information in the result (server default is False)
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is False)
-        :param stop_staffing: Whether to include stop staffing information in the result (server default is False)
-        :param stop_disruptions: Whether to include information about disruptions affecting the stop in the result (server default is False)
-        :return: Details of the specified stop
-        """
         ...
 
     def get_stop(self: Self,
@@ -1194,12 +1250,27 @@ class APIClient:
                  stop_staffing: bool | None = None,
                  stop_disruptions: bool | None = None
                  ) -> Stop:
+        """
+        Returns the stop with the specified stop identifier and route type.
+
+        :param stop_id: The stop identifier
+        :param route_type: The transport type of the specified stop
+        :param stop_location: Whether to include stop location information in the result (server default is ``False``)
+        :param stop_amenities: Whether to include stop amenities information in the result (server default is ``False``)
+        :param stop_accessibility: Whether to include stop accessibility information in the result (server default is ``False``)
+        :param stop_contact: Whether to include operator contact details in the result (server default is ``False``)
+        :param stop_ticket: Whether to include ticketing information in the result (server default is ``False``)
+        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
+        :param stop_staffing: Whether to include stop staffing information in the result (server default is ``False``)
+        :param stop_disruptions: Whether to include information about disruptions affecting the stop in the result (server default is ``False``)
+        :return: Details of the specified stop
+        """
 
         req = f"/v3/stops/{stop_id}/route_type/{route_type}"
         req = self.build_arg_string("stop_location", stop_location, "stop_amenities", stop_amenities, "stop_accessibility", stop_accessibility, "stop_contact", stop_contact, "stop_ticket", stop_ticket, "gtfs", gtfs, "stop_staffing", stop_staffing, "stop_disruptions", stop_disruptions, s=req)
 
         res = self.call(req)["stop"]
-        return Stop(**res)
+        return Stop.load(**res)
 
     def list_stops(self: Self,
                    route_id: int,
@@ -1219,7 +1290,7 @@ class APIClient:
 
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
         req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", stop_disruptions, s=req)
-        return [Stop(**item) for item in self.call(req)["stops"]]
+        return [Stop.load(**item) for item in self.call(req)["stops"]]
 
     def list_stops_near_location(self: Self,
                                  latitude: float,
@@ -1237,14 +1308,14 @@ class APIClient:
         :param route_types: If specified, only return stops for the specified travel mode(s)
         :param max_results: Maximum number of stops to be returned (server default is 30)
         :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
-        :param stop_disruptions: Whether to include stop disruption information (server default is False)
+        :param stop_disruptions: Whether to include stop disruption information (server default is ``False``)
         :return: A list of stops in the specified search parameters
         """
 
         req = f"/v3/stops/location/{latitude},{longitude}"
         req = self.build_arg_string("route_types", route_types, "max_results", max_results, "max_distance", max_distance, "stop_disruptions", stop_disruptions, s=req)
 
-        return [Stop(**item) for item in self.call(req)["stops"]]
+        return [Stop.load(**item) for item in self.call(req)["stops"]]
 
     # route_id is specified - force platform_numbers to be None
     # gtfs is not specified
@@ -1430,14 +1501,14 @@ class APIClient:
         :param route_id: If specified, show only departures for the specified route. Only one of 'route_id' and 'platform_numbers' should be specified.
         :param platform_numbers: If specified, show only departures from the specified platform numbers. Only one of 'route_id' and 'platform_numbers' should be specified.
         :param direction_id: If specified, show only departures travelling towards the specified direction
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is False)
-        :param include_advertised_interchange: Whether to include stop interchange information in result (server default is False)
+        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
+        :param include_advertised_interchange: Whether to include stop interchange information in result (server default is ``False``)
         :param date: If specified, show departures from the specified date and time (server default is current time). If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date and time instead. Defaults to UTC if timezone not specified
         :param max_results: Return only this number of departures
-        :param include_cancelled: Whether to include departures that are cancelled (server default is False)
-        :param look_backwards: If set to True, departures that arrive at their terminating destinations prior to the date and time specified in 'date' are returned instead (server default is False)
-        :param expand: Optional data to include in the response (server default is "None")
-        :param include_geopath: Include the run's path geometry (server default is False)
+        :param include_cancelled: Whether to include departures that are cancelled (server default is ``False``)
+        :param look_backwards: If set to True, departures that arrive at their terminating destinations prior to the date and time specified in 'date' are returned instead (server default is ``False``)
+        :param expand: Optional data to include in the response (server default is ``None``)
+        :param include_geopath: Include the run's path geometry (server default is ``False``)
         :return: The requested departure information and any associated stop, route, run, direction and disruption data
         """
 
@@ -1450,7 +1521,7 @@ class APIClient:
         req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "gtfs", gtfs, "include_advertised_interchange", include_advertised_interchange, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "max_results", max_results, "include_cancelled", include_cancelled, "look_backwards", look_backwards, "expand", expand, "include_geopath", include_geopath, s=req)
 
         res = self.call(req)
-        return DeparturesResponse(**res)
+        return DeparturesResponse.load(**res)
 
     @overload
     def list_disruptions(self: Self,
@@ -1523,7 +1594,7 @@ class APIClient:
         """
 
         res = self.call(f"/v3/disruptions/{disruption_id}")["disruption"]
-        return Disruption(**res)
+        return Disruption.load(**res)
 
     def list_disruption_modes(self: Self) -> list[dict[str, str | int]]:
         """
@@ -1567,19 +1638,13 @@ class APIClient:
         req = self.build_arg_string("touch_on", touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, "touch_off", touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, "is_free_fare_zone", is_free_fare_zone, "travelled_route_types", route_types, s=req)
 
         res = self.call(req)["FareEstimateResult"]
-        return FareEstimate(**res)
+        return FareEstimate.load(**res)
 
     @overload
     def list_outlets(self: Self,
                      *,
                      max_results: int | None = None
                      ) -> list[Outlet]:
-        """
-        Returns a list of all myki ticket outlets.
-
-        :param max_results: Maximum number of outlets to be returned (server default is 30)
-        :return: A list of ticket outlets
-        """
         ...
 
     @overload
@@ -1589,15 +1654,6 @@ class APIClient:
                      max_distance: float | None = None,
                      max_results: int | None = None
                      ) -> list[Outlet]:
-        """
-        Returns a list of ticket outlets near the specified location.
-
-        :param latitude: If specified together with longitude, return ticket outlets near the specified location only
-        :param longitude: If specified together with latitude, return ticket outlets near the specified location only
-        :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
-        :param max_results: Maximum number of outlets to be returned (server default is 30)
-        :return: A list of ticket outlets
-        """
         ...
 
     def list_outlets(self: Self,
@@ -1606,12 +1662,21 @@ class APIClient:
                      max_distance: float | None = None,
                      max_results: int | None = None
                      ) -> list[Outlet]:
+        """
+        Returns a list of all myki ticket outlets or, if specified, near the specified location.
+
+        :param latitude: If specified together with longitude, return ticket outlets near the specified location only
+        :param longitude: If specified together with latitude, return ticket outlets near the specified location only
+        :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
+        :param max_results: Maximum number of outlets to be returned (server default is 30)
+        :return: A list of ticket outlets
+        """
 
         req = "/v3/outlets" + (f"/location/{latitude},{longitude}" if latitude is not None and longitude is not None else "")
         req = self.build_arg_string("max_distance", max_distance, "max_results", max_results, s=req)
 
         res = self.call(req)["outlets"]
-        return [Outlet(**item) for item in res]
+        return [Outlet.load(**item) for item in res]
 
     @overload
     def search(self: Self,
@@ -1633,7 +1698,7 @@ class APIClient:
         :param include_outlets: Whether to include ticket outlets in search result (server default is True)
         :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
         :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is False)
+        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
         :return: All matching stops, routes and ticket outlets
         """
         ...
@@ -1662,7 +1727,7 @@ class APIClient:
         :param include_outlets: Whether to include ticket outlets in search result (server default is True)
         :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
         :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is False)
+        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
         :return: All matching stops, routes and ticket outlets
         """
         ...
@@ -1692,7 +1757,7 @@ class APIClient:
         :param include_outlets: Whether to include ticket outlets in search result (server default is True)
         :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
         :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is False)
+        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
         :return: All matching stops, routes and ticket outlets
         """
         ...
@@ -1708,9 +1773,25 @@ class APIClient:
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ) -> SearchResult:
+        """
+        Searches the PTV database for the specified search term and returns the matching stops, routes and ticket outlets.
 
-        req = f"/v3/search/{search_term}"
+        If the search term is numeric or has fewer than 3 characters, the API will only return routes.
+
+        :param search_term: Term to search
+        :param route_types: Return stops and routes with the specified travel mode type(s) only
+        :param latitude: Latitude coordinate of the location to search
+        :param longitude: Longitude coordinate of the location to search
+        :param max_distance: Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
+        :param include_outlets: Whether to include ticket outlets in search result (server default is True)
+        :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is ``True``)
+        :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is ``True``)
+        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
+        :return: All matching stops, routes and ticket outlets
+        """
+
+        req = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"
         req = self.build_arg_string("route_types", route_types, "latitude", latitude, "longitude", longitude, "max_distance", max_distance, "include_outlets", include_outlets, "match_stop_by_suburb", match_stop_by_suburb, "match_route_by_suburb", match_route_by_suburb, "match_stop_by_gtfs_stop_id", match_stop_by_gtfs_stop_id, s=req)
 
         res = self.call(req)
-        return SearchResult(**res)
+        return SearchResult.load(**res)
