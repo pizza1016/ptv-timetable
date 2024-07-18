@@ -154,21 +154,21 @@ class StopLocation(APIData):
     municipality_id: int
     """Municipality identifier"""
     locality: str
-    """Locality/suburb/town of the stop"""
+    """Locality (suburb/town) of this stop"""
     primary_stop_name: str
-    """Name of one of the roads near the stop (usually the crossing road, or "at" road), or a nearby landmark"""
+    """Name of one of the roads near this stop (usually the crossing road, or "at" road), or a nearby landmark"""
     road_type_primary: str
     """Road name suffix for 'primary_stop_name'"""
     second_stop_name: str
-    """Name of one of the roads near the stop (usually the road of travel, or "on" road); may be empty"""
+    """Name of one of the roads near this stop (usually the road of travel, or "on" road); may be empty"""
     road_type_second: str
     """Road name suffix for 'second_stop_name'"""
     bay_number: int
     """For bus interchanges, the bay number of the particular stop"""
     latitude: float
-    """Latitude coordinate of the stop's location"""
+    """Latitude coordinate of this stop's location"""
     longitude: float
-    """Longitude coordinate of the stop's location"""
+    """Longitude coordinate of this stop's location"""
 
     @classmethod
     @override
@@ -185,19 +185,19 @@ class StopLocation(APIData):
 class StopAmenities(APIData):
     """Amenities at the attached stop."""
 
-    seat_type: str
+    seat_type: Literal["", "Shelter"]
     pay_phone: bool
-    """Whether there is a public telephone at the stop"""
+    """Whether there is a public telephone at this stop"""
     indoor_waiting_area: bool
-    """Whether there is an indoor waiting lounge at the stop"""
+    """Whether there is an indoor waiting lounge at this stop"""
     sheltered_waiting_area: bool
-    """Whether there is a sheltered waiting area at the stop"""
+    """Whether there is a sheltered waiting area at this stop"""
     bicycle_rack: int
-    """Number of public bicycle racks at the stop"""
+    """Number of public bicycle racks at this stop"""
     bicycle_cage: bool
-    """Whether there is a secure bicycle cage at the stop"""
+    """Whether there is a secure bicycle cage at this stop"""
     bicycle_locker: int
-    """Number of bicycle lockers at the stop"""
+    """Number of bicycle lockers at this stop"""
     luggage_locker: int
     kiosk: bool
     seat: str
@@ -206,39 +206,44 @@ class StopAmenities(APIData):
     """"""  # TODO - empty string
     baby_change_facility: str
     parkiteer: None
-    """Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at the stop; None if not applicable or information unavailable"""
+    """Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop; None if not applicable or information unavailable"""
     replacement_bus_stop_location: str
     """Location of the replacement bus stop"""
     QTEM: None
     bike_storage: None
     PID: bool
-    """Whether there are passenger information displays at the stop"""
+    """Whether there are passenger information displays at this stop"""
     ATM: None
-    """Whether there is an automated teller machine at the stop"""
-    travellers_aid: bool
+    """Whether there is an automated teller machine at this stop"""
+    travellers_aid: bool | None
+    """Whether Traveller's Aid facilities are available at this stop; None if not applicable"""
     premium_stop: None
     PSOs: None
-    """Whether Protective Services Officers patrol the stop; None if not applicable"""
+    """Whether Protective Services Officers patrol this stop; None if not applicable"""
     melb_bike_share: None
-    """Defunct. Whether there are Melbourne Bike Share bicycle rentals available at the stop; None if not applicable or information unavailable"""
+    """Defunct. Whether there are Melbourne Bike Share bicycle rentals available at this stop; None if not applicable or information unavailable"""
     luggage_storage: None
-    """Whether luggage storage services are available at the stop; None if not applicable or information unavailable"""
+    """Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
     luggage_check_in: None
-    """Whether luggage check-in facilities are available at the stop; None if not applicable or information unavailable"""
+    """Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
     toilet: bool
-    """Whether there is a public toilet at or near the stop"""
+    """Whether there is a public toilet at or near this stop"""
     taxi_rank: bool
-    """Whether there is a taxi rank at or near the stop"""
-    car_parking: int
-    """Number of fee-free parking spaces at the stop"""
+    """Whether there is a taxi rank at or near this stop"""
+    car_parking: int | None
+    """Number of fee-free parking spaces at this stop; None if not applicable"""
     cctv: bool
-    """Whether there are closed-circuit television cameras at the stop"""
+    """Whether there are closed-circuit television cameras at this stop"""
 
     @classmethod
     @override
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         replacement_bus_stop_location = kwargs.pop("replacement_bus_stop_loc")
-        car_parking = int(kwargs.pop("car_parking"))
+        if kwargs["car_parking"] == "":
+            car_parking = None
+            kwargs.pop("car_parking")
+        else:
+            car_parking = int(kwargs.pop("car_parking"))
         return cls(replacement_bus_stop_location=replacement_bus_stop_location, car_parking=car_parking, **kwargs)
 
 
@@ -247,27 +252,27 @@ class Wheelchair(APIData):
     """Wheelchair accessibility information for the attached stop."""
 
     accessible_ramp: bool
-    """"""  # TODO
-    parking: bool
-    """Whether there is DDA-compliant parking at the stop"""
-    telephone: bool
-    """Whether there is a DDA-compliant telephone at the stop"""
-    toilet: bool
-    """Whether there is a DDA-compliant toilet at the stop"""
+    """Whether there is ramp access to this stop or its platforms"""
+    parking: bool | None
+    """Whether there is DDA-compliant parking at this stop; None if not applicable"""
+    telephone: bool | None
+    """Whether there is a DDA-compliant telephone at this stop; None if not applicable"""
+    toilet: bool | None
+    """Whether there is a DDA-compliant toilet at this stop; None if not applicable"""
     low_ticket_counter: bool | None
-    """Whether there is a DDA-compliant low ticket counter at the stop; None if not applicable"""
+    """Whether there is a DDA-compliant low ticket counter at this stop; None if not applicable"""
     manoeuvring: bool | None
     """Whether there is enough space for mobility devices to board or alight a public transport vehicle; None if not applicable or information unavailable"""
     raised_platform: bool | None
-    """Whether the platform at the stop is raised to the height of the vehicle's floor; None if not applicable or information unavailable"""
+    """Whether the platform at this stop is raised to the height of the vehicle's floor; None if not applicable or information unavailable"""
     raised_platform_shelter: bool | None
     """Whether there is shelter near the raised platform; None if not applicable or information unavailable"""
     ramp: bool | None
-    """Whether there are ramps with a height to length ratio less than 1:14 at the stop; None if not applicable or information unavailable"""
+    """Whether there are ramps with a height to length ratio less than 1:14 at this stop; None if not applicable or information unavailable"""
     secondary_path: bool | None
-    """Whether there is a path outside the stop perimeter or boundary connecting to the stop that is accessible; None if not applicable or information unavailable"""
+    """Whether there is a path outside this stop perimeter or boundary connecting to this stop that is accessible; None if not applicable or information unavailable"""
     steep_ramp: bool | None
-    """Whether there are ramps with a height to length ratio greater than 1:14 at the stop; None if not applicable or information unavailable"""
+    """Whether there are ramps with a height to length ratio greater than 1:14 at this stop; None if not applicable or information unavailable"""
 
     @classmethod
     @override
@@ -282,21 +287,21 @@ class StopAccessibility(APIData):
     """Accessibility information for the attached stop."""
 
     platform_number: int | None
-    """The platform number of the stop that data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
+    """The platform number of the stop that the data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
     lighting: bool
     """Whether there is lighting at this stop"""
     audio_customer_information: bool | None
     """Whether there is at least one facility that provides audio passenger information at this stop; None if not applicable"""
-    escalator: bool
-    """Whether there is at least one escalator that complies with the Disability Discrimination Act 1992 (Cth)"""
-    hearing_loop: bool
-    """Whether hearing loops are available at this stop"""
-    lift: bool
-    """Whether there are lifts at this stop"""
-    stairs: bool
-    """Whether there are stairs at this stop"""
+    escalator: bool | None
+    """Whether there is at least one escalator that complies with the Disability Discrimination Act 1992 (Cth); None if not applicable"""
+    hearing_loop: bool | None
+    """Whether hearing loops are available at this stop; None if not applicable"""
+    lift: bool | None
+    """Whether there are lifts at this stop; None if not applicable"""
+    stairs: bool | None
+    """Whether there are stairs at this stop; None if not applicable"""
     stop_accessible: bool | None
-    """Whether the stop is "accessible"; None if not applicable"""
+    """Whether this stop is "accessible"; None if not applicable"""
     tactile_ground_surface_indicator: bool
     """Whether there are tactile guide tiles or paving at this stop"""
     waiting_room: bool | None
@@ -401,8 +406,18 @@ class Route(APIData):
     """Identifier for this route in the General Transit Feed Specification"""
     geometry: list[PathGeometry] | None = None
     """Physical geometry of this route"""
-    route_service_status: dict[Literal["description", "timestamp"], str]
-    """Service status of the route"""
+    route_service_status: dict[Literal["description", "timestamp"], str | datetime] | None = None
+    """Service status of the route; None if API did not provide this information"""
+
+    # From /v3/disruptions/...
+    route_direction_id: int | None = None
+    """For a disruption, combined identifier for the route and travel direction affected by the disruption; None if not applicable"""
+    direction_id: int | None = None
+    """For a disruption, identifier of travel direction affected by the disruption; None if not applicable"""
+    direction_name: str | None = None
+    """For a disruption, destination of travel direction affected by the disruption; None if not applicable"""
+    service_time: str | None = None
+    """For a disruption, time of the run/service affected by the disruption; None if not applicable, or disruption affects multiple or no runs/services"""
 
     @classmethod
     @override
@@ -411,7 +426,15 @@ class Route(APIData):
         geometry = kwargs.pop("geopath") if "geopath" in kwargs else None
         if geometry is not None:
             geometry = [PathGeometry(**item) for item in geometry]
-        return cls(route_name=route_name, geometry=geometry, **kwargs)
+        route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else None
+        if route_service_status is not None:
+            route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
+        direction = kwargs.pop("direction") if "direction" in kwargs else None
+        route_direction_id = direction["route_direction_id"] if direction is not None else None
+        direction_id = direction["direction_id"] if direction is not None else None
+        direction_name = direction["direction_name"] if direction is not None else None
+        service_time = direction["service_time"] if direction is not None else None
+        return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -420,8 +443,8 @@ class Stop(APIData):
 
     stop_id: int
     """Identifier of this stop"""
-    route_type: int
-    """Identifier of the travel mode of this stop"""
+    route_type: int | None = None
+    """Identifier of the travel mode of this stop; None if this was created by 'Disruptions'"""
     stop_name: str
     """Name of this stop"""
     locality: str | None = None
@@ -432,8 +455,8 @@ class Stop(APIData):
     """Longitude coordinate of the stop's location; None if the API response did not return this information"""
     stop_distance: float | None = None
     """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or None"""
-    stop_landmark: str
-    """Notable landmarks near the stop; "" (empty string) if none"""
+    stop_landmark: str | None = None
+    """Notable landmarks near this stop; "" (empty string) if none; None if this was created by 'Disruptions'"""
     stop_sequence: int | None = None
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | None = None
@@ -467,7 +490,7 @@ class Stop(APIData):
     station_type: str | None = None
     """"""  # TODO
     station_description: str | None = None
-    """Additional information about the stop"""
+    """Additional information about this stop"""
 
     @classmethod
     @override
@@ -475,12 +498,13 @@ class Stop(APIData):
         stop_name = kwargs.pop("stop_name").strip()
         locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
         stop_ticket = StopTicket.load(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", None)
+        routes = [Route.load(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", None)
         stop_contact = StopContact.load(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", None)
         stop_location = StopLocation.load(**kwargs.pop("stop_location")) if "stop_location" in kwargs and kwargs["stop_location"] is not None else kwargs.pop("stop_location", None)
         stop_amenities = StopAmenities.load(**kwargs.pop("stop_amenities")) if "stop_amenities" in kwargs and kwargs["stop_amenities"] is not None else kwargs.pop("stop_amenities", None)
         stop_accessibility = StopAccessibility.load(**kwargs.pop("stop_accessibility")) if "stop_accessibility" in kwargs and kwargs["stop_accessibility"] is not None else kwargs.pop("stop_accessibility", None)
         stop_staffing = StopStaffing.load(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", None)
-        return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
+        return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -520,6 +544,7 @@ class Departure(APIData):
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
         skipped_stops = [Stop(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
+        kwargs.pop("run_id")
         return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
 
@@ -902,40 +927,44 @@ class FareEstimate(APIData):
     def load(cls: Self, **kwargs: str | int | float | bool | list[dict] | dict | None) -> Self:
         early_bird_travel = kwargs.pop("IsEarlyBird")
         free_fare_zone = kwargs.pop("IsJourneyInFreeTramZone")
+        weekend = kwargs.pop("IsThisWeekendJourney")
         zones = kwargs.pop("ZoneInfo")["UniqueZones"]
+        fares = kwargs.pop("PassengerFares")
 
-        for item in kwargs.pop("PassengerFares"):
-            if item["PassengerType"] == "fullFare":
-                full_2_hour_peak = item["Fare2HourPeak"]
-                full_2_hour_off_peak = item["Fare2HourOffPeak"]
-                full_weekday_cap_peak = item["FareDailyPeak"]
-                full_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                full_weekend_cap = item["WeekendCap"]
-                full_holiday_cap = item["HolidayCap"]
-                full_pass_7_days_total = item["Pass7Days"]
-                full_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                full_pass_70_plus_days = item["Pass70PlusDayPerDay"]
-            elif item["PassengerType"] == "concession":
-                concession_2_hour_peak = item["Fare2HourPeak"]
-                concession_2_hour_off_peak = item["Fare2HourOffPeak"]
-                concession_weekday_cap_peak = item["FareDailyPeak"]
-                concession_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                concession_weekend_cap = item["WeekendCap"]
-                concession_holiday_cap = item["HolidayCap"]
-                concession_pass_7_days_total = item["Pass7Days"]
-                concession_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                concession_pass_70_plus_days = item["Pass70PlusDayPerDay"]
-            elif item["PassengerType"] == "senior":
-                senior_2_hour_peak = item["Fare2HourPeak"]
-                senior_2_hour_off_peak = item["Fare2HourOffPeak"]
-                senior_weekday_cap_peak = item["FareDailyPeak"]
-                senior_weekday_cap_off_peak = item["FareDailyOffPeak"]
-                senior_weekend_cap = item["WeekendCap"]
-                senior_holiday_cap = item["HolidayCap"]
-                senior_pass_7_days_total = item["Pass7Days"]
-                senior_pass_28_to_69_days = item["Pass28To69DayPerDay"]
-                senior_pass_70_plus_days = item["Pass70PlusDayPerDay"]
-        return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days, **kwargs)
+        assert fares[0]["PassengerType"] == "fullFare"
+        full_2_hour_peak = fares[0]["Fare2HourPeak"]
+        full_2_hour_off_peak = fares[0]["Fare2HourOffPeak"]
+        full_weekday_cap_peak = fares[0]["FareDailyPeak"]
+        full_weekday_cap_off_peak = fares[0]["FareDailyOffPeak"]
+        full_weekend_cap = fares[0]["WeekendCap"]
+        full_holiday_cap = fares[0]["HolidayCap"]
+        full_pass_7_days_total = fares[0]["Pass7Days"]
+        full_pass_28_to_69_days = fares[0]["Pass28To69DayPerDay"]
+        full_pass_70_plus_days = fares[0]["Pass70PlusDayPerDay"]
+
+        assert fares[1]["PassengerType"] == "concession"
+        concession_2_hour_peak = fares[1]["Fare2HourPeak"]
+        concession_2_hour_off_peak = fares[1]["Fare2HourOffPeak"]
+        concession_weekday_cap_peak = fares[1]["FareDailyPeak"]
+        concession_weekday_cap_off_peak = fares[1]["FareDailyOffPeak"]
+        concession_weekend_cap = fares[1]["WeekendCap"]
+        concession_holiday_cap = fares[1]["HolidayCap"]
+        concession_pass_7_days_total = fares[1]["Pass7Days"]
+        concession_pass_28_to_69_days = fares[1]["Pass28To69DayPerDay"]
+        concession_pass_70_plus_days = fares[1]["Pass70PlusDayPerDay"]
+
+        assert fares[2]["PassengerType"] == "senior"
+        senior_2_hour_peak = fares[2]["Fare2HourPeak"]
+        senior_2_hour_off_peak = fares[2]["Fare2HourOffPeak"]
+        senior_weekday_cap_peak = fares[2]["FareDailyPeak"]
+        senior_weekday_cap_off_peak = fares[2]["FareDailyOffPeak"]
+        senior_weekend_cap = fares[2]["WeekendCap"]
+        senior_holiday_cap = fares[2]["HolidayCap"]
+        senior_pass_7_days_total = fares[2]["Pass7Days"]
+        senior_pass_28_to_69_days = fares[2]["Pass28To69DayPerDay"]
+        senior_pass_70_plus_days = fares[2]["Pass70PlusDayPerDay"]
+
+        return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, weekend=weekend, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days, **kwargs)
 
 
 @dataclass(kw_only=True)
@@ -1076,7 +1105,7 @@ class APIClient:
                     stop_id: int | None = None,
                     date: datetime | str | None = None,
                     include_skipped_stops: bool | None = None,
-                    expand: ExpandType | Iterable[ExpandType] = EXPAND_NONE,
+                    expand: ExpandType | Iterable[ExpandType] | None = None,
                     include_geopath: bool | None = None
                     ) -> StoppingPattern:
         """Returns the stopping pattern of the specified run of the specified route type.
@@ -1086,7 +1115,7 @@ class APIClient:
         :param stop_id: Include only the stop with the specified stop ID
         :param date: TODO
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is ``False``)
-        :param expand: TODO
+        :param expand: Optional data to include in the response (server default is ``EXPAND_DISRUPTION``)
         :param include_geopath: Include the pattern's path geometry (server default is ``False``)
         :return: The stopping pattern of the specified run
         """
@@ -1096,23 +1125,28 @@ class APIClient:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=TZ_MELBOURNE)
 
         req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat(), "include_skipped_stops", include_skipped_stops, "expand", expand, "include_geopath", include_geopath, s=req)
 
         res = self.call(req)
         return StoppingPattern.load(**res)
 
-    def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_utc: str | None = None) -> Route:
+    def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 
         :param route_id: The route identifier
         :param include_geopath: Include the route's path geometry (server default is ``False``)
-        :param geopath_utc: Retrieve the path geometry valid at the specified date (ISO 8601 formatted)
+        :param geopath_date: Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if ``str``). Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :return: Details of the specified route
         """
 
-        req = self.build_arg_string("include_geopath", include_geopath, "geopath_utc", geopath_utc, s=f"/v3/routes/{route_id}")
+        if isinstance(geopath_date, str):
+            geopath_date = datetime.fromisoformat(geopath_date)
+        if geopath_date is not None and geopath_date.tzinfo is None:
+            geopath_date = geopath_date.replace(tzinfo=TZ_MELBOURNE)
+
+        req = self.build_arg_string("include_geopath", include_geopath, "geopath_utc", geopath_date, s=f"/v3/routes/{route_id}")
         return Route.load(**self.call(req)["route"])
 
     def list_routes(self: Self, route_types: Iterable[RouteType] | None = None, route_name: str | None = None) -> list[Route]:
@@ -1141,7 +1175,7 @@ class APIClient:
     def get_run(self: Self,
                 run_ref: str,
                 route_type: RouteType | None = None,
-                expand: ExpandType = EXPAND_NONE,
+                expand: Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | None = None,
                 date: datetime | str | None = None,
                 include_geopath: bool | None = None
                 ) -> list[Run]:
@@ -1149,8 +1183,8 @@ class APIClient:
 
         :param run_ref: The run identifier
         :param route_type: Return runs of the specified type only
-        :param expand: Optional data to include in returned list
-        :param date: Return only data from the specified date
+        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
+        :param date: Return only data from the specified date. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :param include_geopath: Include the run's path geometry (server default is ``False``)
         :return: A list of runs (this will still be a list even if there's only one exact match)
         """
@@ -1160,7 +1194,7 @@ class APIClient:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=TZ_MELBOURNE)
 
         req = self.build_arg_string("expand", expand, "include_geopath", include_geopath, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
 
@@ -1169,15 +1203,15 @@ class APIClient:
     def list_runs(self: Self,
                   route_id: int,
                   route_type: RouteType | None = None,
-                  expand: ExpandType | Iterable[ExpandType] = EXPAND_NONE,
+                  expand: Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | None = None,
                   date: datetime | str | None = None
                   ) -> list[Run]:
         """Returns a list of all runs for the specified route identifier and, if provided, the specified route type.
 
         :param route_id: The route identifier
         :param route_type: The transport type of the specified route
-        :param expand: Optional data to include in the response
-        :param date: Return only data from the specified date
+        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
+        :param date: Return only data from the specified date. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :return: A list of runs
         """
 
@@ -1186,7 +1220,7 @@ class APIClient:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=TZ_MELBOURNE)
 
         req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, s=req)
 
@@ -1253,7 +1287,7 @@ class APIClient:
         """
         Returns the stop with the specified stop identifier and route type.
 
-        :param stop_id: The stop identifier
+        :param stop_id: The stop identifier; must be ``str`` if ``gtfs`` is set to ``True``; otherwise, must be ``int``
         :param route_type: The transport type of the specified stop
         :param stop_location: Whether to include stop location information in the result (server default is ``False``)
         :param stop_amenities: Whether to include stop amenities information in the result (server default is ``False``)
@@ -1337,35 +1371,14 @@ class APIClient:
                         ) -> DeparturesResponse:
         ...
 
-    # platform_numbers is specified by keyword
-    # gtfs is not specified
-    @overload
-    def list_departures(self: Self,
-                        route_type: RouteType,
-                        stop_id: int,
-                        route_id: None = None,
-                        *,
-                        platform_numbers: Iterable[str | int],
-                        direction_id: int | None = None,
-                        gtfs: Literal[False, None] = None,
-                        include_advertised_interchange: bool | None = None,
-                        date: datetime | str | None = None,
-                        max_results: int | None = None,
-                        include_cancelled: bool | None = None,
-                        look_backwards: bool | None = None,
-                        expand: Iterable[ExpandType] | ExpandType | None = None,
-                        include_geopath: bool | None = None
-                        ) -> DeparturesResponse:
-        ...
-
-    # platform_numbers is specified by position - require explicit None on route_id
+    # platform_numbers is specified - force route_id to be None
     # also for when both parameters are None
     # gtfs is not specified
     @overload
     def list_departures(self: Self,
                         route_type: RouteType,
                         stop_id: int,
-                        route_id: None,
+                        route_id: None = None,
                         platform_numbers: Iterable[str | int] | None = None,
                         direction_id: int | None = None,
                         gtfs: Literal[False, None] = None,
@@ -1399,32 +1412,12 @@ class APIClient:
                         ) -> DeparturesResponse:
         ...
 
-    # platform_numbers is specified by keyword; requires gtfs to be specified also by keyword
+    # platform_numbers is specified; gtfs is specified by keyword
     @overload
     def list_departures(self: Self,
                         route_type: RouteType,
                         stop_id: str,
                         route_id: None = None,
-                        *,
-                        platform_numbers: Iterable[str | int],
-                        direction_id: int | None = None,
-                        gtfs: Literal[True],
-                        include_advertised_interchange: bool | None = None,
-                        date: datetime | str | None = None,
-                        max_results: int | None = None,
-                        include_cancelled: bool | None = None,
-                        look_backwards: bool | None = None,
-                        expand: Iterable[ExpandType] | ExpandType | None = None,
-                        include_geopath: bool | None = None
-                        ) -> DeparturesResponse:
-        ...
-
-    # platform_numbers is specified by position, gtfs by keyword
-    @overload
-    def list_departures(self: Self,
-                        route_type: RouteType,
-                        stop_id: str,
-                        route_id: None,
                         platform_numbers: Iterable[str | int] | None = None,
                         direction_id: int | None = None,
                         *,
@@ -1503,11 +1496,11 @@ class APIClient:
         :param direction_id: If specified, show only departures travelling towards the specified direction
         :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
         :param include_advertised_interchange: Whether to include stop interchange information in result (server default is ``False``)
-        :param date: If specified, show departures from the specified date and time (server default is current time). If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date and time instead. Defaults to UTC if timezone not specified
+        :param date: If specified, show departures from the specified date and time (server default is current time). If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date and time instead. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :param max_results: Return only this number of departures
         :param include_cancelled: Whether to include departures that are cancelled (server default is ``False``)
         :param look_backwards: If set to True, departures that arrive at their terminating destinations prior to the date and time specified in 'date' are returned instead (server default is ``False``)
-        :param expand: Optional data to include in the response (server default is ``None``)
+        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
         :param include_geopath: Include the run's path geometry (server default is ``False``)
         :return: The requested departure information and any associated stop, route, run, direction and disruption data
         """
@@ -1515,7 +1508,7 @@ class APIClient:
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
-            date = date.replace(tzinfo=timezone.utc)
+            date = date.replace(tzinfo=TZ_MELBOURNE)
 
         req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
         req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "gtfs", gtfs, "include_advertised_interchange", include_advertised_interchange, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "max_results", max_results, "include_cancelled", include_cancelled, "look_backwards", look_backwards, "expand", expand, "include_geopath", include_geopath, s=req)
@@ -1530,14 +1523,6 @@ class APIClient:
                          disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | None = None,
                          disruption_status: Literal["Current", "Planned"] | None = None
                          ):
-        """
-        Returns a list of all current and planned disruptions.
-
-        :param route_types: If specified, list only disruptions for the specified travel modes
-        :param disruption_modes: If specified, list only disruptions for the specified disruption modes
-        :param disruption_status: If specified, list only disruptions with the specified status
-        :return: A list of disruptions
-        """
         ...
 
     @overload
@@ -1547,14 +1532,6 @@ class APIClient:
                          *,
                          disruption_status: Literal["Current", "Planned"] | None = None
                          ):
-        """
-        Returns a list of all disruptions for the specified route and/or stop.
-
-        :param route_id: If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
-        :param stop_id: If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
-        :param disruption_status: If specified, list only disruptions with the specified status
-        :return: A list of disruptions
-        """
         ...
 
     def list_disruptions(self: Self,
@@ -1583,7 +1560,7 @@ class APIClient:
         for category in res.values():
             ret.extend(category)
 
-        return ret
+        return [Disruption.load(**item) for item in ret]
 
     def get_disruption(self: Self, disruption_id: int) -> Disruption:
         """
@@ -1618,8 +1595,8 @@ class APIClient:
 
         :param zone_a: With zone_b, the lowest and highest zones travelled through (order independent)
         :param zone_b: As per zone_a
-        :param touch_on: If specified, estimate the fare for the journey commencing at the specified touch on time
-        :param touch_off: If specified, estimate the fare for the journey concluding at the specified touch off time
+        :param touch_on: If specified, estimate the fare for the journey commencing at the specified touch on time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :param touch_off: If specified, estimate the fare for the journey concluding at the specified touch off time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :param is_free_fare_zone: Whether the journey is entirely within a free fare zone
         :param route_types: If specified, estimate the fare for the journey travelling through the specified fare zone(s)
         :return: Object containing the estimated fares
@@ -1628,11 +1605,11 @@ class APIClient:
         if type(touch_on) is str:
             touch_on = datetime.fromisoformat(touch_on)
         if touch_on is not None and touch_on.tzinfo is None:
-            touch_on = touch_on.replace(tzinfo=timezone.utc)
+            touch_on = touch_on.replace(tzinfo=TZ_MELBOURNE)
         if type(touch_off) is str:
             touch_off = datetime.fromisoformat(touch_off)
         if touch_off is not None and touch_off.tzinfo is None:
-            touch_off = touch_off.replace(tzinfo=timezone.utc)
+            touch_off = touch_off.replace(tzinfo=TZ_MELBOURNE)
 
         req = f"/v3/fare_estimate/min_zone/{min(zone_a, zone_b)}/max_zone/{max(zone_a, zone_b)}"
         req = self.build_arg_string("touch_on", touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, "touch_off", touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, "is_free_fare_zone", is_free_fare_zone, "travelled_route_types", route_types, s=req)
