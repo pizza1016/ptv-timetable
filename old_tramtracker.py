@@ -10,7 +10,6 @@ import platform
 import re
 import requests
 if platform.system() == "Windows":
-    # noinspection PyUnresolvedReferences
     import tzdata
 
 __all__ = ["TramTrackerClient"]
@@ -188,7 +187,7 @@ class TramTrackerClient:
     CLIENT_VERSION: Final[str] = "0.1"
     CLIENT_WEB_SERVICE_VERSION: Final[str] = "6.4.0.0"
 
-    def __init__(self, uuid: str | None = None) -> None:
+    def __init__(self: Self, uuid: str | None = None) -> None:
         """
         Creates a TramTrackerInterface instance, requesting a new UUID from the service if one is not provided.
 
