@@ -151,14 +151,15 @@ class TramTrackerClient:
 
         return result["ResponseObject"] if "ResponseObject" in result else result["responseObject"]
 
-    def list_destinations(self: Self) -> list[TramDestination]:
+    @classmethod
+    def list_destinations(cls: Self) -> list[TramDestination]:
         """
         Returns a list of termini for each primary tram route on the network.
 
         :return: A list detailing each route terminus
         """
 
-        response = self.call("/GetAllRoutes.ashx")
+        response = cls.call("/GetAllRoutes.ashx")
         return [TramDestination(route_id=element["InternalRouteNo"],
                                 route_number=element["AlphaNumericRouteNo"] if element["AlphaNumericRouteNo"] is not None else str(element["RouteNo"]),
                                 up_direction=element["IsUpDirection"],
@@ -166,7 +167,8 @@ class TramTrackerClient:
                                 has_low_floor_trams=element["HasLowFloor"]
                                 ) for element in response]
 
-    def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
+    @classmethod
+    def list_stops(cls: Self, route_id: int, up_direction: bool) -> list[TramStop]:
         """
         Returns a list of stops on the specified route and direction of travel.
 
@@ -175,7 +177,7 @@ class TramTrackerClient:
         :return: A list of stops on the route
         """
 
-        response = self.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}")
+        response = cls.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}")
         return [TramStop(stop_id=element["StopNo"] if element["StopNo"] != 0 else None,
                          stop_name=element["Description"],
                          stop_number=element["FlagStopNo"],
@@ -188,7 +190,8 @@ class TramTrackerClient:
                          city_direction=element["CityDirection"]
                          ) for element in response]
 
-    def get_stop(self: Self, stop_id: int) -> TramStop:
+    @classmethod
+    def get_stop(cls: Self, stop_id: int) -> TramStop:
         """
         Returns information about the specified stop.
 
@@ -196,7 +199,7 @@ class TramTrackerClient:
         :return: The stop details
         """
 
-        response = self.call(f"/GetStopInformation.ashx?s={stop_id}")
+        response = cls.call(f"/GetStopInformation.ashx?s={stop_id}")
         return TramStop(stop_id=response["StopNo"] if response["StopNo"] != 0 else None,
                         stop_name=response["StopName"],
                         stop_number=response["FlagStopNo"],
@@ -209,7 +212,8 @@ class TramTrackerClient:
                         city_direction=response["CityDirection"]
                         )
 
-    def list_routes_for_stop(self: Self, stop_id: int) -> list[str]:
+    @classmethod
+    def list_routes_for_stop(cls: Self, stop_id: int) -> list[str]:
         """
         Returns a list of route numbers for the primary routes that serve the specified stop.
 
@@ -217,10 +221,11 @@ class TramTrackerClient:
         :return: A list of route numbers
         """
 
-        response = self.call(f"/GetPassingRoutes.ashx?s={stop_id}")
+        response = cls.call(f"/GetPassingRoutes.ashx?s={stop_id}")
         return [element["RouteNo"] for element in response]
 
-    def next_trams(self: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
+    @classmethod
+    def next_trams(cls: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
         """
         Returns the details and times of the next trams to depart from the specified stop. The number of results returned can vary, but is usually three entries per destination.
 
@@ -234,7 +239,7 @@ class TramTrackerClient:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         as_of = as_of.astimezone(TZ_MELBOURNE)
         timestamp = round((as_of - EPOCH) / timedelta(milliseconds=1))
-        response = self.call(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}")
+        response = cls.call(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}")
         return [TramDeparture(stop_id=stop_id,
                               trip_id=element["TripID"],
                               route_id=element["InternalRouteNo"],
@@ -256,7 +261,8 @@ class TramTrackerClient:
                               estimated_departure=(EPOCH + timedelta(milliseconds=int(TIMESTAMP_PATTERN.fullmatch(element["PredictedArrivalDateTime"]).group("timestamp")))).astimezone(TZ_MELBOURNE)
                               ) for element in response]
 
-    def get_route_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
+    @classmethod
+    def get_route_colour(cls: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
         """
         Returns the RGB hexadecimal code for the colour of the specified route as printed on public information paraphernalia.
 
@@ -267,10 +273,11 @@ class TramTrackerClient:
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = self.call(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}")
+        response = cls.call(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}")
         return "#" + response["Colour"].lower()
 
-    def get_route_text_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
+    @classmethod
+    def get_route_text_colour(cls: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
         """
         Returns the RGB hexadecimal code for the text font colour on public information paraphernalia if it was written on a background with the route's colour (e.g. the route iconography).
 
@@ -281,5 +288,5 @@ class TramTrackerClient:
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = self.call(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}")
+        response = cls.call(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}")
         return "#" + response["Colour"].lower()
