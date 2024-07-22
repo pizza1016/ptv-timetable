@@ -13,7 +13,6 @@ import re
 import requests
 import urllib.parse
 if platform.system() == "Windows":
-    # noinspection PyUnresolvedReferences
     import tzdata
 
 __all__ = ["APIClient", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
@@ -104,8 +103,8 @@ class PathGeometry(APIData):
 class StopTicket(APIData):
     """Ticketing information for the attached stop."""
 
-    ticket_type: Literal["myki", "paper", "both"]
-    """Whether this stop uses myki ticketing, paper ticketing, or both"""
+    ticket_type: Literal["myki", "paper", "both", ""]
+    """Appears to be deprecated/unused (always returns empty string). Whether this stop uses myki ticketing, paper ticketing, or both"""
     zone: str
     """Description of the ticketing zone"""
     is_free_fare_zone: bool
@@ -113,9 +112,9 @@ class StopTicket(APIData):
     ticket_machine: bool
     """Whether this stop has ticket machines"""
     ticket_checks: bool
-    """"""  # TODO purpose unclear
+    """Meaning is unclear"""
     vline_reservation: bool
-    """"""  # TODO unsure if this is "need reservation to access" or "reservation facilities available here"
+    """Whether a V/Line reservation is required to travel to or from this station or stop; value should not be used for modes other than V/Line"""
     ticket_zones: list[int]
     """Ticketing zone(s) this stop is in"""
 
@@ -136,6 +135,7 @@ class StopContact(APIData):
     feedback: str | None
     """Phone number to provide feedback"""
     lost_property_contact_number: None
+    """Appears to be deprecated/unused (always returns None)"""
 
     @classmethod
     @override
@@ -186,6 +186,7 @@ class StopAmenities(APIData):
     """Amenities at the attached stop."""
 
     seat_type: Literal["", "Shelter"]
+    """Type of seating; empty string if none"""
     pay_phone: bool
     """Whether there is a public telephone at this stop"""
     indoor_waiting_area: bool
@@ -199,18 +200,23 @@ class StopAmenities(APIData):
     bicycle_locker: int
     """Number of bicycle lockers at this stop"""
     luggage_locker: int
+    """Number of luggage lockers at this stop"""
     kiosk: bool
+    """Meaning unclear"""
     seat: str
-    """"""  # TODO - empty string
+    """Appears to be deprecated/unused (always returns empty string)"""
     stairs: str
-    """"""  # TODO - empty string
+    """Appears to be deprecated/unused (always returns empty string)"""
     baby_change_facility: str
+    """Appears to be deprecated/unused (always returns empty string)"""
     parkiteer: None
-    """Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns None). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop; None if not applicable or information unavailable"""
     replacement_bus_stop_location: str
-    """Location of the replacement bus stop"""
+    """Appears to be deprecated/unused (always returns empty string). Location of the replacement bus stop"""
     QTEM: None
+    """Appears to be deprecated/unused (always returns None)"""
     bike_storage: None
+    """Appears to be deprecated/unused (always returns None)"""
     PID: bool
     """Whether there are passenger information displays at this stop"""
     ATM: None
@@ -218,14 +224,15 @@ class StopAmenities(APIData):
     travellers_aid: bool | None
     """Whether Traveller's Aid facilities are available at this stop; None if not applicable"""
     premium_stop: None
+    """Appears to be deprecated/unused (always returns None)"""
     PSOs: None
-    """Whether Protective Services Officers patrol this stop; None if not applicable"""
+    """Appears to be deprecated/unused (always returns None). Whether Protective Services Officers patrol this stop; None if not applicable"""
     melb_bike_share: None
-    """Defunct. Whether there are Melbourne Bike Share bicycle rentals available at this stop; None if not applicable or information unavailable"""
+    """Defunct (scheme no longer exists). Whether there are Melbourne Bike Share bicycle rentals available at this stop; None if not applicable or information unavailable"""
     luggage_storage: None
-    """Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns empty string). Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
     luggage_check_in: None
-    """Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns empty string). Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
     toilet: bool
     """Whether there is a public toilet at or near this stop"""
     taxi_rank: bool
@@ -321,67 +328,67 @@ class StopStaffing(APIData):
     """Staffing hours for the attached stop"""
 
     mon_am_from: str
-    """Monday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Monday morning staffing hours start time"""
     mon_am_to: str
-    """Monday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Monday morning staffing hours end time"""
     mon_pm_from: str
-    """Monday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Monday evening staffing hours start time"""
     mon_pm_to: str
-    """Monday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Monday evening staffing hours end time"""
     tue_am_from: str
-    """Tuesday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Tuesday morning staffing hours start time"""
     tue_am_to: str
-    """Tuesday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Tuesday morning staffing hours end time"""
     tue_pm_from: str
-    """Tuesday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Tuesday evening staffing hours start time"""
     tue_pm_to: str
-    """Tuesday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Tuesday evening staffing hours end time"""
     wed_am_from: str
-    """Wednesday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Wednesday morning staffing hours start time"""
     wed_am_to: str
-    """Wednesday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Wednesday morning staffing hours end time"""
     wed_pm_from: str
-    """Wednesday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Wednesday evening staffing hours start time"""
     wed_pm_to: str
-    """Wednesday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Wednesday evening staffing hours end time"""
     thu_am_from: str
-    """Thursday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Thursday morning staffing hours start time"""
     thu_am_to: str
-    """Thursday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Thursday morning staffing hours end time"""
     thu_pm_from: str
-    """Thursday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Thursday evening staffing hours start time"""
     thu_pm_to: str
-    """Thursday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Thursday evening staffing hours end time"""
     fri_am_from: str
-    """Friday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Friday morning staffing hours start time"""
     fri_am_to: str
-    """Friday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Friday morning staffing hours end time"""
     fri_pm_from: str
-    """Friday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Friday evening staffing hours start time"""
     fri_pm_to: str
-    """Friday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Friday evening staffing hours end time"""
     sat_am_from: str
-    """Saturday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Saturday morning staffing hours start time"""
     sat_am_to: str
-    """Saturday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Saturday morning staffing hours end time"""
     sat_pm_from: str
-    """Saturday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Saturday evening staffing hours start time"""
     sat_pm_to: str
-    """Saturday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Saturday evening staffing hours end time"""
     sun_am_from: str
-    """Sunday morning staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Sunday morning staffing hours start time"""
     sun_am_to: str
-    """Sunday morning staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Sunday morning staffing hours end time"""
     sun_pm_from: str
-    """Sunday evening staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Sunday evening staffing hours start time"""
     sun_pm_to: str
-    """Sunday evening staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Sunday evening staffing hours end time"""
     ph_from: str
-    """Public holiday staffing hours start time"""
+    """Appears to be deprecated/unused (always returns empty string). Public holiday staffing hours start time"""
     ph_to: str
-    """Public holiday staffing hours end time"""
+    """Appears to be deprecated/unused (always returns empty string). Public holiday staffing hours end time"""
     ph_additional_text: str
-    """Additional details about staffing on public holidays"""
+    """Appears to be deprecated/unused (always returns empty string). Additional details about staffing on public holidays"""
 
     @classmethod
     @override
@@ -464,7 +471,7 @@ class Stop(APIData):
 
     # From /v3/stops/...
     point_id: int | None = None
-    """Identifier of this stop in the PTV static timetable dump; None if the API operation doesn't use this field"""  # TODO: presumably
+    """Identifier of this stop in the PTV static timetable dump; None if the API operation doesn't use this field"""
     disruption_ids: list[int] | None = None
     """Current or future disruptions affecting this stop; None if the API operation doesn't use this field"""
     routes: list[Route] | None = None
@@ -472,11 +479,11 @@ class Stop(APIData):
     operating_hours: str | None = None
     """Description of railway station opening hours; None if the API operation doesn't use this field"""
     mode_id: int | None = None
-    """"""  # TODO
+    """Purpose unclear; appears to correspond to disruption modes, which is not currently implemented in this module as it duplicates the purpose of RouteType"""
     station_details_id: int | None = None
-    """"""  # TODO
+    """Appears to be deprecated/unused (always returns 0)"""
     flexible_stop_opening_hours: str | None = None
-    """"""  # TODO - empty string
+    """Appears to be deprecated/unused (always returns empty string)"""
     stop_contact: StopContact | None = None
     """Operator contact information for this stop; None if not requested from API"""
     stop_location: StopLocation | None = None
@@ -487,8 +494,8 @@ class Stop(APIData):
     """Information about accessibility features available at this stop; None if not requested from API"""
     stop_staffing: StopStaffing | None = None
     """Staffing information for this stop; None if not requested from API"""
-    station_type: str | None = None
-    """"""  # TODO
+    station_type: Literal["Premium Station", "Host Station", "Unstaffed Station"] | None = None
+    """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes or if the API operation doesn't use this field"""
     station_description: str | None = None
     """Additional information about this stop"""
 
@@ -538,6 +545,10 @@ class Departure(APIData):
     skipped_stops: list[Stop] | None = None
     """After departing from this stop, a sequence of stops that are skipped prior to arriving at the next departure point"""
 
+    # Undocumented
+    departure_note: str | None
+    """Notes about this departure (appears to be used to indicate whether a metropolitan train service runs via the City Loop or not)"""
+
     @classmethod
     @override
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
@@ -553,14 +564,15 @@ class VehiclePosition(APIData):
     """Represents the position of the attached vehicle."""
 
     latitude: float | None
-    """Latitude coordinate of the vehicle's position for buses; None if this information is unavailable"""
+    """Latitude coordinate of the vehicle's position; None if this information is unavailable"""
     longitude: float | None
-    """Longitude coordinate of the vehicle's position for buses; None if this information is unavailable"""
+    """Longitude coordinate of the vehicle's position; None if this information is unavailable"""
     easting: float | None
-    """Latitude coordinate of the vehicle's position for metropolitan trains; None if this information is unavailable"""
+    """Easting of the vehicle's position in the easting-northing system; None if this information is unavailable"""
     northing: float | None
-    """Longitude coordinate of the vehicle's position for metropolitan trains; None if this information is unavailable"""
-    direction: str  # TODO
+    """Northing of the vehicle's position easting-northing system; None if this information is unavailable"""
+    direction: str
+    """Description of the direction of travel (e.g. "inbound", "outbound")"""
     bearing: float | None
     """Vehicle's current direction of travel in degrees clockwise from geographic north; None if this information is unavailable"""
     supplier: str
@@ -615,9 +627,9 @@ class Run(APIData):
     """Identifier of the travel mode of this run"""
     final_stop_id: int
     """Identifier of the terminating stop of this run"""
-    destination_name: str
-    """Public-facing destination name of this run"""
-    status: str
+    destination_name: str | None
+    """Public-facing destination name of this run; sometimes returns None (unclear why)"""
+    status: Literal["scheduled", "updated"]
     """Status of this metropolitan train service; "scheduled" for all other modes"""
     direction_id: int
     """Identifier of the direction of travel of this run"""
@@ -634,11 +646,17 @@ class Run(APIData):
     interchange: dict | None
     """Indicates, if any, the run this service will operate after terminating; None if this information was not requested from the API"""
 
+    # Undocumented
+    run_note: str | None
+    """Notes about this run"""
+
     @classmethod
     @override
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         kwargs.pop("run_id")
-        destination_name = kwargs.pop("destination_name").strip()
+        destination_name = kwargs.pop("destination_name")
+        if destination_name is not None:
+            destination_name = destination_name.strip()
         geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         vehicle_position = VehiclePosition.load(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
         vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
@@ -653,8 +671,8 @@ class Direction(APIData):
     """Identifier for direction of travel"""
     direction_name: str
     """Name of direction of travel"""
-    route_direction_description: str
-    """Detailed description of this direction of travel along this route, as publicly displayed on the PTV website"""
+    route_direction_description: str | None = None
+    """Detailed description of this direction of travel along this route, as publicly displayed on the PTV website; not returned by the Departures API"""
     route_id: int
     """Identifier for the route specified by this direction of travel"""
     route_type: int
@@ -1113,7 +1131,7 @@ class APIClient:
         :param run_ref: The run identifier
         :param route_type: The run's travel mode identifier
         :param stop_id: Include only the stop with the specified stop ID
-        :param date: TODO
+        :param date: Doesn't appear to have any effect on the response
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is ``False``)
         :param expand: Optional data to include in the response (server default is ``EXPAND_DISRUPTION``)
         :param include_geopath: Include the pattern's path geometry (server default is ``False``)
@@ -1127,7 +1145,7 @@ class APIClient:
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat(), "include_skipped_stops", include_skipped_stops, "expand", expand, "include_geopath", include_geopath, s=req)
+        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "include_skipped_stops", include_skipped_stops, "expand", expand, "include_geopath", include_geopath, s=req)
 
         res = self.call(req)
         return StoppingPattern.load(**res)
