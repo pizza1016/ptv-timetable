@@ -67,8 +67,8 @@ The goal of this package is to provide a documented and easy-to-use interface (A
 
 ## Contributing
 
-All constructive contributions are welcome!
+All constructive contributions are welcome! By contributing, you agree to license your contributions under the Apache Licence 2.0.
 
 ## Copyright and licensing
 
-This project's source code is licensed under the Apache Licence 2.0; however, data obtained from the API themselves via these modules are licensed separately: PTV Timetable API data are under a Creative Commons Attribution 4.0 International licence and TramTracker data is proprietary. See the LICENCE.md document for further information.
+This project's source code is licensed under the Apache Licence 2.0; however, data obtained from the API themselves via these modules are licensed separately: PTV Timetable API data are under a Creative Commons Attribution 4.0 International licence and TramTracker data is proprietary. See [LICENCE.md](https://gitlab.com/pizza1016/ptv-timetable/-/blob/trunk/LICENCE.md) for further information.

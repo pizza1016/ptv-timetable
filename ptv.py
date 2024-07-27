@@ -1019,7 +1019,7 @@ class TimetableAPI:
     """Interface class with the PTV Timetable API."""
 
     def __init__(self: Self, dev_id: str | int, key: str) -> None:
-        """Initialises a PTVAPI instance with the supplied credentials.
+        """Initialises a new PTVAPI instance with the supplied credentials.
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
@@ -1035,7 +1035,10 @@ class TimetableAPI:
             raise ValueError(f"key is not a UUID string: {key}")
 
         self._dev_id: Final[str] = str(dev_id)
+        """API user ID"""
         self._key: Final[bytes] = key.encode(encoding="ascii")
+        """API request signing key"""
+
         logger.info("PTVAPI instance created")
         return
 
