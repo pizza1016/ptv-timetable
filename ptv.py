@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from typing import Final, Literal, overload, override, Self
+from typing import cast, Final, Literal, overload, override, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -15,7 +15,7 @@ import urllib.parse
 if platform.system() == "Windows":
     import tzdata
 
-__all__ = ["APIClient", "MET_TRAIN", "METRO", "TRAM", "BUS", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
+__all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
 type _Values = str | int | float | bool | datetime | _Record
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
@@ -24,55 +24,64 @@ type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruptio
 type RouteType = Literal[0, 1, 2, 3]
 
 TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
+"""Time zone of Victoria"""
 UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
+"""Regular expression for a universally unique identifier"""
 
+METROPOLITAN_TRAIN: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
+METRO_TRAIN: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
 MET_TRAIN: Literal[0] = 0
-"""Metropolitan trains"""
+"""Metropolitan trains. For use in `route_type` parameters"""
 METRO: Literal[0] = 0
-"""Metropolitan trains"""
+"""Metropolitan trains. For use in `route_type` parameters"""
 TRAM: Literal[1] = 1
-"""Metropolitan trams"""
+"""Metropolitan trams. For use in `route_type` parameters"""
 BUS: Literal[2] = 2
-"""Metropolitan & regional buses"""
+"""Metropolitan & regional buses. For use in `route_type` parameters"""
+REGIONAL_TRAIN: Literal[3] = 3
+"""Regional trains & coaches. For use in `route_type` parameters"""
 REG_TRAIN: Literal[3] = 3
-"""Regional trains & coaches"""
+"""Regional trains & coaches. For use in `route_type` parameters"""
 COACH: Literal[3] = 3
-"""Regional trains & coaches"""
+"""Regional trains & coaches. For use in `route_type` parameters"""
 VLINE: Literal[3] = 3
-"""Regional trains & coaches"""
+"""Regional trains & coaches. For use in `route_type` parameters"""
 
 EXPAND_ALL: Literal["All"] = "All"
-"""Return all object properties in full"""
+"""Return all object properties in full. For use in `expand` parameters"""
 EXPAND_STOP: Literal["Stop"] = "Stop"
-"""Return stop properties"""
+"""Return stop properties. For use in `expand` parameters"""
 EXPAND_ROUTE: Literal["Route"] = "Route"
-"""Return route properties"""
+"""Return route properties. For use in `expand` parameters"""
 EXPAND_RUN: Literal["Run"] = "Run"
-"""Return run properties"""
+"""Return run properties. For use in `expand` parameters"""
 EXPAND_DIRECTION: Literal["Direction"] = "Direction"
-"""Return direction properties"""
+"""Return direction properties. For use in `expand` parameters"""
 EXPAND_DISRUPTION: Literal["Disruption"] = "Disruption"
-"""Return disruption properties"""
+"""Return disruption properties. For use in `expand` parameters"""
 EXPAND_VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
-"""Return vehicle descriptor properties"""
+"""Return vehicle descriptor properties. For use in `expand` parameters"""
 EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
-"""Return vehicle position properties"""
+"""Return vehicle position properties. For use in `expand` parameters"""
 EXPAND_NONE: Literal["None"] = "None"
-"""Don't return any object properties"""
+"""Don't return any object properties. For use in `expand` parameters"""
 
 logger = logging.getLogger("ptv")
+"""Logger for this module"""
 logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.FileHandler("ptv.log", encoding="utf-8"))
+logger.addHandler(logging.NullHandler())
 
 
 @dataclass(kw_only=True)
-class APIData(metaclass=ABCMeta):
+class TimetableData(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         """
-        Constructs a new instance of this ``APIData`` subclass by converting the specified API response data.
+        Constructs a new instance of this ``PTVData`` subclass by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return: The newly constructed instance
@@ -80,8 +89,8 @@ class APIData(metaclass=ABCMeta):
         ...
 
 
-@dataclass(kw_only=True)
-class PathGeometry(APIData):
+@dataclass(kw_only=True, slots=True)
+class PathGeometry(TimetableData):
     """Represents the physical geometry of the attached route or run."""
 
     direction_id: int
@@ -99,8 +108,8 @@ class PathGeometry(APIData):
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True)
-class StopTicket(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopTicket(TimetableData):
     """Ticketing information for the attached stop."""
 
     ticket_type: Literal["myki", "paper", "both", ""]
@@ -124,8 +133,8 @@ class StopTicket(APIData):
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True)
-class StopContact(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopContact(TimetableData):
     """Operator contact details for the attached stop."""
 
     phone: str | None
@@ -143,8 +152,8 @@ class StopContact(APIData):
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True)
-class StopLocation(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopLocation(TimetableData):
     """Location details for the attached stop."""
 
     postcode: int
@@ -181,8 +190,8 @@ class StopLocation(APIData):
         return cls(bay_number=bay_number, locality=locality, latitude=latitude, longitude=longitude, **kwargs)
 
 
-@dataclass(kw_only=True)
-class StopAmenities(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopAmenities(TimetableData):
     """Amenities at the attached stop."""
 
     seat_type: Literal["", "Shelter"]
@@ -254,8 +263,8 @@ class StopAmenities(APIData):
         return cls(replacement_bus_stop_location=replacement_bus_stop_location, car_parking=car_parking, **kwargs)
 
 
-@dataclass(kw_only=True)
-class Wheelchair(APIData):
+@dataclass(kw_only=True, slots=True)
+class Wheelchair(TimetableData):
     """Wheelchair accessibility information for the attached stop."""
 
     accessible_ramp: bool
@@ -289,8 +298,8 @@ class Wheelchair(APIData):
         return cls(manoeuvring=manoeuvring, raised_platform_shelter=raised_platform_shelter, **kwargs)
 
 
-@dataclass(kw_only=True)
-class StopAccessibility(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopAccessibility(TimetableData):
     """Accessibility information for the attached stop."""
 
     platform_number: int | None
@@ -323,8 +332,8 @@ class StopAccessibility(APIData):
         return cls(wheelchair=Wheelchair.load(**wheelchair), **kwargs)
 
 
-@dataclass(kw_only=True)
-class StopStaffing(APIData):
+@dataclass(kw_only=True, slots=True)
+class StopStaffing(TimetableData):
     """Staffing hours for the attached stop"""
 
     mon_am_from: str
@@ -397,8 +406,8 @@ class StopStaffing(APIData):
         return cls(wed_pm_to=wed_pm_to, **kwargs)
 
 
-@dataclass(kw_only=True)
-class Route(APIData):
+@dataclass(kw_only=True, slots=True)
+class Route(TimetableData):
     """Represents a route on the network."""
 
     route_id: int
@@ -444,8 +453,8 @@ class Route(APIData):
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
 
-@dataclass(kw_only=True)
-class Stop(APIData):
+@dataclass(kw_only=True, slots=True)
+class Stop(TimetableData):
     """Represents a particular transport stop."""
 
     stop_id: int
@@ -514,8 +523,8 @@ class Stop(APIData):
         return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
 
-@dataclass(kw_only=True)
-class Departure(APIData):
+@dataclass(kw_only=True, slots=True)
+class Departure(TimetableData):
     """Represents a specific departure from a specific stop."""
 
     stop_id: int
@@ -559,8 +568,8 @@ class Departure(APIData):
         return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
 
-@dataclass(kw_only=True)
-class VehiclePosition(APIData):
+@dataclass(kw_only=True, slots=True)
+class VehiclePosition(TimetableData):
     """Represents the position of the attached vehicle."""
 
     latitude: float | None
@@ -590,8 +599,8 @@ class VehiclePosition(APIData):
         return cls(as_of=as_of, expires=expires, **kwargs)
 
 
-@dataclass(kw_only=True)
-class VehicleDescriptor(APIData):
+@dataclass(kw_only=True, slots=True)
+class VehicleDescriptor(TimetableData):
     """Describes information about a vehicle on a run."""
 
     operator: str | None
@@ -615,8 +624,8 @@ class VehicleDescriptor(APIData):
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True)
-class Run(APIData):
+@dataclass(kw_only=True, slots=True)
+class Run(TimetableData):
     """Represents a particular run or service along a route."""
 
     run_ref: str
@@ -663,8 +672,8 @@ class Run(APIData):
         return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
 
 
-@dataclass(kw_only=True)
-class Direction(APIData):
+@dataclass(kw_only=True, slots=True)
+class Direction(TimetableData):
     """Represents a direction of travel on a particular route."""
 
     direction_id: int
@@ -684,8 +693,8 @@ class Direction(APIData):
         return cls(**kwargs)
 
 
-@dataclass(kw_only=True)
-class Disruption(APIData):
+@dataclass(kw_only=True, slots=True)
+class Disruption(TimetableData):
     """Represents a service disruption."""
 
     disruption_id: int
@@ -731,8 +740,8 @@ class Disruption(APIData):
         return cls(published_on=published_on, last_updated=last_updated, from_date=from_date, to_date=to_date, routes=routes, stops=stops, **kwargs)
 
 
-@dataclass(kw_only=True)
-class StoppingPattern(APIData):
+@dataclass(kw_only=True, slots=True)
+class StoppingPattern(TimetableData):
     """Represents a stopping pattern for a particular run. Sequence specified in departures field."""
 
     disruptions: list[Disruption]
@@ -760,8 +769,8 @@ class StoppingPattern(APIData):
         return cls(disruptions=disruptions, departures=departures, stops=stops, routes=routes, runs=runs, directions=directions)
 
 
-@dataclass(kw_only=True)
-class DeparturesResponse(APIData):
+@dataclass(kw_only=True, slots=True)
+class DeparturesResponse(TimetableData):
     """Response from the departures API request; also contains any relevant route, service and stop details."""
 
     departures: list[Departure]
@@ -790,8 +799,8 @@ class DeparturesResponse(APIData):
         return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
 
 
-@dataclass(kw_only=True)
-class Outlet(APIData):
+@dataclass(kw_only=True, slots=True)
+class Outlet(TimetableData):
     """Represents a ticket outlet."""
 
     outlet_slid_spid: str
@@ -836,8 +845,8 @@ class Outlet(APIData):
         return cls(street_address=street_address, locality=locality, outlet_business_hour_thu=outlet_business_hour_thu, **kwargs)
 
 
-@dataclass(kw_only=True)
-class FareEstimate(APIData):
+@dataclass(kw_only=True, slots=True)
+class FareEstimate(TimetableData):
     """Fare estimate for the specified travel. All fares in AUD."""
 
     early_bird_travel: bool
@@ -985,8 +994,8 @@ class FareEstimate(APIData):
         return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, weekend=weekend, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days, **kwargs)
 
 
-@dataclass(kw_only=True)
-class SearchResult(APIData):
+@dataclass(kw_only=True, slots=True)
+class SearchResult(TimetableData):
     """Response from an API search request."""
 
     stops: list[Stop]
@@ -1006,31 +1015,44 @@ class SearchResult(APIData):
         return cls(stops=stops, routes=routes, outlets=outlets)
 
 
-class APIClient:
+class TimetableAPI:
     """Interface class with the PTV Timetable API."""
 
     def __init__(self: Self, dev_id: str | int, key: str) -> None:
-        """Initialises a PTVInterface instance with the supplied credentials.
+        """Initialises a PTVAPI instance with the supplied credentials.
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
         :return: ``None``
         """
         
-        if not isinstance(dev_id, (str, int)):
-            raise TypeError(f"devID must be type str or int ({type(dev_id)} provided)")
-        elif not isinstance(key, str):
-            raise TypeError(f"key must be type str ({type(key)} provided)")
+        if type(dev_id) not in (str, int):
+            raise TypeError(f"devID must be str or int, not {type(dev_id).__name__}")
+        elif type(key) is not str:
+            raise TypeError(f"key must be str, not {type(key).__name__}")
 
         if UUID_PATTERN.fullmatch(key) is None:
-            raise ValueError(f"Key is not a UUID string: {key}")
+            raise ValueError(f"key is not a UUID string: {key}")
 
-        self._devID: Final[str] = str(dev_id)
+        self._dev_id: Final[str] = str(dev_id)
         self._key: Final[bytes] = key.encode(encoding="ascii")
+        logger.info("PTVAPI instance created")
+        return
+
+    def __del__(self: Self) -> None:
+        """
+        Logs the prospective deletion of an instance into the module logger.
+
+        Note that Python does not guarantee that this will be called for any instance.
+
+        :return: ``None``
+        """
+
+        logger.info("PTVAPI instance deleted")
         return
 
     @staticmethod
-    def build_arg_string(*params: tuple[str, str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None] | str | int | ExpandType | RouteType | Iterable[str | int | ExpandType | RouteType] | None, s: str = "") -> str:
+    def build_arg_string(*params: tuple[str, str | int | bool | Iterable[str | int] | None] | str | int | bool | Iterable[str | int] | None, s: str = "") -> str:
         """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are ``Iterable``. Ignores values that are ``None``.
 
         :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
@@ -1041,31 +1063,39 @@ class APIClient:
         i = 0
         while i < len(params):
             if isinstance(params[i], tuple):
-                if isinstance(params[i][1], str | int):
+                if isinstance(params[i][1], str) or type(params[i][1]) is int:
                     s += f"{"&" if "?" in s else "?"}{params[i][0]}={params[i][1]}"
-                elif isinstance(params[i][1], bool):
+                elif type(params[i][1]) is bool:
                     s += f"{"&" if "?" in s else "?"}{params[i][0]}={"true" if params[i][1] else "false"}"
                 elif isinstance(params[i][1], Iterable):
                     for value in params[i][1]:
-                        s += f"{"&" if "?" in s else "?"}{params[i][0]}={value}"
+                        if isinstance(value, str) or type(value) is int:
+                            s += f"{"&" if "?" in s else "?"}{params[i][0]}={value}"
+                        else:
+                            raise TypeError(f"second element of argument {i} ({params[i]}) contains values that are neither str nor int")
                 elif params[i][1] is not None:
-                    raise TypeError(f"Argument {i} ({params[i]}) contains unsupported types")
+                    raise TypeError(f"second element of argument {i} ({params[i]}) must be str, int, bool or Iterable[str | int], not {type(params[i]).__name__}")
                 i += 1
+
             elif isinstance(params[i], str):
                 if i + 1 >= len(params):
-                    raise ValueError(f"Not enough arguments provided (missing value for {params[i]})")
-                elif isinstance(params[i + 1], str | int):
+                    raise ValueError(f"not enough arguments provided (missing value for {params[i]})")
+                elif isinstance(params[i + 1], str) or type(params[i + 1]) is int:
                     s += f"{"&" if "?" in s else "?"}{params[i]}={params[i + 1]}"
-                elif isinstance(params[i + 1], bool):
+                elif type(params[i + 1]) is bool:
                     s += f"{"&" if "?" in s else "?"}{params[i]}={"true" if params[i + 1] else "false"}"
                 elif isinstance(params[i + 1], Iterable):
                     for value in params[i + 1]:
-                        s += f"{"&" if "?" in s else "?"}{params[i]}={value}"
+                        if isinstance(value, str) or type(value) is int:
+                            s += f"{"&" if "?" in s else "?"}{params[i]}={value}"
+                        else:
+                            raise TypeError(f"argument {i + 1} ({params[i + 1]}) contains values that are neither str nor int")
                 elif params[i + 1] is not None:
-                    raise TypeError(f"Argument {i + 1} ({params[i + 1]}) is not str, int or Iterable[str | int]")
+                    raise TypeError(f"argument {i + 1} ({params[i + 1]}) must be str, int, bool or Iterable[str | int], not {type(params[i + 1]).__name__}")
                 i += 2
+
             else:
-                raise TypeError(f"Argument {i} ({params[i]}) is not tuple or str")
+                raise TypeError(f"argument {i} ({params[i]}) is not tuple or str")
 
         return s
 
@@ -1079,11 +1109,15 @@ class APIClient:
         """
 
         url = self._encode_url(request)
-        logger.debug(url)
+        logger.debug("Requesting from: " + url)
         r = requests.get(url)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except Exception:
+            logger.error("", exc_info=True)
+            raise
         result = r.json()
-        logger.debug(str(result))
+        logger.debug("Response: " + str(result))
         return result
     
     def _encode_url(self: Self, request: str) -> str:
@@ -1093,7 +1127,7 @@ class APIClient:
         :return: API request URL
         """
 
-        raw = f"{request}{"&" if "?" in request else "?"}devid={self._devID}"
+        raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
         signature = HMAC(key=self._key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
 
@@ -1155,7 +1189,7 @@ class APIClient:
 
         :param route_id: The route identifier
         :param include_geopath: Include the route's path geometry (server default is ``False``)
-        :param geopath_date: Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if ``str``). Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :param geopath_date: Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if ``str``). Defaults to current server time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :return: Details of the specified route
         """
 
@@ -1178,17 +1212,17 @@ class APIClient:
         req = self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes")
         return [Route.load(**item) for item in self.call(req)["routes"]]
 
-    def list_route_types(self: Self) -> list[dict[str, str | int]]:
+    def list_route_types(self: Self) -> list[dict[Literal["route_type_name", "route_type"], str | int]]:
         """Returns the names and identifiers of all route types.
 
-        Returned records contain these fields:
+        The returned dicts contain these items:
         "route_type_name" (str): Name of the route type
         "route_type" (int): Value representing the route type
 
         :return: A list of records containing the aforementioned fields
         """
 
-        return self.call("/v3/route_types")["route_types"]
+        return cast(list[dict[Literal["route_type_name", "route_type"], str | int]], self.call("/v3/route_types")["route_types"])
 
     def get_run(self: Self,
                 run_ref: str,
@@ -1660,8 +1694,8 @@ class APIClient:
         """
         Returns a list of all myki ticket outlets or, if specified, near the specified location.
 
-        :param latitude: If specified together with longitude, return ticket outlets near the specified location only
-        :param longitude: If specified together with latitude, return ticket outlets near the specified location only
+        :param latitude: If specified together with ``longitude``, return ticket outlets near the specified location only
+        :param longitude: If specified together with ``latitude``, return ticket outlets near the specified location only
         :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
         :param max_results: Maximum number of outlets to be returned (server default is 30)
         :return: A list of ticket outlets
@@ -1683,19 +1717,6 @@ class APIClient:
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ):
-        """
-        Searches the PTV database for the specified search term and returns the matching stops, routes and ticket outlets.
-
-        If the search term is numeric or has fewer than 3 characters, the API will only return routes.
-
-        :param search_term: Term to search
-        :param route_types: Return stops and routes with the specified travel mode type(s) only
-        :param include_outlets: Whether to include ticket outlets in search result (server default is True)
-        :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
-        :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
-        :return: All matching stops, routes and ticket outlets
-        """
         ...
 
     @overload
@@ -1710,21 +1731,6 @@ class APIClient:
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ):
-        """
-        Searches the PTV database for the specified search term and returns the matching stops, routes and ticket outlets.
-
-        If the search term is numeric or has fewer than 3 characters, the API will only return routes.
-
-        :param search_term: Term to search
-        :param latitude: Latitude coordinate of the location to search
-        :param longitude: Longitude coordinate of the location to search
-        :param max_distance: Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
-        :param include_outlets: Whether to include ticket outlets in search result (server default is True)
-        :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
-        :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
-        :return: All matching stops, routes and ticket outlets
-        """
         ...
 
     @overload
@@ -1739,22 +1745,6 @@ class APIClient:
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ):
-        """
-        Searches the PTV database for the specified search term and returns the matching stops, routes and ticket outlets.
-
-        If the search term is numeric or has fewer than 3 characters, the API will only return routes.
-
-        :param search_term: Term to search
-        :param route_types: Return stops and routes with the specified travel mode type(s) only
-        :param latitude: Latitude coordinate of the location to search
-        :param longitude: Longitude coordinate of the location to search
-        :param max_distance: Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
-        :param include_outlets: Whether to include ticket outlets in search result (server default is True)
-        :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is True)
-        :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is True)
-        :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
-        :return: All matching stops, routes and ticket outlets
-        """
         ...
 
     def search(self: Self,
@@ -1764,8 +1754,8 @@ class APIClient:
                longitude: float | None = None,
                max_distance: float | None = None,
                include_outlets: bool | None = None,
-               match_stop_by_suburb: bool | None = None,
-               match_route_by_suburb: bool | None = None,
+               match_stop_by_locality: bool | None = None,
+               match_route_by_locality: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ) -> SearchResult:
         """
@@ -1779,14 +1769,14 @@ class APIClient:
         :param longitude: Longitude coordinate of the location to search
         :param max_distance: Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
         :param include_outlets: Whether to include ticket outlets in search result (server default is True)
-        :param match_stop_by_suburb: Whether to include stops in the search result where their localities match the search term (server default is ``True``)
-        :param match_route_by_suburb: Whether to include routes in the search result where their localities match the search term (server default is ``True``)
+        :param match_stop_by_locality: Whether to include stops in the search result where their localities match the search term (server default is ``True``)
+        :param match_route_by_locality: Whether to include routes in the search result where their localities match the search term (server default is ``True``)
         :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
         :return: All matching stops, routes and ticket outlets
         """
 
         req = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"
-        req = self.build_arg_string("route_types", route_types, "latitude", latitude, "longitude", longitude, "max_distance", max_distance, "include_outlets", include_outlets, "match_stop_by_suburb", match_stop_by_suburb, "match_route_by_suburb", match_route_by_suburb, "match_stop_by_gtfs_stop_id", match_stop_by_gtfs_stop_id, s=req)
+        req = self.build_arg_string("route_types", route_types, "latitude", latitude, "longitude", longitude, "max_distance", max_distance, "include_outlets", include_outlets, "match_stop_by_suburb", match_stop_by_locality, "match_route_by_suburb", match_route_by_locality, "match_stop_by_gtfs_stop_id", match_stop_by_gtfs_stop_id, s=req)
 
         res = self.call(req)
         return SearchResult.load(**res)

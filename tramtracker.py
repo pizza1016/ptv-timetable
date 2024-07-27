@@ -10,13 +10,19 @@ import requests
 if platform.system() == "Windows":
     import tzdata
 
+__all__ = ["TramTrackerService"]
+
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+"""datetime representation of the Unix epoch"""
 TIMESTAMP_PATTERN = re.compile(r"/Date\((?P<timestamp>[0-9]+)[+-][0-9]{4}\)/")
+"""Regular expression for the response value of timestamps from the data service"""
 TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
+"""Time zone of Victoria"""
 
 logger = logging.getLogger("tramtracker")
+"""Logger for this module"""
 logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.FileHandler("tramtracker.log", encoding="utf-8"))
+logger.addHandler(logging.NullHandler())
 
 
 class TramTrackerError(OSError):
@@ -38,7 +44,7 @@ class TramTrackerError(OSError):
         return
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class TramDeparture:
     """Represents a tram departure from a particular stop."""
 
@@ -82,7 +88,7 @@ class TramDeparture:
     """Estimated real-time departure time of this service from this stop"""
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class TramDestination:
     """Represents a destination of a tram route."""
 
@@ -98,7 +104,7 @@ class TramDestination:
     """Whether low-floor trams service this route (either fully or partially)"""
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class TramStop:
     """Represents a tram stop."""
 
@@ -124,7 +130,7 @@ class TramStop:
     """Descriptor of the direction of travel for this stop (e.g. towards or away from city)"""
 
 
-class TramTrackerClient:
+class TramTrackerService:
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
     @classmethod
@@ -139,15 +145,23 @@ class TramTrackerClient:
         """
 
         url = f"http://tramtracker.com.au/Controllers{request}"
-        logger.debug(url)
+        logger.debug("Requesting from: " + url)
         r = requests.get(url)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except Exception:
+            logger.error("", exc_info=True)
+            raise
         result = r.json()
-        logger.debug(str(result))
+        logger.debug("Response: " + str(result))
 
-        if ("HasError" in result and result["HasError"]) or ("hasError" in result and result["hasError"]):
-            raise TramTrackerError(result["ResponseString"] if "ResponseString" in result else result["errorMessage"])
-        assert ("ResponseObject" in result and result["ResponseObject"] is not None) or ("responseObject" in result and result["responseObject"] is not None)
+        try:
+            if ("HasError" in result and result["HasError"]) or ("hasError" in result and result["hasError"]):
+                raise TramTrackerError(result["ResponseString"] if "ResponseString" in result else result["errorMessage"])
+            assert ("ResponseObject" in result and result["ResponseObject"] is not None) or ("responseObject" in result and result["responseObject"] is not None)
+        except Exception:
+            logger.error("", exc_info=True)
+            raise
 
         return result["ResponseObject"] if "ResponseObject" in result else result["responseObject"]
 
