@@ -20,7 +20,7 @@ maintainers = [
 description = "Python API wrappers to interact with the Public Transport Victoria Timetable API and Yarra Trams TramTracker service"
 readme = "README.md"
 license = {file = "LICENCE.md"}
-keywords = ["public transport", "transport", "transportation", "melbourne", "victoria", "australia", "ptv", "public transport victoria", "yarra trams", "library", "api wrapper"]
+keywords = ["public transport", "transportation", "melbourne", "victoria", "australia", "ptv", "public transport victoria", "yarra trams", "library", "api wrapper"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
