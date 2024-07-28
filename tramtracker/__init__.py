@@ -19,10 +19,10 @@ TIMESTAMP_PATTERN = re.compile(r"/Date\((?P<timestamp>[0-9]+)[+-][0-9]{4}\)/")
 TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
 
-logger = logging.getLogger("tramtracker")
+_logger = logging.getLogger("ptv-timetable.tramtracker")
 """Logger for this module"""
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.NullHandler())
+_logger.setLevel(logging.DEBUG)
+_logger.addHandler(logging.NullHandler())
 
 
 class TramTrackerError(OSError):
@@ -145,22 +145,22 @@ class TramTrackerService:
         """
 
         url = f"http://tramtracker.com.au/Controllers{request}"
-        logger.debug("Requesting from: " + url)
+        _logger.debug("Requesting from: " + url)
         r = requests.get(url)
         try:
             r.raise_for_status()
         except Exception:
-            logger.error("", exc_info=True)
+            _logger.error("", exc_info=True)
             raise
         result = r.json()
-        logger.debug("Response: " + str(result))
+        _logger.debug("Response: " + str(result))
 
         try:
             if ("HasError" in result and result["HasError"]) or ("hasError" in result and result["hasError"]):
                 raise TramTrackerError(result["ResponseString"] if "ResponseString" in result else result["errorMessage"])
             assert ("ResponseObject" in result and result["ResponseObject"] is not None) or ("responseObject" in result and result["responseObject"] is not None)
         except Exception:
-            logger.error("", exc_info=True)
+            _logger.error("", exc_info=True)
             raise
 
         return result["ResponseObject"] if "ResponseObject" in result else result["responseObject"]
