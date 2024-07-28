@@ -68,10 +68,10 @@ EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties. For use in `expand` parameters"""
 
-logger = logging.getLogger("ptv")
+_logger = logging.getLogger("ptv-timetable.ptv_timetable")
 """Logger for this module"""
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.NullHandler())
+_logger.setLevel(logging.DEBUG)
+_logger.addHandler(logging.NullHandler())
 
 
 @dataclass(kw_only=True)
@@ -1039,7 +1039,7 @@ class TimetableAPI:
         self._key: Final[bytes] = key.encode(encoding="ascii")
         """API request signing key"""
 
-        logger.info("PTVAPI instance created")
+        _logger.info("PTVAPI instance created")
         return
 
     def __del__(self: Self) -> None:
@@ -1051,7 +1051,7 @@ class TimetableAPI:
         :return: ``None``
         """
 
-        logger.info("PTVAPI instance deleted")
+        _logger.info("PTVAPI instance deleted")
         return
 
     @staticmethod
@@ -1112,15 +1112,15 @@ class TimetableAPI:
         """
 
         url = self._encode_url(request)
-        logger.debug("Requesting from: " + url)
+        _logger.debug("Requesting from: " + url)
         r = requests.get(url)
         try:
             r.raise_for_status()
         except Exception:
-            logger.error("", exc_info=True)
+            _logger.error("", exc_info=True)
             raise
         result = r.json()
-        logger.debug("Response: " + str(result))
+        _logger.debug("Response: " + str(result))
         return result
     
     def _encode_url(self: Self, request: str) -> str:
