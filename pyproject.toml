@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools >= 71.1.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ptv-timetable"
+version = "0.1.0"
+dependencies = [
+    "ratelimit >= 2.2.1",
+    "requests >= 2.32.3",
+    "tzdata >= 2024.1; platform_system == 'Windows'"
+]
+requires-python = ">= 3.12"
+authors = [
+    {name = "pizza1016", email = "10370007-pizza1016@users.noreply.gitlab.com"}
+]
+maintainers = [
+    {name = "pizza1016", email = "10370007-pizza1016@users.noreply.gitlab.com"}
+]
+description = "Python API wrappers to interact with the Public Transport Victoria Timetable API and Yarra Trams TramTracker service"
+readme = "README.md"
+license = {file = "LICENCE.md"}
+keywords = ["public transport", "transport", "transportation", "melbourne", "victoria", "australia", "ptv", "public transport victoria", "yarra trams", "library", "api wrapper"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Other/Nonlisted Topic",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed"
+]
+
+[project.urls]
+Documentation = "https://gitlab.com/pizza1016/ptv-timetable/-/blob/trunk/README.md"
+Repository = "https://gitlab.com/pizza1016/ptv-timetable"
+Issues = "https://gitlab.com/pizza1016/ptv-timetable/-/issues"
+
+[tool.setuptools]
+packages = ["ptv_timetable", "tramtracker"]

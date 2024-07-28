@@ -1,4 +1,4 @@
-# PTV Timetable API and TramTracker interfaces for Python
+# PTV Timetable and TramTracker API wrappers for Python (pre-release)
 
 Modules to interface with the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index) and [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) in a Python-friendly manner.
 
@@ -6,7 +6,7 @@ Modules to interface with the [Public Transport Victoria](https://ptv.vic.gov.au
 
 ## Overview
 
-The goal of this package is to provide a documented and easy-to-use interface (API wrappers) to interact with the PTV Timetable API and TramTracker service in Python, with minimal transformation to the responses from the API. A secondary aim is to minimise the use of modules that are not part of the standard library to increase portability.
+The goal of this package is to provide documented and easy-to-use interfaces (API wrappers) to interact with the PTV Timetable API and TramTracker service in Python, with minimal transformation to the responses from the API. A secondary aim is to minimise the use of modules that are not part of the standard library to increase portability.
 
 ### What's different from accessing the Timetable API directly?
 
@@ -23,9 +23,13 @@ The goal of this package is to provide a documented and easy-to-use interface (A
 | requests     | ≥ 2.32.3          |                                                                                                                     |
 | tzdata       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
 
+## Issues and error reporting
+
+To report problems with the package, [go to the Issues tab on the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
+
 ## Summary of main components
 
-### ptv.py
+### ptv_timetable/\_\_init__.py
 
 | Constant/function/method                                                                                                                                                                                                                                     | Description                                                                                                                                                                                                            |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -34,6 +38,7 @@ The goal of this package is to provide a documented and easy-to-use interface (A
 | **BUS**                                                                                                                                                                                                                                                      | Use in `route_type` parameters to specify the metropolitan or regional bus network.                                                                                                                                    |
 | **REGIONAL_TRAIN<br/>REG_TRAIN<br/>COACH<br/>VLINE**                                                                                                                                                                                                         | Use in `route_type` parameters to specify the regional train or coach network.                                                                                                                                         |
 | **EXPAND_**<_property_>                                                                                                                                                                                                                                      | Use in `expand` parameters to tell the API to return the specified properties in full.                                                                                                                                 |
+| **logger**                                                                                                                                                                                                                                                   | Logger for this module (a `logging.Logger` instance) with a `NullHandler`. Add your own `Handler` to get its output.                                                                                                   |
 | _class_ **TimetableAPI(**_dev_id, key_**)**                                                                                                                                                                                                                  | Constructs a new instance of the `TimetableAPI` class with the supplied credentials.<br/><br/>To obtain your own set of credentials, follow the instructions on [this page](http://ptv.vic.gov.au/ptv-timetable-api/). |
 | TimetableAPI.**list_route_directions(**_route_id_**)**                                                                                                                                                                                                       | List directions for a specified route.<br/><br/>API operation: `/v3/directions/route/{route_id}`                                                                                                                       |
 | TimetableAPI.**list_directions(**_direction_id, route_type=None_**)**                                                                                                                                                                                        | List directions with a specified identifier.<br/><br/>API operation: `/v3/directions/{direction_id}/route_type/{route_type}`                                                                                           |
@@ -53,17 +58,18 @@ The goal of this package is to provide a documented and easy-to-use interface (A
 | TimetableAPI.**list_outlets(**_latitude=None, longitude=None, max_distance=None, max_results=None_**)**                                                                                                                                                      | List ticket outlets near a specified location.<br/><br/>API operation: `/v3/outlets/location/{latitude},{longitude}`                                                                                                   |
 | TimetableAPI.**search(**_search_term, route_types=None, latitude=None, longitude=None, max_distance=None, include_outlets=None, match_stop_by_locality=None, match_route_by_locality=None, match_stop_by_gtfs_stop_id=None_**)**                             | Search for a stop, route or ticket outlet by name.<br/><br/>API operation: `/v3/search/{search_term}`                                                                                                                  |
 
-### tramtracker.py
+### tramtracker/\_\_init__.py
 
-| Constant/function/method                                                                                                                                    | Description                                                         |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| _classmethod_ TramTrackerService.**list_destinations()**                                                                                                    | List all destinations on the tram network.                          |
-| _classmethod_ TramTrackerService.**list_stops(**_route_id, up_direction_**)**                                                                               | List stops for a specified route and direction of travel.           |
-| _classmethod_ TramTrackerService.**get_stop(**_stop_id_**)**                                                                                                | Return details about a specified stop.                              |
-| _classmethod_ TramTrackerService.**list_routes_for_stop(**_stop_id_**)**                                                                                    | List the routes serving a specified stop.                           |
-| _classmethod_ TramTrackerService.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                |
-| _classmethod_ TramTrackerService.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.      |
-| _classmethod_ TramTrackerService.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia. |
+| Constant/function/method                                                                                                                                    | Description                                                                                                          |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| **logger**                                                                                                                                                  | Logger for this module (a `logging.Logger` instance) with a `NullHandler`. Add your own `Handler` to get its output. |
+| _classmethod_ TramTrackerService.**list_destinations()**                                                                                                    | List all destinations on the tram network.                                                                           |
+| _classmethod_ TramTrackerService.**list_stops(**_route_id, up_direction_**)**                                                                               | List stops for a specified route and direction of travel.                                                            |
+| _classmethod_ TramTrackerService.**get_stop(**_stop_id_**)**                                                                                                | Return details about a specified stop.                                                                               |
+| _classmethod_ TramTrackerService.**list_routes_for_stop(**_stop_id_**)**                                                                                    | List the routes serving a specified stop.                                                                            |
+| _classmethod_ TramTrackerService.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                                                                 |
+| _classmethod_ TramTrackerService.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.                                                       |
+| _classmethod_ TramTrackerService.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia.                                                  |
 
 ## Contributing
 
