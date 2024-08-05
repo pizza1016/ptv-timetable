@@ -2,6 +2,9 @@
 
 Modules to interface with the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index) and [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) in a Python-friendly manner.
 
+Package version: 0.1.1<br />
+Last updated: 3 August 2024
+
 ---
 
 ## Overview
@@ -23,15 +26,33 @@ The goal of this package is to provide documented and easy-to-use interfaces (AP
 | requests     | ≥ 2.32.3          |                                                                                                                     |
 | tzdata       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
 
+## Usage
+
+This package adds two modules into the root namespace of your interpreter (so they can be directly imported into your code with `import <module_name>`):
+- `ptv_timetable` for interacting with the PTV Timetable API; and
+- `tramtracker` for interacting with the TramTracker data service.
+
+Each module defines data types that encapsulate the responses from the APIs so as to allows access by attribute reference (`.`) to take advantage of autocompletion systems in IDEs where available. This format also allows each field to be documented, which is not a feature that's available in the raw `dict`s returned by the APIs.
+
+Each module defines a class to interface with the APIs (`ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerService`) with methods for each supported operation. `ptv_timetable.TimetableAPI` needs to be instantiated before use with credentials obtained from PTV from [this page](http://ptv.vic.gov.au/ptv-timetable-api/). `tramtracker.TramTrackerService` methods can be used directly without creating an instance as credentials are not required and all methods are defined as class methods.
+
+### Logging
+
+Some actions are logged under the logger names `ptv-timetable.ptv_timetable` and `ptv-timetable.tramtracker`. Use `logging.getLogger()` to obtain the loggers and you can register your own handlers to retrieve their contents.
+
 ## Issues and error reporting
 
-To report problems with the package or give feedback otherwise, [go to the Issues tab in the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
+To report problems with the package or otherwise give feedback, [go to the Issues tab in the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
 
-## Logging
+## Contributing
 
-Logging is available in these modules, under the logger names `ptv-timetable.ptv_timetable` and `ptv-timetable.tramtracker`.
+All constructive contributions are welcome! By contributing, you agree to license your contributions under the Apache Licence 2.0.
 
-## Summary of main components
+## Copyright and licensing
+
+This project's source code is licensed under the Apache Licence 2.0; however, data obtained from the APIs themselves via these modules are licensed separately: PTV Timetable API data are under a Creative Commons Attribution 4.0 International licence and TramTracker data is proprietary. See [LICENCE.md](https://gitlab.com/pizza1016/ptv-timetable/-/blob/trunk/LICENCE.md) for further information.
+
+## Summary of module contents
 
 ### ptv_timetable/\_\_init__.py
 
@@ -72,11 +93,3 @@ Logging is available in these modules, under the logger names `ptv-timetable.ptv
 | _classmethod_ TramTrackerService.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                                                                 |
 | _classmethod_ TramTrackerService.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.                                                       |
 | _classmethod_ TramTrackerService.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia.                                                  |
-
-## Contributing
-
-All constructive contributions are welcome! By contributing, you agree to license your contributions under the Apache Licence 2.0.
-
-## Copyright and licensing
-
-This project's source code is licensed under the Apache Licence 2.0; however, data obtained from the API themselves via these modules are licensed separately: PTV Timetable API data are under a Creative Commons Attribution 4.0 International licence and TramTracker data is proprietary. See [LICENCE.md](https://gitlab.com/pizza1016/ptv-timetable/-/blob/trunk/LICENCE.md) for further information.
