@@ -477,6 +477,8 @@ class Stop(TimetableData):
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | None = None
     """Ticketing information for this stop; None if the API response did not return this information"""
+    interchange: list[dict[Literal["route_id", "advertised"], int | bool]] | None = None
+    """Routes available to interchange with from this stop; None if the API response did not return this information"""
 
     # From /v3/stops/...
     point_id: int | None = None
