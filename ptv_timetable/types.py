@@ -709,6 +709,14 @@ class StoppingPattern(TimetableData):
         directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
         return cls(disruptions=disruptions, departures=departures, stops=stops, routes=routes, runs=runs, directions=directions)
 
+    def simple(self: Self) -> list[int]:
+        """
+        Returns the stopping pattern as a simple sequence of stop identifiers.
+
+        :return: A list of stop identifiers.
+        """
+        return [departure.stop_id for departure in self.departures]
+
 
 @dataclass(kw_only=True, slots=True)
 class DeparturesResponse(TimetableData):

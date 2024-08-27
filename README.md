@@ -18,6 +18,10 @@ The goal of this package is to provide documented and easy-to-use interfaces (AP
 - **Date and time representation**: date inputs and outputs are converted from and to `datetime` objects with the local time zone of Victoria, so that you do not have to deal with the different string representations of dates and speaking to the API in the UTC time zone.
 - **Other quality of life modifications**: such as consistent attribute names, fixing typos and removing trailing whitespaces.
 
+## Pre-release package
+
+This package is in pre-release. Breaking changes may be made without notice during development.
+
 ## Dependencies
 
 | Package name | Tested on version | Notes                                                                                                               |
