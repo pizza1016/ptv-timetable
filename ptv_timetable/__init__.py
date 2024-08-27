@@ -214,7 +214,7 @@ class TimetableAPI:
         return [Direction.load(**item) for item in self.call(req)["directions"]]
 
     def get_pattern(self: Self,
-                    run_ref: str,
+                    run_ref: str | int,
                     route_type: RouteType,
                     stop_id: int | None = None,
                     date: datetime | str | None = None,
@@ -287,7 +287,7 @@ class TimetableAPI:
         return cast(list[dict[Literal["route_type_name", "route_type"], str | int]], self.call("/v3/route_types")["route_types"])
 
     def get_run(self: Self,
-                run_ref: str,
+                run_ref: str | int,
                 route_type: RouteType | None = None,
                 expand: Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | None = None,
                 date: datetime | str | None = None,
