@@ -201,11 +201,11 @@ class TimetableAPI:
 
         return [Direction.load(**item) for item in self.call(f"/v3/directions/route/{route_id}")["directions"]]
 
-    def list_directions(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
-        """Returns all directions of travel in the database with the specified identifier for all (or the specified) route type(s).
+    def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
+        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a ``list`` in both cases.
 
         :param direction_id: The direction identifier
-        :param route_type: Return only the directions with the specified route type
+        :param route_type: Return the direction with the specified route type
         :return: List of directions
         """
 
