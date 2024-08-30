@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, override, Self
+from typing import Literal, override, Self, Final
 from zoneinfo import ZoneInfo
 import platform
 if platform.system() == "Windows":
@@ -9,7 +9,7 @@ if platform.system() == "Windows":
 
 __all__ = ["TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
-TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
+TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
 
 

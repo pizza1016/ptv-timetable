@@ -23,9 +23,9 @@ type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
 
-TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
+TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
-UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
+UUID_PATTERN: Final = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
 """Regular expression for a universally unique identifier"""
 
 METROPOLITAN_TRAIN: Literal[0] = 0
@@ -87,7 +87,7 @@ class TimetableAPI:
         
         if type(dev_id) not in (str, int):
             raise TypeError(f"devID must be str or int, not {type(dev_id).__name__}")
-        elif type(key) is not str:
+        if type(key) is not str:
             raise TypeError(f"key must be str, not {type(key).__name__}")
 
         if UUID_PATTERN.fullmatch(key) is None:
@@ -102,8 +102,7 @@ class TimetableAPI:
         return
 
     def __del__(self: Self) -> None:
-        """
-        Logs the prospective deletion of an instance into the module logger.
+        """Logs the prospective deletion of an instance into the module logger.
 
         Note that Python does not guarantee that this will be called for any instance.
 
@@ -162,7 +161,7 @@ class TimetableAPI:
         return s
 
     @sleep_and_retry
-    @limits(calls=1, period=10)  # 1 call every 10 seconds
+    @limits(calls=1, period=10)
     def call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result.
 
@@ -181,7 +180,7 @@ class TimetableAPI:
         result = r.json()
         _logger.debug("Response: " + str(result))
         return result
-    
+
     def _encode_url(self: Self, request: str) -> str:
         """Appends the signature and base URL to the request string.
         
