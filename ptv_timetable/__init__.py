@@ -209,7 +209,7 @@ class TimetableAPI:
         :return: List of directions
         """
 
-        req = f"/v3/directions/{direction_id}" + ("/route_type/{route_type}" if route_type is not None else "")
+        req = f"/v3/directions/{direction_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
         return [Direction.load(**item) for item in self.call(req)["directions"]]
 
     def get_pattern(self: Self,
