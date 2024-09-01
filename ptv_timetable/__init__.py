@@ -82,6 +82,8 @@ class TimetableAPI:
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
+        :param calls: Maximum number of calls that can be made to the API within the specified ``period``
+        :param period: Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :return: ``None``
         """
 
