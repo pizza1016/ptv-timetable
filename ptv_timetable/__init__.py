@@ -78,7 +78,7 @@ class TimetableAPI:
     """Interface class with the PTV Timetable API."""
 
     def __init__(self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10) -> None:
-        """Initialises a new PTVAPI instance with the supplied credentials.
+        """Initialises a new TimetableAPI instance with the supplied credentials.
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
