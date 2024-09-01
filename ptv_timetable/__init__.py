@@ -204,8 +204,10 @@ class TimetableAPI:
     def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
         """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a ``list`` in both cases.
 
+        If the direction is shared by multiple routes (e.g. Flinders Street), a ``Direction`` object will be added to the ``list`` for `each` route.
+
         :param direction_id: The direction identifier
-        :param route_type: Return the direction with the specified route type
+        :param route_type: Return the directions with the specified route type
         :return: List of directions
         """
 
