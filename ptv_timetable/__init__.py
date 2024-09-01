@@ -99,7 +99,7 @@ class TimetableAPI:
         """API user ID"""
         self._key: Final[bytes] = key.encode(encoding="ascii")
         """API request signing key"""
-        self._get = sleep_and_retry(limits(calls, period)(requests.get))
+        self._get = limits(calls, period)(requests.get)
         """requests.get() function but rate-limited"""
 
         _logger.info("PTVAPI instance created")
@@ -166,7 +166,7 @@ class TimetableAPI:
         return s
 
     def call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
-        """Make the request to the API and format the result.
+        """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
 
         :param request: API request string
         :return: Result of API request as a ``dict``
@@ -174,7 +174,7 @@ class TimetableAPI:
 
         url = self._encode_url(request)
         _logger.debug("Requesting from: " + url)
-        r: requests.models.Response = self._get(url)
+        r: requests.models.Response = sleep_and_retry(self._get)(url)
         try:
             r.raise_for_status()
         except Exception:
