@@ -14,7 +14,7 @@ TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, slots=True)
 class TimetableData(metaclass=ABCMeta):
 
     @overload
