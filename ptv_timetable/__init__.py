@@ -13,7 +13,7 @@ import urllib.parse
 if platform.system() == "Windows":
     import tzdata
 
-from ptv_timetable.types import *
+from .types import *
 
 __all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
@@ -77,14 +77,14 @@ _logger.addHandler(logging.NullHandler())
 class TimetableAPI:
     """Interface class with the PTV Timetable API."""
 
-    def __init__(self: Self, dev_id: str | int, key: str) -> None:
+    def __init__(self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10) -> None:
         """Initialises a new PTVAPI instance with the supplied credentials.
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
         :return: ``None``
         """
-        
+
         if type(dev_id) not in (str, int):
             raise TypeError(f"devID must be str or int, not {type(dev_id).__name__}")
         if type(key) is not str:
@@ -97,6 +97,8 @@ class TimetableAPI:
         """API user ID"""
         self._key: Final[bytes] = key.encode(encoding="ascii")
         """API request signing key"""
+        self._get = sleep_and_retry(limits(calls, period)(requests.get))
+        """requests.get() function but rate-limited"""
 
         _logger.info("PTVAPI instance created")
         return
@@ -111,6 +113,7 @@ class TimetableAPI:
 
         _logger.info("PTVAPI instance deleted")
         return
+
 
     @staticmethod
     def build_arg_string(*params: tuple[str, str | int | bool | Iterable[str | int] | None] | str | int | bool | Iterable[str | int] | None, s: str = "") -> str:
@@ -160,8 +163,6 @@ class TimetableAPI:
 
         return s
 
-    @sleep_and_retry
-    @limits(calls=1, period=10)
     def call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result.
 
@@ -171,7 +172,7 @@ class TimetableAPI:
 
         url = self._encode_url(request)
         _logger.debug("Requesting from: " + url)
-        r = requests.get(url)
+        r: requests.models.Response = self._get(url)
         try:
             r.raise_for_status()
         except Exception:
@@ -183,7 +184,7 @@ class TimetableAPI:
 
     def _encode_url(self: Self, request: str) -> str:
         """Appends the signature and base URL to the request string.
-        
+
         :param request: API request string
         :return: API request URL
         """
