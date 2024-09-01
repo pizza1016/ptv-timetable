@@ -1,7 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import asdict, astuple, dataclass
 from datetime import datetime
-from typing import Literal, override, Self, Final
+from typing import Any, Final, Literal, overload, override, Self
 from zoneinfo import ZoneInfo
 import platform
 if platform.system() == "Windows":
@@ -16,11 +17,46 @@ TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 @dataclass(kw_only=True)
 class TimetableData(metaclass=ABCMeta):
 
+    @overload
+    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, Any]:
+        ...
+
+    @overload
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T]) -> _T:
+        ...
+
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
+        """Converts this ``TimetableData`` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+
+        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+
+        :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
+        :return: The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+        """
+        return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
+
+    @overload
+    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[Any, ...]:
+        ...
+
+    @overload
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T]) -> _T:
+        ...
+
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
+        """Converts this ``TimetableData`` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+
+        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+
+        :param tuple_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
+        :return: The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+        """
+        return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
+
     @classmethod
     @abstractmethod
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
-        """
-        Constructs a new instance of this ``PTVData`` subclass by converting the specified API response data.
+        """Constructs a new instance of this ``TimetableData`` subclass by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return: The newly constructed instance
@@ -487,7 +523,7 @@ class Departure(TimetableData):
     platform_number: str
     """Expected platform number the train will depart from; this may change at any time up to prior to arriving at the stop"""
     flags: str
-    """TODO"""
+    """Unclear; appears to be some sort of run code"""
     departure_sequence: int
     """Sort key for this stop in a sequence of stops for this run"""
 
