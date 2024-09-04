@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+from abc import ABCMeta
+from collections.abc import Callable
+from dataclasses import asdict, astuple, dataclass
 from datetime import datetime, timedelta, timezone
 from ratelimit import sleep_and_retry, limits
-from typing import Final, Literal, Self
+from typing import Any, Final, Literal, overload, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -45,7 +47,48 @@ class TramTrackerError(OSError):
 
 
 @dataclass(kw_only=True, slots=True)
-class TramDeparture:
+class TramTrackerData(object, metaclass=ABCMeta):
+    """Base class for API response types."""
+
+    @overload
+    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, Any]:
+        ...
+
+    @overload
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T]) -> _T:
+        ...
+
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
+        """Converts this ``TramTrackerData`` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+
+        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+
+        :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
+        :return: The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+        """
+        return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
+
+    @overload
+    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[Any, ...]:
+        ...
+
+    @overload
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T]) -> _T:
+        ...
+
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
+        """Converts this ``TramTrackerData`` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+
+        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+
+        :param tuple_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
+        :return: The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+        """
+        return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
+
+
+@dataclass(kw_only=True, slots=True)
+class TramDeparture(TramTrackerData):
     """Represents a tram departure from a particular stop."""
 
     stop_id: int
@@ -89,7 +132,7 @@ class TramDeparture:
 
 
 @dataclass(kw_only=True, slots=True)
-class TramDestination:
+class TramDestination(TramTrackerData):
     """Represents a destination of a tram route."""
 
     route_id: int
@@ -105,7 +148,7 @@ class TramDestination:
 
 
 @dataclass(kw_only=True, slots=True)
-class TramStop:
+class TramStop(TramTrackerData):
     """Represents a tram stop."""
 
     stop_id: int | None
