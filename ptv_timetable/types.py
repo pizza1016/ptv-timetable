@@ -15,7 +15,8 @@ TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 
 
 @dataclass(kw_only=True, slots=True)
-class TimetableData(metaclass=ABCMeta):
+class TimetableData(object, metaclass=ABCMeta):
+    """Base class for API response types."""
 
     @overload
     def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, Any]:

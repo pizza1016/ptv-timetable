@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from ratelimit import sleep_and_retry, limits
-from typing import Literal, Self
+from typing import Final, Literal, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -12,14 +12,14 @@ if platform.system() == "Windows":
 
 __all__ = ["TramTrackerService"]
 
-EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+EPOCH: Final = datetime(1970, 1, 1, tzinfo=timezone.utc)
 """datetime representation of the Unix epoch"""
-TIMESTAMP_PATTERN = re.compile(r"/Date\((?P<timestamp>[0-9]+)[+-][0-9]{4}\)/")
+TIMESTAMP_PATTERN: Final = re.compile(r"/Date\((?P<timestamp>[0-9]+)[+-][0-9]{4}\)/")
 """Regular expression for the response value of timestamps from the data service"""
-TZ_MELBOURNE = ZoneInfo("Australia/Melbourne")
+TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
 
-_logger = logging.getLogger("ptv-timetable.tramtracker")
+_logger: Final = logging.getLogger("ptv-timetable.tramtracker")
 """Logger for this module"""
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
@@ -130,7 +130,7 @@ class TramStop:
     """Descriptor of the direction of travel for this stop (e.g. towards or away from city)"""
 
 
-class TramTrackerService:
+class TramTrackerService(object):
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
     @classmethod

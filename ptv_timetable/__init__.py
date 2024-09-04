@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
@@ -68,13 +68,13 @@ EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties. For use in `expand` parameters"""
 
-_logger = logging.getLogger("ptv-timetable.ptv_timetable")
+_logger: Final = logging.getLogger("ptv-timetable.ptv_timetable")
 """Logger for this module"""
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
 
 
-class TimetableAPI:
+class TimetableAPI(object):
     """Interface class with the PTV Timetable API."""
 
     def __init__(self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10) -> None:
@@ -99,7 +99,7 @@ class TimetableAPI:
         """API user ID"""
         self._key: Final[bytes] = key.encode(encoding="ascii")
         """API request signing key"""
-        self._get = limits(calls, period)(requests.get)
+        self._get: Callable[..., requests.models.Response] = limits(calls, period)(requests.get)
         """requests.get() function but rate-limited"""
 
         _logger.info("PTVAPI instance created")
