@@ -176,9 +176,36 @@ class TramStop(TramTrackerData):
 class TramTrackerService(object):
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
+    _calls: int = 1
+    """Maximum number of calls that can be made to the API within the period specified by cls._period"""
+    _period: float = 10
+    """Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count"""
+    _get: Callable[..., requests.models.Response] = limits(1, 10)(requests.get)
+    """requests.get() function but rate-limited"""
+
     @classmethod
-    @sleep_and_retry
-    @limits(calls=1, period=20)
+    @property
+    def ratelimit_rate(cls: Self) -> tuple[int, float]:
+        """Returns the current rate limit on API requests as the tuple (``calls``, ``period``) i.e. the maximum number of API calls than can be made in the specified period. Default is (1, 10).
+
+        :return: The tuple (``calls``, ``period``)
+        """
+        return cls._calls, cls._period
+
+    @classmethod
+    @ratelimit_rate.setter
+    def ratelimit_rate(cls: Self, rate: tuple[int, float]) -> None:
+        """Sets the rate limit on API requests to ``calls`` calls every ``period`` seconds.
+
+        :param rate: A tuple in the form (``calls: int``, ``period: float``); both values must be greater than 0
+        :return: ``None``
+        """
+        cls._get = limits(rate[0], rate[1])(requests.get)
+        cls._calls = rate[0]
+        cls._period = rate[1]
+        return
+
+    @classmethod
     def call(cls: Self, request: str) -> list[dict[str, str | int | float | bool | dict[str, str | int | list[str]] | None]] | dict[str, str | int | float | bool | None]:
         """
         Requests data from the TramTracker service and returns the response.
@@ -189,7 +216,7 @@ class TramTrackerService(object):
 
         url = f"http://tramtracker.com.au/Controllers{request}"
         _logger.debug("Requesting from: " + url)
-        r = requests.get(url)
+        r: requests.models.Response = sleep_and_retry(cls._get)(url)
         try:
             r.raise_for_status()
         except Exception:
