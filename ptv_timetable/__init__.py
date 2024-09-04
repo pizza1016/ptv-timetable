@@ -106,7 +106,7 @@ class TimetableAPI(object):
         return
 
     def __del__(self: Self) -> None:
-        """Logs the prospective deletion of an instance into the module logger.
+        """Logs the prospective deletion of an instance into the module logger once there are no more references to it in the program.
 
         Note that Python does not guarantee that this will be called for any instance.
 
