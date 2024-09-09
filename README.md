@@ -22,7 +22,7 @@ The goal of this package is to provide documented and easy-to-use interfaces (AP
 
 This package is in pre-release. Breaking changes may be made without notice during development.
 
-## Dependencies
+## Direct dependencies
 
 | Package name | Tested on version | Notes                                                                                                               |
 |--------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
@@ -31,6 +31,16 @@ This package is in pre-release. Breaking changes may be made without notice duri
 | tzdata       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
 
 ## Usage
+
+The recommended method to install this package is via the [Python Package Index](https://pypi.org/project/ptv-timetable/):
+```bash
+python -m pip install ptv-timetable
+```
+You can also install from the [GitLab Package Registry](https://gitlab.com/pizza1016/ptv-timetable/-/packages/) (authentication not required):
+```bash
+python -m pip install --index-url https://gitlab.com/api/v4/projects/54559866/packages/pypi/simple ptv-timetable
+```
+These commands will also install any required dependencies.
 
 This package adds two modules into the root namespace of your interpreter (so they can be directly imported into your code with `import <module_name>`):
 - `ptv_timetable` for interacting with the PTV Timetable API;

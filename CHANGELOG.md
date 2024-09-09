@@ -1,12 +1,20 @@
 # Changelog
 
+## 0.2.1 (pending)
+- Allow customisation of rate-limiting on `tramtracker.TramTrackerClient` by adding the `calls` and `period` class properties
+- Added `.as_dict()` and `.as_tuple()` to dataclasses in `tramtracker` module
+- Type hinting adjustments
+  - Missed a few `typing.Final`s
+  - Explicit subclassing from `object`
+- Clarifications in docstrings
+
 ## 0.2.0 (2024-09-01)
 - Dataclasses in `ptv_timetable` moved to `ptv_timetable.types`
 - Added `ptv_timetable.types.StoppingPattern.simple()`
 - Allow customisation of rate-limiting on instantiation of `ptv_timetable.TimetableAPI` by adding the `calls` and `period` parameters
 - Renamed `ptv_timetable.TimetableAPI.list_directions()` to `.get_direction()`
 - Added `.as_dict()` and `.as_tuple()` to `ptv_timetable.types.TimetableData` abstract class
-- Static typing adjustments
+- Type hinting adjustments
   - Non-`typing.Literal` constants are now `typing.Final`
   - `run_ref` parameters in `ptv_timetable.TimetableAPI.get_pattern()` and `.get_run()` now also accept `int`s
 - Fixed bugs:
