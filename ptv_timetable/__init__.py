@@ -77,13 +77,14 @@ _logger.addHandler(logging.NullHandler())
 class TimetableAPI(object):
     """Interface class with the PTV Timetable API."""
 
-    def __init__(self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10) -> None:
+    def __init__[**_P, _R](self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> None:
         """Initialises a new TimetableAPI instance with the supplied credentials.
 
         :param dev_id: User ID
         :param key: API request signing key (a UUID)
         :param calls: Maximum number of calls that can be made to the API within the specified ``period``
         :param period: Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+        :param ratelimit_handler: Function decorator that handles ``ratelimit.exception.RateLimitException`` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
         :return: ``None``
         """
 
@@ -99,7 +100,7 @@ class TimetableAPI(object):
         """API user ID"""
         self._key: Final[bytes] = key.encode(encoding="ascii")
         """API request signing key"""
-        self._get: Callable[..., requests.models.Response] = limits(calls, period)(requests.get)
+        self._get: Callable[..., requests.models.Response] = ratelimit_handler(limits(calls, period)(requests.get))
         """requests.get() function but rate-limited"""
 
         _logger.info("PTVAPI instance created")
@@ -115,7 +116,6 @@ class TimetableAPI(object):
 
         _logger.info("PTVAPI instance deleted")
         return
-
 
     @staticmethod
     def build_arg_string(*params: tuple[str, str | int | bool | Iterable[str | int] | None] | str | int | bool | Iterable[str | int] | None, s: str = "") -> str:
@@ -174,7 +174,7 @@ class TimetableAPI(object):
 
         url = self._encode_url(request)
         _logger.debug("Requesting from: " + url)
-        r: requests.models.Response = sleep_and_retry(self._get)(url)
+        r: requests.models.Response = self._get(url)
         try:
             r.raise_for_status()
         except Exception:

@@ -176,39 +176,34 @@ class TramStop(TramTrackerData):
 class TramTrackerService(object):
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
-    _calls: int = 1
-    """Maximum number of calls that can be made to the API within the period specified by cls._period"""
-    _period: float = 10
-    """Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count"""
-    _get: Callable[..., requests.models.Response] = limits(1, 10)(requests.get)
-    """requests.get() function but rate-limited"""
+    def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> None:
+        """Initialises a new TramTrackerService instance.
 
-    @classmethod
-    @property
-    def ratelimit_rate(cls: Self) -> tuple[int, float]:
-        """Returns the current rate limit on API requests as the tuple (``calls``, ``period``) i.e. the maximum number of API calls than can be made in the specified period. Default is (1, 10).
-
-        :return: The tuple (``calls``, ``period``)
-        """
-        return cls._calls, cls._period
-
-    @classmethod
-    @ratelimit_rate.setter
-    def ratelimit_rate(cls: Self, rate: tuple[int, float]) -> None:
-        """Sets the rate limit on API requests to ``calls`` calls every ``period`` seconds.
-
-        :param rate: A tuple in the form (``calls: int``, ``period: float``); both values must be greater than 0
+        :param calls: Maximum number of calls that can be made to the service within the specified ``period``
+        :param period: Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+        :param ratelimit_handler: Function decorator that handles ``ratelimit.exception.RateLimitException`` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
         :return: ``None``
         """
-        cls._get = limits(rate[0], rate[1])(requests.get)
-        cls._calls = rate[0]
-        cls._period = rate[1]
+
+        self._get: Callable[..., requests.models.Response] = ratelimit_handler(limits(calls, period)(requests.get))
+        """requests.get() function but rate-limited"""
+
+        _logger.info("TramTrackerService instance created")
         return
 
-    @classmethod
-    def call(cls: Self, request: str) -> list[dict[str, str | int | float | bool | dict[str, str | int | list[str]] | None]] | dict[str, str | int | float | bool | None]:
+    def __del__(self: Self) -> None:
+        """Logs the prospective deletion of an instance into the module logger once there are no more references to it in the program.
+
+        Note that Python does not guarantee that this will be called for any instance.
+
+        :return: ``None``
         """
-        Requests data from the TramTracker service and returns the response.
+
+        _logger.info("TramTrackerService instance deleted")
+        return
+
+    def call(self: Self, request: str) -> list[dict[str, str | int | float | bool | dict[str, str | int | list[str]] | None]] | dict[str, str | int | float | bool | None]:
+        """Requests data from the TramTracker service and returns the response.
 
         :param request: The request, which is appended to the base URL of the service
         :return: A ``list`` or ``dict`` of the response data, depending on the request
@@ -216,7 +211,7 @@ class TramTrackerService(object):
 
         url = f"http://tramtracker.com.au/Controllers{request}"
         _logger.debug("Requesting from: " + url)
-        r: requests.models.Response = sleep_and_retry(cls._get)(url)
+        r: requests.models.Response = self._get(url)
         try:
             r.raise_for_status()
         except Exception:
@@ -235,15 +230,13 @@ class TramTrackerService(object):
 
         return result["ResponseObject"] if "ResponseObject" in result else result["responseObject"]
 
-    @classmethod
-    def list_destinations(cls: Self) -> list[TramDestination]:
-        """
-        Returns a list of termini for each primary tram route on the network.
+    def list_destinations(self: Self) -> list[TramDestination]:
+        """Returns a list of termini for each primary tram route on the network.
 
         :return: A list detailing each route terminus
         """
 
-        response = cls.call("/GetAllRoutes.ashx")
+        response = self.call("/GetAllRoutes.ashx")
         return [TramDestination(route_id=element["InternalRouteNo"],
                                 route_number=element["AlphaNumericRouteNo"] if element["AlphaNumericRouteNo"] is not None else str(element["RouteNo"]),
                                 up_direction=element["IsUpDirection"],
@@ -251,17 +244,15 @@ class TramTrackerService(object):
                                 has_low_floor_trams=element["HasLowFloor"]
                                 ) for element in response]
 
-    @classmethod
-    def list_stops(cls: Self, route_id: int, up_direction: bool) -> list[TramStop]:
-        """
-        Returns a list of stops on the specified route and direction of travel.
+    def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
+        """Returns a list of stops on the specified route and direction of travel.
 
         :param route_id: The route identifier, as returned by ``list_destinations()``
         :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described in ``list_destinations()``
         :return: A list of stops on the route
         """
 
-        response = cls.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}")
+        response = self.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}")
         return [TramStop(stop_id=element["StopNo"] if element["StopNo"] != 0 else None,
                          stop_name=element["Description"],
                          stop_number=element["FlagStopNo"],
@@ -274,16 +265,14 @@ class TramTrackerService(object):
                          city_direction=element["CityDirection"]
                          ) for element in response]
 
-    @classmethod
-    def get_stop(cls: Self, stop_id: int) -> TramStop:
-        """
-        Returns information about the specified stop.
+    def get_stop(self: Self, stop_id: int) -> TramStop:
+        """Returns information about the specified stop.
 
         :param stop_id: The TramTracker code of the stop
         :return: The stop details
         """
 
-        response = cls.call(f"/GetStopInformation.ashx?s={stop_id}")
+        response = self.call(f"/GetStopInformation.ashx?s={stop_id}")
         return TramStop(stop_id=response["StopNo"] if response["StopNo"] != 0 else None,
                         stop_name=response["StopName"],
                         stop_number=response["FlagStopNo"],
@@ -296,22 +285,18 @@ class TramTrackerService(object):
                         city_direction=response["CityDirection"]
                         )
 
-    @classmethod
-    def list_routes_for_stop(cls: Self, stop_id: int) -> list[str]:
-        """
-        Returns a list of route numbers for the primary routes that serve the specified stop.
+    def list_routes_for_stop(self: Self, stop_id: int) -> list[str]:
+        """Returns a list of route numbers for the primary routes that serve the specified stop.
 
         :param stop_id: The TramTracker code of the stop
         :return: A list of route numbers
         """
 
-        response = cls.call(f"/GetPassingRoutes.ashx?s={stop_id}")
+        response = self.call(f"/GetPassingRoutes.ashx?s={stop_id}")
         return [element["RouteNo"] for element in response]
 
-    @classmethod
-    def next_trams(cls: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
-        """
-        Returns the details and times of the next trams to depart from the specified stop. The number of results returned can vary, but is usually three entries per destination.
+    def next_trams(self: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
+        """Returns the details and times of the next trams to depart from the specified stop. The number of results returned can vary, but is usually three entries per destination.
 
         :param stop_id: The TramTracker code of the stop
         :param route_id: If specified, return next trams for the specified route identifier
@@ -323,7 +308,7 @@ class TramTrackerService(object):
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         as_of = as_of.astimezone(TZ_MELBOURNE)
         timestamp = round((as_of - EPOCH) / timedelta(milliseconds=1))
-        response = cls.call(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}")
+        response = self.call(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}")
         return [TramDeparture(stop_id=stop_id,
                               trip_id=element["TripID"],
                               route_id=element["InternalRouteNo"],
@@ -345,10 +330,8 @@ class TramTrackerService(object):
                               estimated_departure=(EPOCH + timedelta(milliseconds=int(TIMESTAMP_PATTERN.fullmatch(element["PredictedArrivalDateTime"]).group("timestamp")))).astimezone(TZ_MELBOURNE)
                               ) for element in response]
 
-    @classmethod
-    def get_route_colour(cls: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
-        """
-        Returns the RGB hexadecimal code for the colour of the specified route as printed on public information paraphernalia.
+    def get_route_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
+        """Returns the RGB hexadecimal code for the colour of the specified route as printed on public information paraphernalia.
 
         :param route_id: The route identifier
         :param as_of: If specified, return the colour that was/will be used at the specified time; defaults to current system time
@@ -357,13 +340,11 @@ class TramTrackerService(object):
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = cls.call(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}")
+        response = self.call(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}")
         return "#" + response["Colour"].lower()
 
-    @classmethod
-    def get_route_text_colour(cls: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
-        """
-        Returns the RGB hexadecimal code for the text font colour on public information paraphernalia if it was written on a background with the route's colour (e.g. the route iconography).
+    def get_route_text_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
+        """Returns the RGB hexadecimal code for the text font colour on public information paraphernalia if it was written on a background with the route's colour (e.g. the route iconography).
 
         :param route_id: The route identifier
         :param as_of: If specified, return the colour that was/will be used at the specified time; defaults to current system time
@@ -372,5 +353,5 @@ class TramTrackerService(object):
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = cls.call(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}")
+        response = self.call(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}")
         return "#" + response["Colour"].lower()
