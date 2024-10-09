@@ -1,12 +1,16 @@
 # Changelog
 
 ## 0.2.1 (pending)
-- Allow customisation of rate-limiting on `tramtracker.TramTrackerClient` by adding the `calls` and `period` class properties
+- Allow customisation of rate-limiting on instantiation of `tramtracker.TramTrackerService` via the `calls` and `period` parameters
+  - Breaking change: `TramTrackerService` must now be instantiated; methods are no longer class methods 
+- Allow customisation of rate limit handlers on instantiation of `ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerService`
 - Added `.as_dict()` and `.as_tuple()` to dataclasses in `tramtracker` module
 - Type hinting adjustments
   - Missed a few `typing.Final`s
   - Explicit subclassing from `object`
 - Clarifications in docstrings
+- Minor editorial change in `CHANGELOG.md`
+- Updated documentation and metadata
 
 ## 0.2.0 (2024-09-01)
 - Dataclasses in `ptv_timetable` moved to `ptv_timetable.types`

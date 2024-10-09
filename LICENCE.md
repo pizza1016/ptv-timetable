@@ -2,7 +2,7 @@
 
 The source code in this project is licensed under the Apache Licence, version 2.0, which allows anyone to use, copy, modify and distribute the source code in this project, provided that the licence and any copyright notices, and, where you or someone else has modified one or more files before distribution, a notice stating that that person has changed those files, are distributed with the source code. For convenience, a copy of the licence is provided below these notices.
 
-For this project, a URL to this licence page or the main licence page at https://www.apache.org/licenses/LICENSE-2.0 is sufficient for providing a copy of this licence for the purposes of clause 4(a) of the licence.
+For the purposes of clause 4(a) of the licence for this project, the contributors deem it sufficient for a URL or hyperlink to this licence page or the main licence page at https://www.apache.org/licenses/LICENSE-2.0 to be provided in lieu of the full text of the licence.
 
 **Note that the Apache Licence only applies to the source code and not the data obtained from the APIs.**
 
