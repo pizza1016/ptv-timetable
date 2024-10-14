@@ -2,8 +2,8 @@
 
 Modules to interface with the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index) and [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) in a Python-friendly manner.
 
-Package version: 0.2.0<br />
-Last updated: 1 September 2024
+Package version: 0.2.1<br />
+Last updated: 14 October 2024
 
 ---
 

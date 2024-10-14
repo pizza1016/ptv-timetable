@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 (pending)
+## 0.2.1 (2024-10-14)
 - Allow customisation of rate-limiting on instantiation of `tramtracker.TramTrackerService` via the `calls` and `period` parameters
   - Breaking change: `TramTrackerService` must now be instantiated; methods are no longer class methods 
 - Allow customisation of rate limit handlers on instantiation of `ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerService`
