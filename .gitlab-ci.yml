@@ -50,7 +50,7 @@ publish:
     - |
       # install bws
       apt-get update && apt-get install -y curl git jq unzip
-      export BWS_VER="$(curl -s https://api.github.com/repos/bitwarden/sdk/releases/latest | jq -r '.tag_name' | sed 's/bws-v//')"
+      export BWS_VER="1.0.0"
       curl -LO "https://github.com/bitwarden/sdk/releases/download/bws-v$BWS_VER/bws-x86_64-unknown-linux-gnu-$BWS_VER.zip"
       unzip -o bws-x86_64-unknown-linux-gnu-$BWS_VER.zip -d /usr/local/bin
       
