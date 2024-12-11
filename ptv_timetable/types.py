@@ -4,15 +4,30 @@ from dataclasses import asdict, astuple, dataclass
 from datetime import datetime
 from typing import Any, Final, Literal, overload, override, Self, TypedDict
 from zoneinfo import ZoneInfo
+import enum
 import platform
 if platform.system() == "Windows":
     import tzdata
 
-__all__ = ["TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+__all__ = ["NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
 TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
 
+@enum.unique
+class _NotProvidedType(enum.Enum):
+    """Type of the ``NOT_PROVIDED`` constant."""
+
+    NOT_PROVIDED = enum.auto()
+    """Sentinel value that indicates that the API did not return the information in this field."""
+
+    def __bool__(self: Self) -> bool:
+        if self is self.NOT_PROVIDED:
+            return False
+        raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
+
+NOT_PROVIDED = _NotProvidedType.NOT_PROVIDED
+"""Sentinel value that indicates that the API did not return the information in this field."""
 
 @dataclass(kw_only=True, slots=True)
 class TimetableData(object, metaclass=ABCMeta):
@@ -396,36 +411,41 @@ class Route(TimetableData):
     """Public-facing route number of this route"""
     route_gtfs_id: str
     """Identifier for this route in the General Transit Feed Specification"""
-    geometry: list[PathGeometry] | None = None
+    geometry: list[PathGeometry] | None | _NotProvidedType = NOT_PROVIDED
     """Physical geometry of this route"""
     route_service_status: TypedDict("RouteServiceStatus", {"description": str, "timestamp": datetime}) | _NotProvidedType = NOT_PROVIDED
     """Service status of the route; NOT_PROVIDED if API did not provide this information"""
 
     # From /v3/disruptions/...
-    route_direction_id: int | None = None
-    """For a disruption, combined identifier for the route and travel direction affected by the disruption; None if not applicable"""
-    direction_id: int | None = None
-    """For a disruption, identifier of travel direction affected by the disruption; None if not applicable"""
-    direction_name: str | None = None
-    """For a disruption, destination of travel direction affected by the disruption; None if not applicable"""
-    service_time: str | None = None
-    """For a disruption, time of the run/service affected by the disruption; None if not applicable, or disruption affects multiple or no runs/services"""
+    route_direction_id: int | None | _NotProvidedType = NOT_PROVIDED
+    """For a disruption, combined identifier for the route and travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    direction_id: int | None | _NotProvidedType = NOT_PROVIDED
+    """For a disruption, identifier of travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    direction_name: str | None | _NotProvidedType = NOT_PROVIDED
+    """For a disruption, destination of travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    service_time: str | None | _NotProvidedType = NOT_PROVIDED
+    """For a disruption, time of the run/service affected by the disruption; NOT_PROVIDED if not applicable, or disruption affects multiple or no runs/services"""
 
     @classmethod
     @override
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         route_name = kwargs.pop("route_name").strip()
-        geometry = kwargs.pop("geopath") if "geopath" in kwargs else None
-        if geometry is not None:
-            geometry = [PathGeometry(**item) for item in geometry]
-        route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else None
-        if route_service_status is not None:
+        if "geopath" in kwargs:
+            geometry = [PathGeometry(**item) for item in kwargs.pop("geopath")]
+        else:
+            geometry = NOT_PROVIDED
+        route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else NOT_PROVIDED
+        if route_service_status is not NOT_PROVIDED:
             route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
-        direction = kwargs.pop("direction") if "direction" in kwargs else None
-        route_direction_id = direction["route_direction_id"] if direction is not None else None
-        direction_id = direction["direction_id"] if direction is not None else None
-        direction_name = direction["direction_name"] if direction is not None else None
-        service_time = direction["service_time"] if direction is not None else None
+        direction = kwargs.pop("direction") if "direction" in kwargs else NOT_PROVIDED
+        if "direction" in kwargs:
+            direction = kwargs.pop("direction")
+            route_direction_id = direction["route_direction_id"]
+            direction_id = direction["direction_id"]
+            direction_name = direction["direction_name"]
+            service_time = direction["service_time"]
+        else:
+            route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
 
@@ -435,55 +455,55 @@ class Stop(TimetableData):
 
     stop_id: int
     """Identifier of this stop"""
-    route_type: int | None = None
-    """Identifier of the travel mode of this stop; None if this was created by 'Disruptions'"""
+    route_type: int | _NotProvidedType = NOT_PROVIDED
+    """Identifier of the travel mode of this stop; NOT_PROVIDED if this was created by 'Disruptions'"""
     stop_name: str
     """Name of this stop"""
-    locality: str | None = None
-    """Locality (suburb/town) this stop is in; None if the API response did not return this information"""
-    stop_latitude: float | None = None
-    """Latitude coordinate of the stop's location; None if the API response did not return this information"""
-    stop_longitude: float | None = None
-    """Longitude coordinate of the stop's location; None if the API response did not return this information"""
-    stop_distance: float | None = None
-    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or None"""
-    stop_landmark: str | None = None
-    """Notable landmarks near this stop; "" (empty string) if none; None if this was created by 'Disruptions'"""
-    stop_sequence: int | None = None
+    locality: str | _NotProvidedType = NOT_PROVIDED
+    """Locality (suburb/town) this stop is in; NOT_PROVIDED if the API response did not return this information"""
+    stop_latitude: float | _NotProvidedType = NOT_PROVIDED
+    """Latitude coordinate of the stop's location; NOT_PROVIDED if the API response did not return this information"""
+    stop_longitude: float | _NotProvidedType = NOT_PROVIDED
+    """Longitude coordinate of the stop's location; NOT_PROVIDED if the API response did not return this information"""
+    stop_distance: float | _NotProvidedType = NOT_PROVIDED
+    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or NOT_PROVIDED"""
+    stop_landmark: str | _NotProvidedType = NOT_PROVIDED
+    """Notable landmarks near this stop; "" (empty string) if none; NOT_PROVIDED if this was created by 'Disruptions'"""
+    stop_sequence: int | _NotProvidedType = NOT_PROVIDED
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
-    stop_ticket: StopTicket | None = None
-    """Ticketing information for this stop; None if the API response did not return this information"""
-    interchange: list[dict[Literal["route_id", "advertised"], int | bool]] | None = None
-    """Routes available to interchange with from this stop; None if the API response did not return this information"""
+    stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
+    """Ticketing information for this stop; NOT_PROVIDED if the API response did not return this information"""
+    interchange: list[dict[Literal["route_id", "advertised"], int | bool]] | _NotProvidedType = NOT_PROVIDED
+    """Routes available to interchange with from this stop; NOT_PROVIDED if the API response did not return this information"""
 
     # From /v3/stops/...
-    point_id: int | None = None
-    """Identifier of this stop in the PTV static timetable dump; None if the API operation doesn't use this field"""
-    disruption_ids: list[int] | None = None
-    """Current or future disruptions affecting this stop; None if the API operation doesn't use this field"""
-    routes: list[Route] | None = None
-    """List of routes serving this stop; None if the API operation doesn't use this field"""
-    operating_hours: str | None = None
-    """Description of railway station opening hours; None if the API operation doesn't use this field"""
-    mode_id: int | None = None
+    point_id: int | _NotProvidedType = NOT_PROVIDED
+    """Identifier of this stop in the PTV static timetable dump; NOT_PROVIDED if the API operation doesn't use this field"""
+    disruption_ids: list[int] | _NotProvidedType = NOT_PROVIDED
+    """Current or future disruptions affecting this stop; NOT_PROVIDED if the API operation doesn't use this field"""
+    routes: list[Route] | _NotProvidedType = NOT_PROVIDED
+    """List of routes serving this stop; NOT_PROVIDED if the API operation doesn't use this field"""
+    operating_hours: str | _NotProvidedType = NOT_PROVIDED
+    """Description of railway station opening hours; NOT_PROVIDED if the API operation doesn't use this field"""
+    mode_id: int | _NotProvidedType = NOT_PROVIDED
     """Purpose unclear; appears to correspond to disruption modes, which is not currently implemented in this module as it duplicates the purpose of RouteType"""
-    station_details_id: int | None = None
+    station_details_id: int | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns 0)"""
-    flexible_stop_opening_hours: str | None = None
+    flexible_stop_opening_hours: str | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns empty string)"""
-    stop_contact: StopContact | None = None
-    """Operator contact information for this stop; None if not requested from API"""
-    stop_location: StopLocation | None = None
-    """Location information about this stop; None if not requested from API"""
-    stop_amenities: StopAmenities | None = None
-    """Facilities available at this stop; None if not requested from API"""
-    stop_accessibility: StopAccessibility | None = None
-    """Information about accessibility features available at this stop; None if not requested from API"""
-    stop_staffing: StopStaffing | None = None
-    """Staffing information for this stop; None if not requested from API"""
-    station_type: Literal["Premium Station", "Host Station", "Unstaffed Station"] | None = None
-    """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes or if the API operation doesn't use this field"""
-    station_description: str | None = None
+    stop_contact: StopContact | _NotProvidedType = NOT_PROVIDED
+    """Operator contact information for this stop; NOT_PROVIDED if not requested from API"""
+    stop_location: StopLocation | _NotProvidedType = NOT_PROVIDED
+    """Location information about this stop; NOT_PROVIDED if not requested from API"""
+    stop_amenities: StopAmenities | _NotProvidedType = NOT_PROVIDED
+    """Facilities available at this stop; NOT_PROVIDED if not requested from API"""
+    stop_accessibility: StopAccessibility | _NotProvidedType = NOT_PROVIDED
+    """Information about accessibility features available at this stop; NOT_PROVIDED if not requested from API"""
+    stop_staffing: StopStaffing | _NotProvidedType = NOT_PROVIDED
+    """Staffing information for this stop; NOT_PROVIDED if not requested from API"""
+    station_type: Literal["Premium Station", "Host Station", "Unstaffed Station"] | None | _NotProvidedType = NOT_PROVIDED
+    """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes; NOT_PROVIDED if the API operation doesn't use this field"""
+    station_description: str | _NotProvidedType = NOT_PROVIDED
     """Additional information about this stop"""
 
     @classmethod
@@ -491,13 +511,13 @@ class Stop(TimetableData):
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         stop_name = kwargs.pop("stop_name").strip()
         locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
-        stop_ticket = StopTicket.load(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", None)
-        routes = [Route.load(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", None)
-        stop_contact = StopContact.load(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", None)
-        stop_location = StopLocation.load(**kwargs.pop("stop_location")) if "stop_location" in kwargs and kwargs["stop_location"] is not None else kwargs.pop("stop_location", None)
-        stop_amenities = StopAmenities.load(**kwargs.pop("stop_amenities")) if "stop_amenities" in kwargs and kwargs["stop_amenities"] is not None else kwargs.pop("stop_amenities", None)
-        stop_accessibility = StopAccessibility.load(**kwargs.pop("stop_accessibility")) if "stop_accessibility" in kwargs and kwargs["stop_accessibility"] is not None else kwargs.pop("stop_accessibility", None)
-        stop_staffing = StopStaffing.load(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", None)
+        stop_ticket = StopTicket.load(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", NOT_PROVIDED)
+        routes = [Route.load(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", NOT_PROVIDED)
+        stop_contact = StopContact.load(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", NOT_PROVIDED)
+        stop_location = StopLocation.load(**kwargs.pop("stop_location")) if "stop_location" in kwargs and kwargs["stop_location"] is not None else kwargs.pop("stop_location", NOT_PROVIDED)
+        stop_amenities = StopAmenities.load(**kwargs.pop("stop_amenities")) if "stop_amenities" in kwargs and kwargs["stop_amenities"] is not None else kwargs.pop("stop_amenities", NOT_PROVIDED)
+        stop_accessibility = StopAccessibility.load(**kwargs.pop("stop_accessibility")) if "stop_accessibility" in kwargs and kwargs["stop_accessibility"] is not None else kwargs.pop("stop_accessibility", NOT_PROVIDED)
+        stop_staffing = StopStaffing.load(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", NOT_PROVIDED)
         return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
 
@@ -529,7 +549,7 @@ class Departure(TimetableData):
     """Sort key for this stop in a sequence of stops for this run"""
 
     # From /v3/pattern/...
-    skipped_stops: list[Stop] | None = None
+    skipped_stops: list[Stop] | _NotProvidedType = NOT_PROVIDED
     """After departing from this stop, a sequence of stops that are skipped prior to arriving at the next departure point"""
 
     # Undocumented
@@ -658,7 +678,7 @@ class Direction(TimetableData):
     """Identifier for direction of travel"""
     direction_name: str
     """Name of direction of travel"""
-    route_direction_description: str | None = None
+    route_direction_description: str | _NotProvidedType = NOT_PROVIDED
     """Detailed description of this direction of travel along this route, as publicly displayed on the PTV website; not returned by the Departures API"""
     route_id: int
     """Identifier for the route specified by this direction of travel"""
@@ -819,8 +839,8 @@ class Outlet(TimetableData):
     """Outlet's business hours on Sundays"""
     outlet_notes: str | None
     """Additional notes about the ticket outlet"""
-    outlet_distance: float | None = None
-    """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, None if the operation doesn't use this field"""
+    outlet_distance: float | _NotProvidedType = NOT_PROVIDED
+    """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, NOT_PROVIDED if the operation doesn't use this field"""
 
     @classmethod
     @override
