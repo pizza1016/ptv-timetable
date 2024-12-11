@@ -1,21 +1,26 @@
 # Copyright and licensing
-
+### Source code licence
 The source code in this project is licensed under the Apache Licence, version 2.0, which allows anyone to use, copy, modify and distribute the source code in this project, provided that the licence and any copyright notices, and, where you or someone else has modified one or more files before distribution, a notice stating that that person has changed those files, are distributed with the source code. For convenience, a copy of the licence is provided below these notices.
 
 For the purposes of clause 4(a) of the licence for this project, the contributors deem it sufficient for a URL or hyperlink to this licence page or the main licence page at https://www.apache.org/licenses/LICENSE-2.0 to be provided in lieu of the full text of the licence.
 
 **Note that the Apache Licence only applies to the source code and not the data obtained from the APIs.**
 
+### Data licences
 Data from the PTV Timetable API is open government data that is separately licensed under the Creative Commons Attribution 4.0 International licence (CC BY 4.0) by the Department of Transport and Planning of Victoria, Australia, which can be found at https://creativecommons.org/licenses/by/4.0/legalcode.en.
 
 Data from the Yarra Trams TramTracker data service is proprietary data by Keolis Downer Rail (KDR) Victoria and their terms of use can be found at https://yarratrams.com.au/terms-conditions.
+
+Data from the V/Line website is proprietary data by V/Line Corporation, a statutory authority of the state government of Victoria and their terms of use can be found at https://www.vline.com.au/Terms-of-use.
+
+**If you need to avoid using data that is not freely licensed, do *not* use the `tramtracker` and `vline` modules.**
 
 ---
 
 ## Apache Licence
 Version 2.0, January 2004<br />
 http://www.apache.org/licenses/<br />
-This copy of the licence has been edited for style; the original licence terms prevails in the event of any inconsistency.
+This copy of the licence has been edited for style; the original licence terms as linked above prevails in the event of any inconsistency.
 
 ### Terms and conditions for use, reproduction and distribution
 
