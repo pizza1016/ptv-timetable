@@ -35,8 +35,8 @@ class TramTrackerError(OSError):
         Constructs a new exception instance with the specified error message. This is used to raise an exception when the TramTracker data service responds with an error.
 
         :param message: Error message to display
-        :param args: Any other positional-only arguments to pass to the constructor of the parent class
-        :return: ``None``
+        :param args:    Any other positional-only arguments to pass to the constructor of the parent class
+        :return:        ``None``
         """
 
         self.message = message
@@ -59,12 +59,12 @@ class TramTrackerData(object, metaclass=ABCMeta):
         ...
 
     def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
-        """Converts this ``TramTrackerData`` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+        """Converts this :class:`TramTrackerData` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
 
         This is a convenient shorthand for ``dataclasses.asdict(self)``.
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
-        :return: The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+        :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
         """
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
@@ -77,12 +77,12 @@ class TramTrackerData(object, metaclass=ABCMeta):
         ...
 
     def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
-        """Converts this ``TramTrackerData`` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+        """Converts this :class:`TramTrackerData` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
 
         This is a convenient shorthand for ``dataclasses.astuple(self)``.
 
-        :param tuple_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
-        :return: The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+        :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
+        :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
         """
         return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
 
@@ -179,10 +179,10 @@ class TramTrackerService(object):
     def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> None:
         """Initialises a new TramTrackerService instance.
 
-        :param calls: Maximum number of calls that can be made to the service within the specified ``period``
-        :param period: Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
-        :param ratelimit_handler: Function decorator that handles ``ratelimit.exception.RateLimitException`` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
-        :return: ``None``
+        :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
+        :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+        :param ratelimit_handler: Function decorator that handles :class:`ratelimit.exception.RateLimitException` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
+        :return:                  ``None``
         """
 
         self._get: Callable[..., requests.models.Response] = ratelimit_handler(limits(calls, period)(requests.get))
@@ -206,7 +206,7 @@ class TramTrackerService(object):
         """Requests data from the TramTracker service and returns the response.
 
         :param request: The request, which is appended to the base URL of the service
-        :return: A ``list`` or ``dict`` of the response data, depending on the request
+        :return:        A :class:`list` or :class:`dict` of the response data, depending on the request
         """
 
         url = f"http://tramtracker.com.au/Controllers{request}"
@@ -247,9 +247,9 @@ class TramTrackerService(object):
     def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
         """Returns a list of stops on the specified route and direction of travel.
 
-        :param route_id: The route identifier, as returned by ``list_destinations()``
+        :param route_id:     The route identifier, as returned by ``list_destinations()``
         :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described in ``list_destinations()``
-        :return: A list of stops on the route
+        :return:             A list of stops on the route
         """
 
         response = self.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}")
@@ -269,7 +269,7 @@ class TramTrackerService(object):
         """Returns information about the specified stop.
 
         :param stop_id: The TramTracker code of the stop
-        :return: The stop details
+        :return:        The stop details
         """
 
         response = self.call(f"/GetStopInformation.ashx?s={stop_id}")
@@ -289,7 +289,7 @@ class TramTrackerService(object):
         """Returns a list of route numbers for the primary routes that serve the specified stop.
 
         :param stop_id: The TramTracker code of the stop
-        :return: A list of route numbers
+        :return:        A list of route numbers
         """
 
         response = self.call(f"/GetPassingRoutes.ashx?s={stop_id}")
@@ -298,11 +298,11 @@ class TramTrackerService(object):
     def next_trams(self: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
         """Returns the details and times of the next trams to depart from the specified stop. The number of results returned can vary, but is usually three entries per destination.
 
-        :param stop_id: The TramTracker code of the stop
-        :param route_id: If specified, return next trams for the specified route identifier
+        :param stop_id:        The TramTracker code of the stop
+        :param route_id:       If specified, return next trams for the specified route identifier
         :param low_floor_tram: If set to ``True``, only departures with low-floor trams will be returned
-        :param as_of: The time from which to get departures; defaults to current system time
-        :return: A list of departures from the stop
+        :param as_of:          The time from which to get departures; defaults to current system time
+        :return:               A list of departures from the stop
         """
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
@@ -334,8 +334,8 @@ class TramTrackerService(object):
         """Returns the RGB hexadecimal code for the colour of the specified route as printed on public information paraphernalia.
 
         :param route_id: The route identifier
-        :param as_of: If specified, return the colour that was/will be used at the specified time; defaults to current system time
-        :return: A hexadecimal code representing the route colour
+        :param as_of:    If specified, return the colour that was/will be used at the specified time; defaults to current system time
+        :return:         A hexadecimal code representing the route colour
         """
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
@@ -347,8 +347,8 @@ class TramTrackerService(object):
         """Returns the RGB hexadecimal code for the text font colour on public information paraphernalia if it was written on a background with the route's colour (e.g. the route iconography).
 
         :param route_id: The route identifier
-        :param as_of: If specified, return the colour that was/will be used at the specified time; defaults to current system time
-        :return: A hexadecimal code representing the text colour
+        :param as_of:    If specified, return the colour that was/will be used at the specified time; defaults to current system time
+        :return:         A hexadecimal code representing the text colour
         """
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)

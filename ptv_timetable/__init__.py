@@ -78,14 +78,14 @@ class TimetableAPI(object):
     """Interface class with the PTV Timetable API."""
 
     def __init__[**_P, _R](self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> None:
-        """Initialises a new TimetableAPI instance with the supplied credentials.
+        """Initialises a new :class:`TimetableAPI` instance with the supplied credentials.
 
-        :param dev_id: User ID
-        :param key: API request signing key (a UUID)
-        :param calls: Maximum number of calls that can be made to the API within the specified ``period``
-        :param period: Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
-        :param ratelimit_handler: Function decorator that handles ``ratelimit.exception.RateLimitException`` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
-        :return: ``None``
+        :param dev_id:            User ID
+        :param key:               API request signing key (a UUID)
+        :param calls:             Maximum number of calls that can be made to the API within the specified ``period``
+        :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+        :param ratelimit_handler: Function decorator that handles :class:`ratelimit.exception.RateLimitException` without re-raising it; defaults to :function:`ratelimit.decorators.sleep_and_retry`. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
+        :return:                  ``None``
         """
 
         if type(dev_id) not in (str, int):
@@ -122,8 +122,8 @@ class TimetableAPI(object):
         """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are ``Iterable``. Ignores values that are ``None``.
 
         :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
-        :param s: Optionally, the string to append to
-        :return: Modified URL string
+        :param s:      Optionally, the string to append to
+        :return:       Modified URL string
         """
 
         i = 0
@@ -169,7 +169,7 @@ class TimetableAPI(object):
         """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
 
         :param request: API request string
-        :return: Result of API request as a ``dict``
+        :return:        Result of API request as a :class:`dict`
         """
 
         url = self._encode_url(request)
@@ -188,7 +188,7 @@ class TimetableAPI(object):
         """Appends the signature and base URL to the request string.
 
         :param request: API request string
-        :return: API request URL
+        :return:        API request URL
         """
 
         raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
@@ -199,19 +199,19 @@ class TimetableAPI(object):
         """Returns the directions of travel for a particular route.
 
         :param route_id: The route identifier
-        :return: List of directions
+        :return:         List of directions
         """
 
         return [Direction.load(**item) for item in self.call(f"/v3/directions/route/{route_id}")["directions"]]
 
     def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
-        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a ``list`` in both cases.
+        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
 
-        If the direction is shared by multiple routes (e.g. Flinders Street), a ``Direction`` object will be added to the ``list`` for `each` route.
+        If the direction is shared by multiple routes (e.g. Flinders Street), a :class:`Direction` object will be added to the :class:`list` for *each* route.
 
         :param direction_id: The direction identifier
-        :param route_type: Return the directions with the specified route type
-        :return: List of directions
+        :param route_type:   Return the directions with the specified route type
+        :return:             List of directions
         """
 
         req = f"/v3/directions/{direction_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
@@ -228,14 +228,14 @@ class TimetableAPI(object):
                     ) -> StoppingPattern:
         """Returns the stopping pattern of the specified run of the specified route type.
 
-        :param run_ref: The run identifier
-        :param route_type: The run's travel mode identifier
-        :param stop_id: Include only the stop with the specified stop ID
-        :param date: Doesn't appear to have any effect on the response
+        :param run_ref:               The run identifier
+        :param route_type:            The run's travel mode identifier
+        :param stop_id:               Include only the stop with the specified stop ID
+        :param date:                  Doesn't appear to have any effect on the response
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is ``False``)
-        :param expand: Optional data to include in the response (server default is ``EXPAND_DISRUPTION``)
-        :param include_geopath: Include the pattern's path geometry (server default is ``False``)
-        :return: The stopping pattern of the specified run
+        :param expand:                Optional data to include in the response (server default is ``EXPAND_DISRUPTION``)
+        :param include_geopath:       Include the pattern's path geometry (server default is ``False``)
+        :return:                      The stopping pattern of the specified run
         """
 
         req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
@@ -253,10 +253,10 @@ class TimetableAPI(object):
     def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 
-        :param route_id: The route identifier
+        :param route_id:        The route identifier
         :param include_geopath: Include the route's path geometry (server default is ``False``)
-        :param geopath_date: Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if ``str``). Defaults to current server time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
-        :return: Details of the specified route
+        :param geopath_date:    Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :return:                Details of the specified route
         """
 
         if isinstance(geopath_date, str):
@@ -271,8 +271,8 @@ class TimetableAPI(object):
         """Returns all routes of all (or specified) types.
 
         :param route_types: Return only the routes of the specified type(s)
-        :param route_name: Return the routes with names containing the specified substring
-        :return: A list of routes
+        :param route_name:  Return the routes with names containing the specified substring
+        :return:            A list of routes
         """
 
         req = self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes")
@@ -283,7 +283,7 @@ class TimetableAPI(object):
 
         The returned dicts contain these items:
         "route_type_name" (str): Name of the route type
-        "route_type" (int): Value representing the route type
+        "route_type"      (int): Value representing the route type
 
         :return: A list of records containing the aforementioned fields
         """
@@ -299,12 +299,12 @@ class TimetableAPI(object):
                 ) -> list[Run]:
         """Returns a list of all runs with the specified run identifier and, optionally, the specified route type.
 
-        :param run_ref: The run identifier
-        :param route_type: Return runs of the specified type only
-        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
-        :param date: Return only data from the specified date. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :param run_ref:         The run identifier
+        :param route_type:      Return runs of the specified type only
+        :param expand:          Optional data to include in the response (server default is ``EXPAND_NONE``)
+        :param date:            Return only data from the specified date. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :param include_geopath: Include the run's path geometry (server default is ``False``)
-        :return: A list of runs (this will still be a list even if there's only one exact match)
+        :return:                A list of runs (this will still be a list even if there's only one exact match)
         """
 
         req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
@@ -326,11 +326,11 @@ class TimetableAPI(object):
                   ) -> list[Run]:
         """Returns a list of all runs for the specified route identifier and, if provided, the specified route type.
 
-        :param route_id: The route identifier
+        :param route_id:   The route identifier
         :param route_type: The transport type of the specified route
-        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
-        :param date: Return only data from the specified date. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
-        :return: A list of runs
+        :param expand:     Optional data to include in the response (server default is ``EXPAND_NONE``)
+        :param date:       Return only data from the specified date. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :return:           A list of runs
         """
 
         req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
@@ -405,17 +405,17 @@ class TimetableAPI(object):
         """
         Returns the stop with the specified stop identifier and route type.
 
-        :param stop_id: The stop identifier; must be ``str`` if ``gtfs`` is set to ``True``; otherwise, must be ``int``
-        :param route_type: The transport type of the specified stop
-        :param stop_location: Whether to include stop location information in the result (server default is ``False``)
-        :param stop_amenities: Whether to include stop amenities information in the result (server default is ``False``)
+        :param stop_id:            The stop identifier; must be :class:`str` if ``gtfs`` is set to ``True``; otherwise, must be :class:`int`
+        :param route_type:         The transport type of the specified stop
+        :param stop_location:      Whether to include stop location information in the result (server default is ``False``)
+        :param stop_amenities:     Whether to include stop amenities information in the result (server default is ``False``)
         :param stop_accessibility: Whether to include stop accessibility information in the result (server default is ``False``)
-        :param stop_contact: Whether to include operator contact details in the result (server default is ``False``)
-        :param stop_ticket: Whether to include ticketing information in the result (server default is ``False``)
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
-        :param stop_staffing: Whether to include stop staffing information in the result (server default is ``False``)
-        :param stop_disruptions: Whether to include information about disruptions affecting the stop in the result (server default is ``False``)
-        :return: Details of the specified stop
+        :param stop_contact:       Whether to include operator contact details in the result (server default is ``False``)
+        :param stop_ticket:        Whether to include ticketing information in the result (server default is ``False``)
+        :param gtfs:               Whether the value specified in ``stop_id`` is a General Transit Feed Specification identifier (server default is ``False``)
+        :param stop_staffing:      Whether to include stop staffing information in the result (server default is ``False``)
+        :param stop_disruptions:   Whether to include information about disruptions affecting the stop in the result (server default is ``False``)
+        :return:                   Details of the specified stop
         """
 
         req = f"/v3/stops/{stop_id}/route_type/{route_type}"
@@ -433,11 +433,11 @@ class TimetableAPI(object):
         """
         Returns a list of all stops on the specified route.
 
-        :param route_id: The route identifier
-        :param route_type: The route type of the specified route
-        :param direction_id: Specify a direction identifier to include stop sequence information in the list
+        :param route_id:         The route identifier
+        :param route_type:       The route type of the specified route
+        :param direction_id:     Specify a direction identifier to include stop sequence information in the list
         :param stop_disruptions: Whether to include stop disruption information
-        :return: A list of all stops on the route
+        :return:                 A list of all stops on the route
         """
 
         req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
@@ -455,13 +455,13 @@ class TimetableAPI(object):
         """
         Returns a list of stops near the specified location.
 
-        :param latitude: Latitude coordinate of the search location
-        :param longitude: Longitude coordinate of the search location
-        :param route_types: If specified, only return stops for the specified travel mode(s)
-        :param max_results: Maximum number of stops to be returned (server default is 30)
-        :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
+        :param latitude:         Latitude coordinate of the search location
+        :param longitude:        Longitude coordinate of the search location
+        :param route_types:      If specified, only return stops for the specified travel mode(s)
+        :param max_results:      Maximum number of stops to be returned (server default is 30)
+        :param max_distance:     Maximum radius from the specified location to search, in metres (server default is 300 metres)
         :param stop_disruptions: Whether to include stop disruption information (server default is ``False``)
-        :return: A list of stops in the specified search parameters
+        :return:                 A list of stops in the specified search parameters
         """
 
         req = f"/v3/stops/location/{latitude},{longitude}"
@@ -607,20 +607,20 @@ class TimetableAPI(object):
         """
         Returns a list of departures from the specified stop.
 
-        :param route_type: Transport mode identifier
-        :param stop_id: Stop identifier
-        :param route_id: If specified, show only departures for the specified route. Only one of 'route_id' and 'platform_numbers' should be specified.
-        :param platform_numbers: If specified, show only departures from the specified platform numbers. Only one of 'route_id' and 'platform_numbers' should be specified.
-        :param direction_id: If specified, show only departures travelling towards the specified direction
-        :param gtfs: Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
+        :param route_type:                     Transport mode identifier
+        :param stop_id:                        Stop identifier
+        :param route_id:                       If specified, show only departures for the specified route. Only one of 'route_id' and 'platform_numbers' should be specified.
+        :param platform_numbers:               If specified, show only departures from the specified platform numbers. Only one of 'route_id' and 'platform_numbers' should be specified.
+        :param direction_id:                   If specified, show only departures travelling towards the specified direction
+        :param gtfs:                           Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
         :param include_advertised_interchange: Whether to include stop interchange information in result (server default is ``False``)
-        :param date: If specified, show departures from the specified date and time (server default is current time). If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date and time instead. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
-        :param max_results: Return only this number of departures
-        :param include_cancelled: Whether to include departures that are cancelled (server default is ``False``)
-        :param look_backwards: If set to True, departures that arrive at their terminating destinations prior to the date and time specified in 'date' are returned instead (server default is ``False``)
-        :param expand: Optional data to include in the response (server default is ``EXPAND_NONE``)
-        :param include_geopath: Include the run's path geometry (server default is ``False``)
-        :return: The requested departure information and any associated stop, route, run, direction and disruption data
+        :param date:                           If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified.
+        :param max_results:                    Return only this number of departures
+        :param include_cancelled:              Whether to include departures that are cancelled (server default is ``False``)
+        :param look_backwards:                 If set to ``True``, departures that arrive at their terminating destinations prior to the date specified in 'date' are returned instead (server default is ``False``)
+        :param expand:                         Optional data to include in the response (server default is ``EXPAND_NONE``)
+        :param include_geopath:                Include the run's path geometry (server default is ``False``)
+        :return:                               The requested departure information and any associated stop, route, run, direction and disruption data
         """
 
         if isinstance(date, str):
@@ -662,12 +662,12 @@ class TimetableAPI(object):
         """
         Returns a list of all disruptions or, if specified, the disruptions for the specified route and/or stop.
 
-        :param route_id: If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
-        :param stop_id: If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
-        :param route_types: If specified, list only disruptions for the specified travel modes
-        :param disruption_modes: If specified, list only disruptions for the specified disruption modes
+        :param route_id:          If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param stop_id:           If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+        :param route_types:       If specified, list only disruptions for the specified travel modes
+        :param disruption_modes:  If specified, list only disruptions for the specified disruption modes
         :param disruption_status: If specified, list only disruptions with the specified status
-        :return: A list of disruptions
+        :return:                  A list of disruptions
         """
 
         req = "/v3/disruptions" + (f"/route/{route_id}" if route_id is not None else "") + (f"/stop/{stop_id}" if stop_id is not None else "")
@@ -685,7 +685,7 @@ class TimetableAPI(object):
         Retrieves the details of the disruption with the specified disruption identifier
 
         :param disruption_id: Disruption identifier
-        :return: The disruption with the specified identifier
+        :return:              The disruption with the specified identifier
         """
 
         res = self.call(f"/v3/disruptions/{disruption_id}")["disruption"]
@@ -711,13 +711,13 @@ class TimetableAPI(object):
         """
         Returns the estimated fare for the specified journey details.
 
-        :param zone_a: With zone_b, the lowest and highest zones travelled through (order independent)
-        :param zone_b: As per zone_a
-        :param touch_on: If specified, estimate the fare for the journey commencing at the specified touch on time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
-        :param touch_off: If specified, estimate the fare for the journey concluding at the specified touch off time. Defaults to ``ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :param zone_a:            With zone_b, the lowest and highest zones travelled through (order independent)
+        :param zone_b:            As per zone_a
+        :param touch_on:          If specified, estimate the fare for the journey commencing at the specified touch on time. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified
+        :param touch_off:         If specified, estimate the fare for the journey concluding at the specified touch off time. Defaults to ``zoneinfo.ZoneInfo("Australia/Melbourne")`` if time zone not specified
         :param is_free_fare_zone: Whether the journey is entirely within a free fare zone
-        :param route_types: If specified, estimate the fare for the journey travelling through the specified fare zone(s)
-        :return: Object containing the estimated fares
+        :param route_types:       If specified, estimate the fare for the journey travelling through the specified fare zone(s)
+        :return:                  Object containing the estimated fares
         """
 
         if type(touch_on) is str:
@@ -760,11 +760,11 @@ class TimetableAPI(object):
         """
         Returns a list of all myki ticket outlets or, if specified, near the specified location.
 
-        :param latitude: If specified together with ``longitude``, return ticket outlets near the specified location only
-        :param longitude: If specified together with ``latitude``, return ticket outlets near the specified location only
+        :param latitude:     If specified together with ``longitude``, return ticket outlets near the specified location only
+        :param longitude:    If specified together with ``latitude``, return ticket outlets near the specified location only
         :param max_distance: Maximum radius from the specified location to search, in metres (server default is 300 metres)
-        :param max_results: Maximum number of outlets to be returned (server default is 30)
-        :return: A list of ticket outlets
+        :param max_results:  Maximum number of outlets to be returned (server default is 30)
+        :return:             A list of ticket outlets
         """
 
         req = "/v3/outlets" + (f"/location/{latitude},{longitude}" if latitude is not None and longitude is not None else "")
@@ -829,16 +829,16 @@ class TimetableAPI(object):
 
         If the search term is numeric or has fewer than 3 characters, the API will only return routes.
 
-        :param search_term: Term to search
-        :param route_types: Return stops and routes with the specified travel mode type(s) only
-        :param latitude: Latitude coordinate of the location to search
-        :param longitude: Longitude coordinate of the location to search
-        :param max_distance: Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
-        :param include_outlets: Whether to include ticket outlets in search result (server default is True)
-        :param match_stop_by_locality: Whether to include stops in the search result where their localities match the search term (server default is ``True``)
-        :param match_route_by_locality: Whether to include routes in the search result where their localities match the search term (server default is ``True``)
+        :param search_term:                Term to search
+        :param route_types:                Return stops and routes with the specified travel mode type(s) only
+        :param latitude:                   Latitude coordinate of the location to search
+        :param longitude:                  Longitude coordinate of the location to search
+        :param max_distance:               Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres)
+        :param include_outlets:            Whether to include ticket outlets in search result (server default is ``True``)
+        :param match_stop_by_locality:     Whether to include stops in the search result where their localities match the search term (server default is ``True``)
+        :param match_route_by_locality:    Whether to include routes in the search result where their localities match the search term (server default is ``True``)
         :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
-        :return: All matching stops, routes and ticket outlets
+        :return:                           All matching stops, routes and ticket outlets
         """
 
         req = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"

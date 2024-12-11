@@ -42,12 +42,12 @@ class TimetableData(object, metaclass=ABCMeta):
         ...
 
     def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
-        """Converts this ``TimetableData`` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+        """Converts this :class:`TimetableData` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
 
         This is a convenient shorthand for ``dataclasses.asdict(self)``.
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
-        :return: The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+        :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
         """
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
@@ -60,19 +60,19 @@ class TimetableData(object, metaclass=ABCMeta):
         ...
 
     def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
-        """Converts this ``TimetableData`` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+        """Converts this :class:`TimetableData` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
 
         This is a convenient shorthand for ``dataclasses.astuple(self)``.
 
-        :param tuple_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
-        :return: The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+        :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
+        :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
         """
         return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
 
     @classmethod
     @abstractmethod
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
-        """Constructs a new instance of this ``TimetableData`` subclass by converting the specified API response data.
+        """Constructs a new instance of this :class:`TimetableData` subclass by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return: The newly constructed instance
@@ -210,7 +210,7 @@ class StopAmenities(TimetableData):
     baby_change_facility: str
     """Appears to be deprecated/unused (always returns empty string)"""
     parkiteer: None
-    """Appears to be deprecated/unused (always returns None). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns None). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop"""
     replacement_bus_stop_location: str
     """Appears to be deprecated/unused (always returns empty string). Location of the replacement bus stop"""
     QTEM: None
@@ -220,7 +220,7 @@ class StopAmenities(TimetableData):
     PID: bool
     """Whether there are passenger information displays at this stop"""
     ATM: None
-    """Whether there is an automated teller machine at this stop"""
+    """Appears to be deprecated/unused (always returns None). Whether there is an automated teller machine at this stop"""
     travellers_aid: bool | None
     """Whether Traveller's Aid facilities are available at this stop; None if not applicable"""
     premium_stop: None
