@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import datetime
-from typing import Any, Final, Literal, overload, override, Self
+from typing import Any, Final, Literal, overload, override, Self, TypedDict
 from zoneinfo import ZoneInfo
 import platform
 if platform.system() == "Windows":
@@ -398,8 +398,8 @@ class Route(TimetableData):
     """Identifier for this route in the General Transit Feed Specification"""
     geometry: list[PathGeometry] | None = None
     """Physical geometry of this route"""
-    route_service_status: dict[Literal["description", "timestamp"], str | datetime] | None = None
-    """Service status of the route; None if API did not provide this information"""
+    route_service_status: TypedDict("RouteServiceStatus", {"description": str, "timestamp": datetime}) | _NotProvidedType = NOT_PROVIDED
+    """Service status of the route; NOT_PROVIDED if API did not provide this information"""
 
     # From /v3/disruptions/...
     route_direction_id: int | None = None

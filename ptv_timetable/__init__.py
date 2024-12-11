@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from typing import cast, Final, Literal, overload, Self
+from typing import cast, Final, Literal, overload, Self, TypedDict
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -278,7 +278,7 @@ class TimetableAPI(object):
         req = self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes")
         return [Route.load(**item) for item in self.call(req)["routes"]]
 
-    def list_route_types(self: Self) -> list[dict[Literal["route_type_name", "route_type"], str | int]]:
+    def list_route_types(self: Self) -> list[TypedDict("RouteType", {"route_type_name": str, "route_type": int})]:
         """Returns the names and identifiers of all route types.
 
         The returned dicts contain these items:
@@ -288,7 +288,7 @@ class TimetableAPI(object):
         :return: A list of records containing the aforementioned fields
         """
 
-        return cast(list[dict[Literal["route_type_name", "route_type"], str | int]], self.call("/v3/route_types")["route_types"])
+        return cast(list[TypedDict("RouteType", {"route_type_name": str, "route_type": int})], self.call("/v3/route_types")["route_types"])
 
     def get_run(self: Self,
                 run_ref: str | int,
