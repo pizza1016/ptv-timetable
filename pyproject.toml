@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ptv-timetable"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
     "ratelimit >= 2.2.1",
     "requests >= 2.32.3",
@@ -17,7 +17,7 @@ authors = [
 maintainers = [
     {name = "pizza1016", email = "10370007-pizza1016@users.noreply.gitlab.com"}
 ]
-description = "Python API wrappers to interact with the Public Transport Victoria Timetable API and Yarra Trams TramTracker service"
+description = "API wrappers for interacting with real-time public transport data in Victoria, Australia"
 readme = "README.md"
 license = {file = "LICENCE.md"}
 keywords = ["public transport", "transportation", "melbourne", "victoria", "australia", "ptv", "public transport victoria", "yarra trams", "library", "api wrapper"]

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 (2024-12-__)
+- Added new `vline` module to retrieve real-time platform information and estimated V/Line train departure/arrival at Southern Cross station
+  - Added V/Line copyright information to `LICENCE.md`
+- Added a new sentinel value `NOT_PROVIDED` to `ptv_timetable.types` to be used when an API operation doesn't contain a particular field
+- Clarified some code in `ptv_timetable.types`
+- Type hinting adjustments
+  - Replaced some `dict` hints with `typing.TypedDict`
+- Updated documentation and metadata
+
 ## 0.2.1 (2024-10-14)
 - Allow customisation of rate-limiting on instantiation of `tramtracker.TramTrackerService` via the `calls` and `period` parameters
   - Breaking change: `TramTrackerService` must now be instantiated; methods are no longer class methods 

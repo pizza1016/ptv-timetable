@@ -1,21 +1,31 @@
-# PTV Timetable and TramTracker API wrappers for Python (pre-release)
+from ptv_timetable import TimetableAPI
 
-Modules to interface with the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index) and [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) in a Python-friendly manner.
+# Victorian public transport information API wrappers for Python (pre-release)
 
-Package version: 0.2.1<br />
-Last updated: 14 October 2024
+Python utilities for interacting with real-time information for public transport in Victoria, Australia, via the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index), [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) and the [V/Line website](https://www.vline.com.au).
+
+Package version: 0.3.0<br />
+Last updated: __ December 2024<br />
+Tested on Python version: ≥ 3.12
 
 ---
 
 ## Overview
 
-The goal of this package is to provide documented and easy-to-use interfaces (API wrappers) to interact with the PTV Timetable API and TramTracker service in Python, with minimal transformation to the responses from the API. A secondary aim is to minimise the use of modules that are not part of the standard library to increase portability.
+This package of modules aims to simplify the process of retrieving and manipulating real-time data for public transport in Victoria, Australia and document each operation and response supported by the APIs.
+
+The package implements interfaces for three data sources:
+- PTV [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index) - the main service for real-time and scheduled public transport information across Victoria;
+- Yarra Trams [TramTracker](https://tramtracker.com.au/pid.html) - live passenger information for the Melbourne tram network, including planned diversions which the Timetable API lacks; and
+- [V/Line website](https://www.vline.com.au) - since November 2024, real-time V/Line departures and arrivals information at Southern Cross station for the next 30 minutes, including platform information and estimated time of departure/arrival.
+
+The package minimises the use of third-party modules to improve portability, especially on systems with restrictions.
 
 ### What's different from accessing the Timetable API directly?
 
-- **Simplifying output "types"**: instead of having a different response schema for each API operation, any object that represents the same concept are consolidated into the same response type (e.g. all responses that represent a public transport stop are instances of the same class: `Stop`, instead of the ten or so different representations in the API). Any attribute/field for which the API does not provide a response for will have the value `None`.
+- **Simplifying output "types"**: instead of having a different response schema for each API operation, any object that represents the same concept are consolidated into the same response type (e.g. all responses that represent a public transport stop are instances of the same class: `Stop`, instead of the ten or so different representations in the API). Any attribute/field for which the API does not provide a response for will have a sentinel value.
 - **Best-effort documentation**: all operations and fields have, as far as practicable, been documented in type hints and docstrings (although some of these are guesses).
-- **Date and time representation**: date inputs and outputs are converted from and to `datetime` objects with the local time zone of Victoria, so that you do not have to deal with the different string representations of dates and speaking to the API in the UTC time zone.
+- **Date and time representation**: date inputs and outputs are converted from and to `datetime` objects with the local time zone of Victoria, so that you do not have to deal with the different string representations of dates and speaking to the API in the UTC time zone as implemented by the Timetable API.
 - **Other quality of life modifications**: such as consistent attribute names, fixing typos and removing trailing whitespaces.
 
 ## Pre-release package
@@ -24,11 +34,11 @@ This package is in pre-release. Breaking changes may be made without notice duri
 
 ## Direct dependencies
 
-| Package name | Tested on version | Notes                                                                                                               |
-|--------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
-| ratelimit    | ≥ 2.2.1           |                                                                                                                     |
-| requests     | ≥ 2.32.3          |                                                                                                                     |
-| tzdata       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
+| Package name                                     | Tested on version | Notes                                                                                                               |
+|--------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
+| [ratelimit](https://pypi.org/project/ratelimit/) | ≥ 2.2.1           |                                                                                                                     |
+| [requests](https://pypi.org/project/requests/)   | ≥ 2.32.3          |                                                                                                                     |
+| [tzdata](https://pypi.org/project/tzdata/)       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
 
 ## Usage
 
@@ -42,22 +52,29 @@ python -m pip install --index-url https://gitlab.com/api/v4/projects/54559866/pa
 ```
 These commands will also install any required dependencies.
 
-This package adds two modules into the root namespace of your interpreter (so they can be directly imported into your code with `import <module_name>`):
+This package adds three modules into the root namespace of your interpreter (so they can be directly imported into your code with `import <module_name>`):
 - `ptv_timetable` for interacting with the PTV Timetable API;
-  - `ptv_timetable.types` defines dataclasses used to represent returned API objects; and
-- `tramtracker` for interacting with the TramTracker data service.
+  - `ptv_timetable.types` defines dataclasses used to represent returned API objects;
+- `tramtracker` for interacting with the TramTracker data service; and
+- `vline` for retrieving V/Line Southern Cross departure and arrival information.
 
-Each module defines data types that encapsulate the responses from the APIs so as to allows access by attribute reference (`.`) to take advantage of autocompletion systems in IDEs where available. This format also allows each field to be documented, which is not a feature that's available in the raw `dict`s returned by the APIs.
+Each module defines data types that encapsulate the responses from the APIs to allow access by attribute reference (`.`) to take advantage of autocompletion systems in IDEs where available. This format also allows each field to be documented, which is not a feature that is available in the raw `dict`s returned by the APIs.
 
-Each module defines a class to interface with the APIs (`ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerService`) with methods for each supported operation. `ptv_timetable.TimetableAPI` needs to be instantiated before use with credentials obtained from PTV from [this page](http://ptv.vic.gov.au/ptv-timetable-api/).
+To use the Timetable API service, you will first need to obtain credentials from PTV:
+- Send an email to [APIKeyRequest@ptv.vic.gov.au](mailto:APIKeyRequest@ptv.vic.gov.au) with the subject line `PTV Timetable API - request for key`.
+- You will receive a user ID and a UUID-format signing key in response. This may take several days depending on volume of requests; you will *not* receive confirmation that your request was received, so hang tight!<br />
+ (Details: http://ptv.vic.gov.au/ptv-timetable-api/)
+- Specify the credentials when instantiating the `ptv_timetable.TimetableAPI` class: `TimetableAPI(dev_id, key)`
+
+Credentials are not required for the `tramtracker` and `vline` modules.
 
 ### Logging
 
-Some actions are logged under the logger names `ptv-timetable.ptv_timetable` and `ptv-timetable.tramtracker`. Use `logging.getLogger()` to obtain the loggers and you can register your own handlers to retrieve their contents.
+Some actions are logged under the logger names `ptv-timetable.ptv_timetable`, `ptv-timetable.tramtracker` and `ptv-timetable.vline`. Use `logging.getLogger()` to obtain the loggers and you can register your own handlers to retrieve their contents.
 
 ## Issues and error reporting
 
-To report problems with the package or otherwise give feedback, [go to the Issues tab in the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
+To report problems with the package or otherwise give feedback, [go to the Issues tab of the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
 
 ## Contributing
 
