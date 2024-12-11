@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (2024-12-__)
+## 0.3.0 (2024-12-12)
 - Added new `vline` module to retrieve real-time platform information and estimated V/Line train departure/arrival at Southern Cross station
   - Added V/Line copyright information to `LICENCE.md`
 - Added a new sentinel value `NOT_PROVIDED` to `ptv_timetable.types` to be used when an API operation doesn't contain a particular field

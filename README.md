@@ -1,11 +1,9 @@
-from ptv_timetable import TimetableAPI
-
 # Victorian public transport information API wrappers for Python (pre-release)
 
 Python utilities for interacting with real-time information for public transport in Victoria, Australia, via the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index), [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) and the [V/Line website](https://www.vline.com.au).
 
 Package version: 0.3.0<br />
-Last updated: __ December 2024<br />
+Last updated: 12 December 2024<br />
 Tested on Python version: ≥ 3.12
 
 ---
@@ -126,3 +124,9 @@ This project's source code is licensed under the Apache Licence 2.0; however, da
 | TramTrackerService.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                |
 | TramTrackerService.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.      |
 | TramTrackerService.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia. |
+
+### vline/\_\_init__.py
+
+| Constant/function/method | Description                                                                                        |
+|--------------------------|----------------------------------------------------------------------------------------------------|
+| **next_services()**      | Gets the details of the next 30 minutes of services departing and arriving Southern Cross station. |
