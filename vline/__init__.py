@@ -154,7 +154,11 @@ class _ServiceInfoScraper(HTMLParser):
         """Time of information request"""
         r = requests.get("https://www.vline.com.au")
         r.raise_for_status()
-        self.feed(r.text)
+        try:
+            self.feed(r.text)
+        except AssertionError as exc:
+            _logger.error("", exc_info=True)
+            raise RuntimeError("Data received from the server is not in the expected format. This could be because of breaking changes on the server side and client-side code is yet to be updated.") from exc
         return
 
     @override
@@ -165,7 +169,7 @@ class _ServiceInfoScraper(HTMLParser):
             attrs: defaultdict[str, str | None] = defaultdict(lambda: None, attrs)
             if attrs["class"] is not None and len(self._stack) == 0:
                 html_class = attrs["class"].split(" ")
-                if "depatureDesktopBrowser" in html_class:
+                if "depatureDesktopBrowser" in html_class:  # Typo is intentional (originated from server side)
                     self._stack.append(html_class)
                     assert attrs["onclick"]
                     self._current = self.pattern_attrs.search(attrs["onclick"]).groupdict()
