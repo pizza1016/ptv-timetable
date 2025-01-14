@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
-from typing import cast, Final, Literal, overload, Self, TypedDict
+from typing import Final, Literal, overload, Self, TypedDict
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -165,7 +165,7 @@ class TimetableAPI(object):
 
         return s
 
-    def call(self: Self, request: str) -> dict[str, _Record | list[_Record]]:
+    def call(self: Self, request: str) -> list[_Record] | dict[str, _Record | list[_Record]]:
         """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
 
         :param request: API request string
@@ -288,7 +288,7 @@ class TimetableAPI(object):
         :return: A list of records containing the aforementioned fields
         """
 
-        return cast(list[TypedDict("RouteType", {"route_type_name": str, "route_type": int})], self.call("/v3/route_types")["route_types"])
+        return self.call("/v3/route_types")["route_types"]
 
     def get_run(self: Self,
                 run_ref: str | int,
