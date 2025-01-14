@@ -473,7 +473,7 @@ class Stop(TimetableData):
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
     """Ticketing information for this stop; NOT_PROVIDED if the API response did not return this information"""
-    interchange: list[dict[Literal["route_id", "advertised"], int | bool]] | _NotProvidedType = NOT_PROVIDED
+    interchange: list[TypedDict("StopInterchange", {"route_id": int, "advertised": bool})] | _NotProvidedType = NOT_PROVIDED
     """Routes available to interchange with from this stop; NOT_PROVIDED if the API response did not return this information"""
 
     # From /v3/stops/...
@@ -631,6 +631,29 @@ class VehicleDescriptor(TimetableData):
 
 
 @dataclass(kw_only=True, slots=True)
+class RunInterchange(TimetableData):
+    """Contains information about the preceding or subsequent service of a particular run."""
+
+    run_ref: str
+    """Identifier of this run"""
+    route_id: int
+    """Identifier of the route this run belongs to"""
+    direction_id: int
+    """Identifier of the direction of travel of this run"""
+    stop_id: int
+    """Identifier of the stop where the original run (which contains this RunInterchange instance in its interchange field) changes over to this run, or vice versa"""
+    destination_name: str
+    """Public-facing destination name of this run"""
+    advertised: bool
+    """Whether the service swap is intended to be shown to passengers on public-facing signage"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        return cls(**kwargs)
+
+
+@dataclass(kw_only=True, slots=True)
 class Run(TimetableData):
     """Represents a particular run or service along a route."""
 
@@ -658,8 +681,8 @@ class Run(TimetableData):
     """Information on the vehicle operating this service, where available; None if this information was not requested from the API"""
     geometry: list[PathGeometry]
     """Physical geometry of this run's journey; [] (empty list) if not requested from API"""
-    interchange: dict | None
-    """Indicates, if any, the run this service will operate after terminating; None if this information was not requested from the API"""
+    interchange: dict[Literal["feeder", "distributor"], RunInterchange | None] | None
+    """Indicates, if any, the run this service was operating before commencing ("feeder"), and the run this service will operate after terminating ("distributor"); None if no information available, or this information was not requested from the API"""
 
     # Undocumented
     run_note: str | None
