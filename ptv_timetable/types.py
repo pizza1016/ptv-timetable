@@ -293,7 +293,7 @@ class Wheelchair(TimetableData):
 class StopAccessibility(TimetableData):
     """Accessibility information for the attached stop."""
 
-    platform_number: int | None
+    platform_number: str | None
     """The platform number of the stop that the data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
     lighting: bool
     """Whether there is lighting at this stop"""
