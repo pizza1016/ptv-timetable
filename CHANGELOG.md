@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 (2025-01-14)
+- Added dataclass `ptv_timetable.types.RunInterchange`
+- Added property `ptv_timetable.types.Departure.departure_time`
+- Error logging in `vline` module
+- Type hinting adjustments
+  - Replaced `dict` hint with `typing.TypedDict` in `ptv_timetable.types.Stop.interchange`
+  - `ptv_timetable.types.StopAccessibility.platform_number` is a `str`, not `int`
+- Fixed bugs:
+  - Incomplete type hint in `ptv_timetable.TimetableAPI.call()`
+- Update data licensing information
+  - Yarra Trams is now operated by Yarra Journey Makers Pty Ltd
+
 ## 0.3.0 (2024-12-12)
 - Added new `vline` module to retrieve real-time platform information and estimated V/Line train departure/arrival at Southern Cross station
   - Added V/Line copyright information to `LICENCE.md`

@@ -19,7 +19,7 @@ class _NotProvidedType(enum.Enum):
     """Type of the ``NOT_PROVIDED`` constant."""
 
     NOT_PROVIDED = enum.auto()
-    """Sentinel value that indicates that the API did not return the information in this field."""
+    """Sentinel value that indicates that the API operation used does not return the information in this field"""
 
     def __bool__(self: Self) -> bool:
         if self is self.NOT_PROVIDED:
@@ -27,7 +27,7 @@ class _NotProvidedType(enum.Enum):
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
 
 NOT_PROVIDED = _NotProvidedType.NOT_PROVIDED
-"""Sentinel value that indicates that the API did not return the information in this field."""
+"""Sentinel value that indicates that the API operation used does not return the information in this field"""
 
 @dataclass(kw_only=True, slots=True)
 class TimetableData(object, metaclass=ABCMeta):

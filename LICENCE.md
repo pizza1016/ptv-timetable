@@ -9,7 +9,7 @@ For the purposes of clause 4(a) of the licence for this project, the contributor
 ### Data licences
 Data from the PTV Timetable API is open government data that is separately licensed under the Creative Commons Attribution 4.0 International licence (CC BY 4.0) by the Department of Transport and Planning of Victoria, Australia, which can be found at https://creativecommons.org/licenses/by/4.0/legalcode.en.
 
-Data from the Yarra Trams TramTracker data service is proprietary data by Keolis Downer Rail (KDR) Victoria and their terms of use can be found at https://yarratrams.com.au/terms-conditions.
+Data from the Yarra Trams TramTracker service is proprietary data by Yarra Journey Makers Pty Ltd and their terms of use can be found at https://yarratrams.com.au/terms-conditions.
 
 Data from the V/Line website is proprietary data by V/Line Corporation, a statutory authority of the state government of Victoria and their terms of use can be found at https://www.vline.com.au/Terms-of-use.
 
