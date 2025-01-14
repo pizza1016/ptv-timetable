@@ -556,6 +556,14 @@ class Departure(TimetableData):
     departure_note: str | None
     """Notes about this departure (appears to be used to indicate whether a metropolitan train service runs via the City Loop or not)"""
 
+    @property
+    def departure_time(self: Self) -> datetime:
+        """Returns :attribute:`estimated_departure` if its value is not ``None``, otherwise returns :attribute:`scheduled_departure`.
+
+        :return: :attribute:`estimated_departure` if not ``None``, else :attribute:`scheduled_departure`
+        """
+        return self.estimated_departure if self.estimated_departure is not None else self.scheduled_departure
+
     @classmethod
     @override
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
