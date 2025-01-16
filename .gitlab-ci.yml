@@ -45,7 +45,7 @@ publish:
   stage: deploy
   dependencies:
     - build
-  id-tokens:
+  id_tokens:
     PYPI_ID_TOKEN:
       aud: pypi
   script:
