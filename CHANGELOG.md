@@ -2,6 +2,7 @@
 
 ## 0.4.0 (2025-01-__)
 - Moved constants in `ptv_timetable` to `ptv_timetable.types` (they are still accessible from `ptv_timetable`)
+- An instance of `ptv_timetable.TimetableAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
 - Type hinting adjustments
   - Added missing return types in overloaded signatures of `ptv_timetable.search()`
 - Fixed bug:
