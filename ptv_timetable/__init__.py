@@ -39,7 +39,7 @@ class TimetableAPI(object):
         :param calls:             Maximum number of calls that can be made to the API within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :param ratelimit_handler: Function decorator that handles :class:`ratelimit.exception.RateLimitException` without re-raising it; defaults to :function:`ratelimit.decorators.sleep_and_retry`. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
-        :param session:           If specified, calls will be made using this HTTP session (default is to create a new :class:`requests.sessions.Session` instance)
+        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`requests.sessions.Session` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instanc to be used internally)
         :return:                  ``None``
         """
 
