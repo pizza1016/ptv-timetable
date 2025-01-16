@@ -1,13 +1,11 @@
-from collections.abc import Iterable, Callable
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
 from typing import Final, Literal, overload, Self, TypedDict
-from zoneinfo import ZoneInfo
 import logging
 import platform
-import re
 import requests
 import urllib.parse
 if platform.system() == "Windows":
@@ -22,51 +20,6 @@ type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
 
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
-
-TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
-"""Time zone of Victoria"""
-UUID_PATTERN: Final = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
-"""Regular expression for a universally unique identifier"""
-
-METROPOLITAN_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
-METRO_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
-MET_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
-METRO: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
-TRAM: Literal[1] = 1
-"""Metropolitan trams. For use in `route_type` parameters"""
-BUS: Literal[2] = 2
-"""Metropolitan & regional buses. For use in `route_type` parameters"""
-REGIONAL_TRAIN: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
-REG_TRAIN: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
-COACH: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
-VLINE: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
-
-EXPAND_ALL: Literal["All"] = "All"
-"""Return all object properties in full. For use in `expand` parameters"""
-EXPAND_STOP: Literal["Stop"] = "Stop"
-"""Return stop properties. For use in `expand` parameters"""
-EXPAND_ROUTE: Literal["Route"] = "Route"
-"""Return route properties. For use in `expand` parameters"""
-EXPAND_RUN: Literal["Run"] = "Run"
-"""Return run properties. For use in `expand` parameters"""
-EXPAND_DIRECTION: Literal["Direction"] = "Direction"
-"""Return direction properties. For use in `expand` parameters"""
-EXPAND_DISRUPTION: Literal["Disruption"] = "Disruption"
-"""Return disruption properties. For use in `expand` parameters"""
-EXPAND_VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
-"""Return vehicle descriptor properties. For use in `expand` parameters"""
-EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
-"""Return vehicle position properties. For use in `expand` parameters"""
-EXPAND_NONE: Literal["None"] = "None"
-"""Don't return any object properties. For use in `expand` parameters"""
 
 _logger: Final = logging.getLogger("ptv-timetable.ptv_timetable")
 """Logger for this module"""
@@ -103,7 +56,7 @@ class TimetableAPI(object):
         self._get: Callable[..., requests.models.Response] = ratelimit_handler(limits(calls, period)(requests.get))
         """requests.get() function but rate-limited"""
 
-        _logger.info("PTVAPI instance created")
+        _logger.info("TimetableAPI instance created")
         return
 
     def __del__(self: Self) -> None:
@@ -114,7 +67,7 @@ class TimetableAPI(object):
         :return: ``None``
         """
 
-        _logger.info("PTVAPI instance deleted")
+        _logger.info("TimetableAPI instance deleted")
         return
 
     @staticmethod
@@ -782,7 +735,7 @@ class TimetableAPI(object):
                match_stop_by_suburb: bool | None = None,
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
-               ):
+               ) -> SearchResult:
         ...
 
     @overload
@@ -796,7 +749,7 @@ class TimetableAPI(object):
                match_stop_by_suburb: bool | None = None,
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
-               ):
+               ) -> SearchResult:
         ...
 
     @overload
@@ -810,7 +763,7 @@ class TimetableAPI(object):
                match_stop_by_suburb: bool | None = None,
                match_route_by_suburb: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
-               ):
+               ) -> SearchResult:
         ...
 
     def search(self: Self,

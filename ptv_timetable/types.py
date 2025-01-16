@@ -6,13 +6,57 @@ from typing import Any, Final, Literal, overload, override, Self, TypedDict
 from zoneinfo import ZoneInfo
 import enum
 import platform
+import re
 if platform.system() == "Windows":
     import tzdata
 
-__all__ = ["NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+__all__ = ["TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
 TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
+UUID_PATTERN: Final = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}")
+"""Regular expression for a universally unique identifier"""
+
+METROPOLITAN_TRAIN: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
+METRO_TRAIN: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
+MET_TRAIN: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
+METRO: Literal[0] = 0
+"""Metropolitan trains. For use in `route_type` parameters"""
+TRAM: Literal[1] = 1
+"""Metropolitan trams. For use in `route_type` parameters"""
+BUS: Literal[2] = 2
+"""Metropolitan & regional buses. For use in `route_type` parameters"""
+REGIONAL_TRAIN: Literal[3] = 3
+"""Regional trains & coaches. For use in `route_type` parameters"""
+REG_TRAIN: Literal[3] = 3
+"""Regional trains & coaches. For use in `route_type` parameters"""
+COACH: Literal[3] = 3
+"""Regional trains & coaches. For use in `route_type` parameters"""
+VLINE: Literal[3] = 3
+"""Regional trains & coaches. For use in `route_type` parameters"""
+
+EXPAND_ALL: Literal["All"] = "All"
+"""Return all object properties in full. For use in `expand` parameters"""
+EXPAND_STOP: Literal["Stop"] = "Stop"
+"""Return stop properties. For use in `expand` parameters"""
+EXPAND_ROUTE: Literal["Route"] = "Route"
+"""Return route properties. For use in `expand` parameters"""
+EXPAND_RUN: Literal["Run"] = "Run"
+"""Return run properties. For use in `expand` parameters"""
+EXPAND_DIRECTION: Literal["Direction"] = "Direction"
+"""Return direction properties. For use in `expand` parameters"""
+EXPAND_DISRUPTION: Literal["Disruption"] = "Disruption"
+"""Return disruption properties. For use in `expand` parameters"""
+EXPAND_VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
+"""Return vehicle descriptor properties. For use in `expand` parameters"""
+EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
+"""Return vehicle position properties. For use in `expand` parameters"""
+EXPAND_NONE: Literal["None"] = "None"
+"""Don't return any object properties. For use in `expand` parameters"""
+
 
 @enum.unique
 class _NotProvidedType(enum.Enum):
@@ -75,7 +119,7 @@ class TimetableData(object, metaclass=ABCMeta):
         """Constructs a new instance of this :class:`TimetableData` subclass by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
-        :return: The newly constructed instance
+        :return:       The newly constructed instance
         """
         ...
 
@@ -431,13 +475,12 @@ class Route(TimetableData):
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
-            geometry = [PathGeometry(**item) for item in kwargs.pop("geopath")]
+            geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         else:
             geometry = NOT_PROVIDED
         route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else NOT_PROVIDED
         if route_service_status is not NOT_PROVIDED:
             route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
-        direction = kwargs.pop("direction") if "direction" in kwargs else NOT_PROVIDED
         if "direction" in kwargs:
             direction = kwargs.pop("direction")
             route_direction_id = direction["route_direction_id"]
@@ -1028,7 +1071,7 @@ class FareEstimate(TimetableData):
         senior_pass_28_to_69_days = fares[2]["Pass28To69DayPerDay"]
         senior_pass_70_plus_days = fares[2]["Pass70PlusDayPerDay"]
 
-        return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, weekend=weekend, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days, **kwargs)
+        return cls(early_bird_travel=early_bird_travel, free_fare_zone=free_fare_zone, weekend=weekend, zones=zones, full_2_hour_peak=full_2_hour_peak, full_2_hour_off_peak=full_2_hour_off_peak, full_weekday_cap_peak=full_weekday_cap_peak, full_weekday_cap_off_peak=full_weekday_cap_off_peak, full_weekend_cap=full_weekend_cap, full_holiday_cap=full_holiday_cap, full_pass_7_days_total=full_pass_7_days_total, full_pass_28_to_69_days=full_pass_28_to_69_days, full_pass_70_plus_days=full_pass_70_plus_days, concession_2_hour_peak=concession_2_hour_peak, concession_2_hour_off_peak=concession_2_hour_off_peak, concession_weekday_cap_peak=concession_weekday_cap_peak, concession_weekday_cap_off_peak=concession_weekday_cap_off_peak, concession_weekend_cap=concession_weekend_cap, concession_holiday_cap=concession_holiday_cap, concession_pass_7_days_total=concession_pass_7_days_total, concession_pass_28_to_69_days=concession_pass_28_to_69_days, concession_pass_70_plus_days=concession_pass_70_plus_days, senior_2_hour_peak=senior_2_hour_peak, senior_2_hour_off_peak=senior_2_hour_off_peak, senior_weekday_cap_peak=senior_weekday_cap_peak, senior_weekday_cap_off_peak=senior_weekday_cap_off_peak, senior_weekend_cap=senior_weekend_cap, senior_holiday_cap=senior_holiday_cap, senior_pass_7_days_total=senior_pass_7_days_total, senior_pass_28_to_69_days=senior_pass_28_to_69_days, senior_pass_70_plus_days=senior_pass_70_plus_days)
 
 
 @dataclass(kw_only=True, slots=True)

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (2025-01-__)
+- Moved constants in `ptv_timetable` to `ptv_timetable.types` (they are still accessible from `ptv_timetable`)
+- Type hinting adjustments
+  - Added missing return types in overloaded signatures of `ptv_timetable.search()`
+- Fixed bug:
+  - Stray `PathGeometry()` in `ptv_timetable.types.Route.load()` from earlier version (now `PathGeometry.load()`)
+  - Removed old `kwargs.pop("direction")` line in `ptv_timetable.types.Route.load()` that has since been replaced
+
 ## 0.3.1 (2025-01-14)
 - Added dataclass `ptv_timetable.types.RunInterchange`
 - Added property `ptv_timetable.types.Departure.departure_time`
