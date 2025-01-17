@@ -10,7 +10,7 @@ import platform
 if platform.system() == "Windows":
     import tzdata
 
-from .types import EPOCH, TIMESTAMP_PATTERN, TZ_MELBOURNE, TramTrackerError, TramDeparture, TramDestination, TramStop
+from .types import *
 
 __all__ = ["TramTrackerAPI"]
 
