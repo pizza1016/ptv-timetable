@@ -1,7 +1,7 @@
 from aiohttp.client import ClientSession
 from aiolimiter.leakybucket import AsyncLimiter
 from datetime import datetime, timedelta, timezone
-from typing import Final, Self
+from typing import Any, Final, NoReturn, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
@@ -21,24 +21,40 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTramTrackerAPI(object):
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
-    def __init__(self: Self, *, calls: int = 1, period: float = 10, session: ClientSession | None = None) -> None:
-        """Initialises a new AsyncTramTrackerAPI instance.
+    def __init__(self: Self, *args: Any, **kwargs: Any) -> NoReturn:
+        """This class cannot be constructed directly. Use the :method:`AsyncTramTrackerAPI.create()` asynchronous class method instead.
+
+        :return: Raises ``TypeError`` if called
+        """
+
+        self._limiter: AsyncLimiter = ...
+        """HTTP requests rate limiter"""
+        self._session: ClientSession = ...
+        """HTTP session used to make requests"""
+        self._is_user_session: bool = ...
+        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
+
+        raise TypeError("AsyncTramTrackerAPI cannot be constructed directly. Use the .create() asynchronous class method instead.")
+
+    @classmethod
+    async def create(cls: Self, *, calls: int = 1, period: float = 10, session: ClientSession | None = None) -> Self:
+        """Creates a new :class:`AsyncTramTrackerAPI` instance.
 
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instance to be used internally)
-        :return:                  ``None``
+        :return:                  The new instance
         """
 
-        self._limiter: Final[AsyncLimiter] = AsyncLimiter(calls, period)
-        """HTTP requests rate limiter"""
-        self._session = session if session is not None else ClientSession()
-        """HTTP session used to make requests"""
-        self._is_user_session: Final[bool] = True if session is not None else False
-        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
+        instance = cls.__new__(cls)
+
+        instance._limiter = AsyncLimiter(calls, period)
+        instance._session = session if session is not None else ClientSession()
+        instance._is_user_session = True if session is not None else False
 
         _logger.info("AsyncTramTrackerAPI instance created")
-        return
+
+        return instance
 
     def __del__(self: Self) -> None:
         """Closes the underlying HTTP session if it wasn't supplied by the user and logs the prospective deletion of an instance into the module logger once there are no more references to it in the program.

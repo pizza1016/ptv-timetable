@@ -7,10 +7,7 @@ from requests.models import Response
 from requests.sessions import Session
 from typing import Final, Literal, overload, Self, TypedDict
 import logging
-import platform
 import urllib.parse
-if platform.system() == "Windows":
-    import tzdata
 
 from .types import *
 

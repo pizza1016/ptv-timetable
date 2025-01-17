@@ -4,12 +4,9 @@ from collections.abc import Iterable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
-from typing import Final, Literal, overload, Self, TypedDict
+from typing import Any, Final, Literal, Never, overload, Self, TypedDict
 import logging
-import platform
 import urllib.parse
-if platform.system() == "Windows":
-    import tzdata
 
 from .types import *
 
@@ -30,15 +27,36 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTimetableAPI(object):
     """Interface class with the PTV Timetable API."""
 
-    def __init__(self: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10, session: ClientSession | None = None) -> None:
-        """Initialises a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
+    def __init__(self: Self, *args: Any, **kwargs: Any) -> Never:
+        """This class cannot be constructed directly. Use the :method:`AsyncTimetableAPI.create()` asynchronous class method instead.
+
+        :return: Raises ``TypeError`` if called
+        """
+
+        self._dev_id: str = ...
+        """API user ID"""
+        self._key: bytes = ...
+        """API request signing key"""
+
+        self._limiter: AsyncLimiter = ...
+        """HTTP requests rate limiter"""
+        self._session: ClientSession = ...
+        """Asynchronous HTTP session"""
+        self._is_user_session: bool = ...
+        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
+
+        raise TypeError("AsyncTimetableAPI cannot be constructed directly. Use the .create() asynchronous class method instead.")
+
+    @classmethod
+    async def create(cls: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10, session: ClientSession | None = None) -> Self:
+        """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
         :param key:     API request signing key (a UUID)
         :param calls:   Maximum number of calls that can be made to the API within the specified ``period``
         :param period:  Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :param session: If specified, calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` instance to be used as a context manager (default is to create a new :class:`aiohttp.client.ClientSession` instance to be used internally)
-        :return:        ``None``
+        :return:        The new instance
         """
 
         if type(dev_id) not in (str, int):
@@ -49,20 +67,17 @@ class AsyncTimetableAPI(object):
         if UUID_PATTERN.fullmatch(key) is None:
             raise ValueError(f"key is not a UUID string: {key}")
 
-        self._dev_id: Final[str] = str(dev_id)
-        """API user ID"""
-        self._key: Final[bytes] = key.encode(encoding="ascii")
-        """API request signing key"""
+        instance = cls.__new__(cls)
 
-        self._limiter: Final[AsyncLimiter] = AsyncLimiter(calls, period)
-        """HTTP requests rate limiter"""
-        self._session = session if session is not None else ClientSession()
-        """Asynchronous HTTP session"""
-        self._is_user_session: Final[bool] = True if session is not None else False
-        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
+        instance._dev_id = str(dev_id)
+        instance._key = key.encode(encoding="ascii")
+        instance._limiter = AsyncLimiter(calls, period)
+        instance._session = session if session is not None else ClientSession()
+        instance._is_user_session = True if session is not None else False
 
         _logger.info("AsyncTimetableAPI instance created")
-        return
+
+        return instance
 
     def __del__(self: Self) -> None:
         """Closes the underlying HTTP session if it wasn't supplied by the user and logs the prospective deletion of the instance into the module logger once there are no more references to it in the program.
