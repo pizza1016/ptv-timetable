@@ -3,7 +3,7 @@
 ## 0.4.0 (2025-01-__)
 - Moved constants and types in `ptv_timetable` and `tramtracker` to `ptv_timetable.types` and `tramtracker.types`, respectively (they are still accessible from `ptv_timetable` and `tramtracker`)
 - Breaking change: `tramtracker.TramTrackerService` has been renamed to `tramtracker.TramTrackerAPI`
-- An instance of `ptv_timetable.TimetableAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
+- An instance of `ptv_timetable.TimetableAPI` and `ptv_timetable.TramTrackerAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
 - Type hinting adjustments
   - Added missing return types in overloaded signatures of `ptv_timetable.search()`
 - Fixed bug:

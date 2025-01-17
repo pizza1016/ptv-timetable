@@ -1,11 +1,12 @@
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from ratelimit import sleep_and_retry, limits
+from requests.models import Response
+from requests.sessions import Session
 from typing import Final, Self
 from zoneinfo import ZoneInfo
 import logging
 import platform
-import requests
 if platform.system() == "Windows":
     import tzdata
 
@@ -22,29 +23,37 @@ _logger.addHandler(logging.NullHandler())
 class TramTrackerAPI(object):
     """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
-    def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> None:
+    def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
         """Initialises a new TramTrackerAPI instance.
 
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :param ratelimit_handler: Function decorator that handles :class:`ratelimit.exception.RateLimitException` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
+        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`requests.sessions.Session` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instance to be used internally)
         :return:                  ``None``
         """
 
-        self._get: Callable[..., requests.models.Response] = ratelimit_handler(limits(calls, period)(requests.get))
-        """requests.get() function but rate-limited"""
+        self._session = session if session is not None else Session()
+        """HTTP session used to make requests"""
+        self._is_user_session: Final[bool] = True if session is not None else False
+        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
+
+        self._get: Callable[..., Response] = ratelimit_handler(limits(calls, period)(self._session.get))
+        """Session.get() method but rate-limited"""
 
         _logger.info("TramTrackerAPI instance created")
         return
 
     def __del__(self: Self) -> None:
-        """Logs the prospective deletion of an instance into the module logger once there are no more references to it in the program.
+        """Closes the underlying HTTP session if it wasn't supplied by the user and logs the prospective deletion of an instance into the module logger once there are no more references to it in the program.
 
         Note that Python does not guarantee that this will be called for any instance.
 
         :return: ``None``
         """
 
+        if not self._is_user_session:
+            self._session.close()
         _logger.info("TramTrackerAPI instance deleted")
         return
 
@@ -57,7 +66,7 @@ class TramTrackerAPI(object):
 
         url = f"http://tramtracker.com.au/Controllers{request}"
         _logger.debug("Requesting from: " + url)
-        r: requests.models.Response = self._get(url)
+        r: Response = self._get(url)
         try:
             r.raise_for_status()
         except Exception:
