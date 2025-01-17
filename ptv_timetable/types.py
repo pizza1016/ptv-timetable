@@ -116,12 +116,21 @@ class TimetableData(object, metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
-        """Constructs a new instance of this :class:`TimetableData` subclass by converting the specified API response data.
+        """Constructs a new instance of this class by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return:       The newly constructed instance
         """
         ...
+
+    @classmethod
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        """Asynchronously constructs a new instance of this class by converting the specified API response data.
+
+        :param kwargs: A dictionary unpacking with the data to instantiate
+        :return:       The newly constructed instance
+        """
+        return cls.load(**kwargs)
 
 
 @dataclass(kw_only=True, slots=True)
@@ -491,6 +500,27 @@ class Route(TimetableData):
             route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        route_name = kwargs.pop("route_name").strip()
+        if "geopath" in kwargs:
+            geometry = [await PathGeometry.aload(**item) for item in kwargs.pop("geopath")]
+        else:
+            geometry = NOT_PROVIDED
+        route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else NOT_PROVIDED
+        if route_service_status is not NOT_PROVIDED:
+            route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
+        if "direction" in kwargs:
+            direction = kwargs.pop("direction")
+            route_direction_id = direction["route_direction_id"]
+            direction_id = direction["direction_id"]
+            direction_name = direction["direction_name"]
+            service_time = direction["service_time"]
+        else:
+            route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
+        return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
+
 
 @dataclass(kw_only=True, slots=True)
 class Stop(TimetableData):
@@ -563,6 +593,20 @@ class Stop(TimetableData):
         stop_staffing = StopStaffing.load(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", NOT_PROVIDED)
         return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        stop_name = kwargs.pop("stop_name").strip()
+        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
+        stop_ticket = await StopTicket.aload(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", NOT_PROVIDED)
+        routes = [await Route.aload(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", NOT_PROVIDED)
+        stop_contact = await StopContact.aload(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", NOT_PROVIDED)
+        stop_location = await StopLocation.aload(**kwargs.pop("stop_location")) if "stop_location" in kwargs and kwargs["stop_location"] is not None else kwargs.pop("stop_location", NOT_PROVIDED)
+        stop_amenities = await StopAmenities.aload(**kwargs.pop("stop_amenities")) if "stop_amenities" in kwargs and kwargs["stop_amenities"] is not None else kwargs.pop("stop_amenities", NOT_PROVIDED)
+        stop_accessibility = await StopAccessibility.aload(**kwargs.pop("stop_accessibility")) if "stop_accessibility" in kwargs and kwargs["stop_accessibility"] is not None else kwargs.pop("stop_accessibility", NOT_PROVIDED)
+        stop_staffing = await StopStaffing.aload(**kwargs.pop("stop_staffing")) if "stop_staffing" in kwargs and kwargs["stop_staffing"] is not None else kwargs.pop("stop_staffing", NOT_PROVIDED)
+        return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
+
 
 @dataclass(kw_only=True, slots=True)
 class Departure(TimetableData):
@@ -613,6 +657,15 @@ class Departure(TimetableData):
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
         skipped_stops = [Stop.load(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
+        kwargs.pop("run_id")
+        return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
+
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
+        estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
+        skipped_stops = [await Stop.aload(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
         kwargs.pop("run_id")
         return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
@@ -743,6 +796,18 @@ class Run(TimetableData):
         vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
         return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
 
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        kwargs.pop("run_id")
+        destination_name = kwargs.pop("destination_name")
+        if destination_name is not None:
+            destination_name = destination_name.strip()
+        geometry = [await PathGeometry.aload(**item) for item in kwargs.pop("geopath")]
+        vehicle_position = await VehiclePosition.aload(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
+        vehicle_descriptor = await VehicleDescriptor.aload(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
+        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
+
 
 @dataclass(kw_only=True, slots=True)
 class Direction(TimetableData):
@@ -811,6 +876,17 @@ class Disruption(TimetableData):
         stops = [Stop.load(**item) for item in kwargs.pop("stops")]
         return cls(published_on=published_on, last_updated=last_updated, from_date=from_date, to_date=to_date, routes=routes, stops=stops, **kwargs)
 
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
+        last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
+        from_date = datetime.fromisoformat(kwargs.pop("from_date")).astimezone(TZ_MELBOURNE)
+        to_date = datetime.fromisoformat(kwargs.pop("to_date")).astimezone(TZ_MELBOURNE) if kwargs["to_date"] is not None else kwargs.pop("to_date")
+        routes = [await Route.aload(**item) for item in kwargs.pop("routes")]
+        stops = [await Stop.aload(**item) for item in kwargs.pop("stops")]
+        return cls(published_on=published_on, last_updated=last_updated, from_date=from_date, to_date=to_date, routes=routes, stops=stops, **kwargs)
+
 
 @dataclass(kw_only=True, slots=True)
 class StoppingPattern(TimetableData):
@@ -838,6 +914,17 @@ class StoppingPattern(TimetableData):
         routes = {int(key): Route.load(**value) for key, value in kwargs.pop("routes").items()}
         runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()}
         directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
+        return cls(disruptions=disruptions, departures=departures, stops=stops, routes=routes, runs=runs, directions=directions)
+
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        disruptions = [await Disruption.aload(**item) for item in kwargs.pop("disruptions")]
+        departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
+        stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()}
+        routes = {int(key): await Route.aload(**value) for key, value in kwargs.pop("routes").items()}
+        runs = {key: await Run.aload(**value) for key, value in kwargs.pop("runs").items()}
+        directions = {int(key): await Direction.aload(**value) for key, value in kwargs.pop("directions").items()}
         return cls(disruptions=disruptions, departures=departures, stops=stops, routes=routes, runs=runs, directions=directions)
 
     def simple(self: Self) -> list[int]:
@@ -875,6 +962,18 @@ class DeparturesResponse(TimetableData):
         runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()}
         directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
         disruptions = {int(key): Disruption.load(**value) for key, value in kwargs.pop("disruptions").items()}
+        kwargs.pop("status")
+        return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
+
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
+        stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()}
+        routes = {int(key): await Route.aload(**value) for key, value in kwargs.pop("routes").items()}
+        runs = {key: await Run.aload(**value) for key, value in kwargs.pop("runs").items()}
+        directions = {int(key): await Direction.aload(**value) for key, value in kwargs.pop("directions").items()}
+        disruptions = {int(key): await Disruption.aload(**value) for key, value in kwargs.pop("disruptions").items()}
         kwargs.pop("status")
         return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
 
@@ -1094,3 +1193,11 @@ class SearchResult(TimetableData):
         kwargs.pop("status")
         return cls(stops=stops, routes=routes, outlets=outlets)
 
+    @classmethod
+    @override
+    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+        stops = [await Stop.aload(**item) for item in kwargs.pop("stops")]
+        routes = [await Route.aload(**item) for item in kwargs.pop("routes")]
+        outlets = [await Outlet.aload(**item) for item in kwargs.pop("outlets")]
+        kwargs.pop("status")
+        return cls(stops=stops, routes=routes, outlets=outlets)

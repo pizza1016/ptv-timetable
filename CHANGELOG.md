@@ -1,12 +1,14 @@
 # Changelog
 
 ## 0.4.0 (2025-01-__)
+- New modules `ptv_timetable.asyncapi` and `tramtracker.asyncapi` to allow for asynchronous operations using the built-in `asyncio` library.
+  - Consequential modifications to dataclasses in `ptv_timetable.types`
 - Moved constants and types in `ptv_timetable` and `tramtracker` to `ptv_timetable.types` and `tramtracker.types`, respectively (they are still accessible from `ptv_timetable` and `tramtracker`)
 - Breaking change: `tramtracker.TramTrackerService` has been renamed to `tramtracker.TramTrackerAPI`
 - An instance of `ptv_timetable.TimetableAPI` and `ptv_timetable.TramTrackerAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
 - Type hinting adjustments
   - Added missing return types in overloaded signatures of `ptv_timetable.search()`
-- Fixed bug:
+- Fixed bugs:
   - Stray `PathGeometry()` in `ptv_timetable.types.Route.load()` from earlier version (now `PathGeometry.load()`)
   - Removed old `kwargs.pop("direction")` line in `ptv_timetable.types.Route.load()` that has since been replaced
 
