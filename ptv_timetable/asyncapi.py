@@ -4,7 +4,7 @@ from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
-from typing import Final, Literal, overload, Self, TypedDict
+from typing import Final, Literal, overload, Required, Self, TypedDict
 import logging
 import urllib.parse
 
@@ -14,6 +14,25 @@ __all__ = ["AsyncTimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN"
 
 type _Values = str | int | float | bool | datetime | _Record
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
+
+class _PTVResponseType(TypedDict, total=False):
+    directions: list[_Record]
+    disruption: _Record
+    disruptions: _Record
+    disruption_modes: list[_Record]
+    outlets: list[_Record]
+    route: _Record
+    routes: list[_Record]
+    route_types: list[_Record]
+    runs: list[_Record]
+    stop: _Record
+    stops: list[_Record]
+    status: Required[TypedDict("Status", {"version": str, "health": int})]
+
+class _FareEstimateResponseType(TypedDict, total=False):
+    FareEstimateResult: _Record
+    FareEstimateResultStatus: Required[TypedDict("FareEstimateResultStatus", {"Message": str, "StatusCode": int})]
+
 
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
@@ -145,7 +164,7 @@ class AsyncTimetableAPI(object):
 
         return s
 
-    async def call(self: Self, request: str) -> list[_Record] | dict[str, _Record | list[_Record]]:
+    async def call(self: Self, request: str) -> _PTVResponseType | _FareEstimateResponseType:
         """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
 
         :param request: API request string
@@ -673,7 +692,7 @@ class AsyncTimetableAPI(object):
         res = (await self.call(f"/v3/disruptions/{disruption_id}"))["disruption"]
         return await Disruption.aload(**res)
 
-    async def list_disruption_modes(self: Self) -> list[dict[str, str | int]]:
+    async def list_disruption_modes(self: Self) -> list[TypedDict("DisruptionMode", {"disruption_mode": int, "disruption_mode_name": str})]:
         """
         Returns the names and identifiers of all disruption modes.
 

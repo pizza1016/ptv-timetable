@@ -5,7 +5,7 @@ from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
 from requests.models import Response
 from requests.sessions import Session
-from typing import Final, Literal, overload, Self, TypedDict
+from typing import Final, Literal, overload, Required, Self, TypedDict
 import logging
 import urllib.parse
 
@@ -13,8 +13,28 @@ from .types import *
 
 __all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
-type _Values = str | int | float | bool | datetime | _Record
+type _Values = str | int | float | bool | _Record
 type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
+
+
+class _PTVResponseType(TypedDict, total=False):
+    directions: list[_Record]
+    disruption: _Record
+    disruptions: _Record
+    disruption_modes: list[_Record]
+    outlets: list[_Record]
+    route: _Record
+    routes: list[_Record]
+    route_types: list[_Record]
+    runs: list[_Record]
+    stop: _Record
+    stops: list[_Record]
+    status: Required[TypedDict("Status", {"version": str, "health": int})]
+
+class _FareEstimateResponseType(TypedDict, total=False):
+    FareEstimateResult: _Record
+    FareEstimateResultStatus: Required[TypedDict("FareEstimateResultStatus", {"Message": str, "StatusCode": int})]
+
 
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
@@ -125,7 +145,7 @@ class TimetableAPI(object):
 
         return s
 
-    def call(self: Self, request: str) -> list[_Record] | dict[str, _Record | list[_Record]]:
+    def call(self: Self, request: str) -> _PTVResponseType | _FareEstimateResponseType:
         """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
 
         :param request: API request string
@@ -651,7 +671,7 @@ class TimetableAPI(object):
         res = self.call(f"/v3/disruptions/{disruption_id}")["disruption"]
         return Disruption.load(**res)
 
-    def list_disruption_modes(self: Self) -> list[dict[str, str | int]]:
+    def list_disruption_modes(self: Self) -> list[TypedDict("DisruptionMode", {"disruption_mode": int, "disruption_mode_name": str})]:
         """
         Returns the names and identifiers of all disruption modes.
 
