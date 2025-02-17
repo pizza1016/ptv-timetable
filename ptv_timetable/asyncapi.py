@@ -1,10 +1,10 @@
 from aiohttp.client import ClientSession
 from aiolimiter.leakybucket import AsyncLimiter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
-from typing import Any, Final, Literal, Never, overload, Self, TypedDict
+from typing import Final, Literal, overload, Self, TypedDict
 import logging
 import urllib.parse
 
@@ -27,35 +27,14 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTimetableAPI(object):
     """Interface class with the PTV Timetable API."""
 
-    def __init__(self: Self, *args: Any, **kwargs: Any) -> Never:
-        """This class cannot be constructed directly. Use the :method:`AsyncTimetableAPI.create()` asynchronous class method instead.
-
-        :return: Raises ``TypeError`` if called
-        """
-
-        self._dev_id: str = ...
-        """API user ID"""
-        self._key: bytes = ...
-        """API request signing key"""
-
-        self._limiter: AsyncLimiter = ...
-        """HTTP requests rate limiter"""
-        self._session: ClientSession = ...
-        """Asynchronous HTTP session"""
-        self._is_user_session: bool = ...
-        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
-
-        raise TypeError("AsyncTimetableAPI cannot be constructed directly. Use the .create() asynchronous class method instead.")
-
-    @classmethod
-    async def create(cls: Self, dev_id: str | int, key: str, *, calls: int = 1, period: float = 10, session: ClientSession | None = None) -> Self:
+    def __init__(self: Self, dev_id: str | int, key: str, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
         """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
         :param key:     API request signing key (a UUID)
+        :param session: Calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` instance to be used as a context manager. If you wish to let the instance handle the session, use the alternative constructor method ``.create()`` instead
         :param calls:   Maximum number of calls that can be made to the API within the specified ``period``
         :param period:  Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
-        :param session: If specified, calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` instance to be used as a context manager (default is to create a new :class:`aiohttp.client.ClientSession` instance to be used internally)
         :return:        The new instance
         """
 
@@ -67,15 +46,41 @@ class AsyncTimetableAPI(object):
         if UUID_PATTERN.fullmatch(key) is None:
             raise ValueError(f"key is not a UUID string: {key}")
 
-        instance = cls.__new__(cls)
+        if not isinstance(session, ClientSession):
+            raise TypeError(f"session must be aiohttp.client.ClientSession, not {type(session).__name__}")
 
-        instance._dev_id = str(dev_id)
-        instance._key = key.encode(encoding="ascii")
-        instance._limiter = AsyncLimiter(calls, period)
-        instance._session = session if session is not None else ClientSession()
-        instance._is_user_session = True if session is not None else False
+        self._dev_id: Final[str] = str(dev_id)
+        """API user ID"""
+        self._key: Final[bytes] = key.encode(encoding="ascii")
+        """API request signing key"""
+
+        self._limiter: Final[AsyncLimiter] = AsyncLimiter(calls, period)
+        """HTTP requests rate limiter"""
+        self._session: Final[ClientSession] = session
+        """Asynchronous HTTP session"""
+        self._is_user_session: bool = True
+        """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
 
         _logger.info("AsyncTimetableAPI instance created")
+        return
+
+    @classmethod
+    async def create(cls: Callable[..., Self], dev_id: str | int, key: str, session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
+        """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
+
+        :param dev_id:  User ID
+        :param key:     API request signing key (a UUID)
+        :param session: If specified, calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` instance to be used as a context manager (default is to create a new :class:`aiohttp.client.ClientSession` instance to be used internally)
+        :param calls:   Maximum number of calls that can be made to the API within the specified ``period``
+        :param period:  Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+        :return:        The new instance
+        """
+
+        if session is None:
+            instance = cls(dev_id=dev_id, key=key, session=ClientSession(), calls=calls, period=period)
+            instance._is_user_session = False
+        else:
+            instance = cls(dev_id=dev_id, key=key, session=session, calls=calls, period=period)
 
         return instance
 
