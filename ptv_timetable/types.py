@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import datetime
-from typing import Any, Final, Literal, overload, override, Self, TypedDict
+from typing import Any, Final, final, Literal, overload, override, Self, TypedDict
 from zoneinfo import ZoneInfo
 import enum
 import platform
@@ -57,7 +57,7 @@ EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties. For use in `expand` parameters"""
 
-
+@final
 @enum.unique
 class _NotProvidedType(enum.Enum):
     """Type of the ``NOT_PROVIDED`` constant."""
@@ -68,6 +68,17 @@ class _NotProvidedType(enum.Enum):
     def __bool__(self: Self) -> bool:
         if self is self.NOT_PROVIDED:
             return False
+        raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
+
+    def __repr__(self: Self) -> str:
+        if self is self.NOT_PROVIDED:
+            return "_NotProvidedType.NOT_PROVIDED"
+        raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
+
+
+    def __str__(self: Self) -> str:
+        if self is self.NOT_PROVIDED:
+            return "NOT_PROVIDED"
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
 
 NOT_PROVIDED = _NotProvidedType.NOT_PROVIDED
