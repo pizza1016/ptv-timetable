@@ -37,7 +37,7 @@ class _FareEstimateResponseType(TypedDict, total=False):
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
 
-_logger: Final = logging.getLogger("ptv-timetable.ptv_timetable.aio")
+_logger: Final = logging.getLogger("ptv-timetable.ptv_timetable.asyncapi")
 """Logger for this module"""
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
@@ -172,6 +172,7 @@ class AsyncTimetableAPI(object):
         """
 
         url = await self._encode_url(request)
+        _logger.debug("Entering rate limit context manager")
         async with self._limiter:  # Rate limit requests
             _logger.debug("Requesting from: " + url)
             r = await self._session.request("get", url)
@@ -180,6 +181,7 @@ class AsyncTimetableAPI(object):
         except Exception:
             _logger.error("", exc_info=True)
             raise
+        _logger.debug("Awaiting JSON")
         result = await r.json()
         _logger.debug("Response: " + str(result))
         return result

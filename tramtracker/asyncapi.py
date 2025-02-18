@@ -13,7 +13,7 @@ from .types import *
 
 __all__ = ["AsyncTramTrackerAPI"]
 
-_logger: Final = logging.getLogger("ptv-timetable.tramtracker")
+_logger: Final = logging.getLogger("ptv-timetable.tramtracker.asyncapi")
 """Logger for this module"""
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
@@ -80,7 +80,8 @@ class AsyncTramTrackerAPI(object):
         """
 
         url = f"http://tramtracker.com.au/Controllers{request}"
-        async with self._limiter:
+        _logger.debug("Entering rate limiter context manager")
+        async with self._limiter:  # Rate limit requests
             _logger.debug("Requesting from: " + url)
             r = await self._session.request("get", url)
         try:
@@ -88,6 +89,7 @@ class AsyncTramTrackerAPI(object):
         except Exception:
             _logger.error("", exc_info=True)
             raise
+        _logger.debug("Awaiting JSON decoder")
         result = await r.json()
         _logger.debug("Response: " + str(result))
 
