@@ -12,6 +12,7 @@
 - Fixed bugs:
   - Stray `PathGeometry()` in `ptv_timetable.types.Route.load()` from earlier version (now `PathGeometry.load()`)
   - Removed old `kwargs.pop("direction")` line in `ptv_timetable.types.Route.load()` that has since been replaced
+- Updated documentation and metadata
 
 ## 0.3.1 (2025-01-14)
 - Added dataclass `ptv_timetable.types.RunInterchange`

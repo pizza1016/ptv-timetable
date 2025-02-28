@@ -2,8 +2,8 @@
 
 Python utilities for interacting with real-time information for public transport in Victoria, Australia, via the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index), [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) and the [V/Line website](https://www.vline.com.au).
 
-Package version: 0.3.1<br />
-Last updated: 14 January 2025<br />
+Package version: 0.4.0<br />
+Last updated: 28 February 2025<br />
 Tested on Python version: ≥ 3.12
 
 ---
@@ -31,16 +31,19 @@ The package minimises the use of third-party modules to improve portability, esp
 This package is in pre-release. Breaking changes may be made without notice during development.
 
 ## Direct dependencies
+Note that these dependencies may have their own dependencies.
 
-| Package name                                     | Tested on version | Notes                                                                                                               |
-|--------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
-| [ratelimit](https://pypi.org/project/ratelimit/) | ≥ 2.2.1           |                                                                                                                     |
-| [requests](https://pypi.org/project/requests/)   | ≥ 2.32.3          |                                                                                                                     |
-| [tzdata](https://pypi.org/project/tzdata/)       | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
+| Package name                                      | Tested on version | Notes                                                                                                               |
+|---------------------------------------------------|-------------------|---------------------------------------------------------------------------------------------------------------------|
+| [aiohttp](https://pypi.org/project/aiohttp)       | ≥ 3.11.11         |
+| [aiolimiter](https://pypi.org/project/aiolimiter) | ≥ 1.2.1           |
+| [ratelimit](https://pypi.org/project/ratelimit/)  | ≥ 2.2.1           |                                                                                                                     |
+| [requests](https://pypi.org/project/requests/)    | ≥ 2.32.3          |                                                                                                                     |
+| [tzdata](https://pypi.org/project/tzdata/)        | ≥ 2024.1          | Only required on OSes without a native [tz database](https://en.wikipedia.org/wiki/tz_database), including Windows. |
 
-## Usage
+## Installation
 
-The recommended method to install this package is via the [Python Package Index](https://pypi.org/project/ptv-timetable/):
+The recommended method to install this package is via the [Python Package Index](https://pypi.org/project/ptv-timetable/) (PyPI):
 ```bash
 python -m pip install ptv-timetable
 ```
@@ -48,7 +51,9 @@ You can also install from the [GitLab Package Registry](https://gitlab.com/pizza
 ```bash
 python -m pip install --index-url https://gitlab.com/api/v4/projects/54559866/packages/pypi/simple ptv-timetable
 ```
-These commands will also install any required dependencies.
+These commands will also install any required dependencies from PyPI.
+
+## Usage
 
 This package adds three modules into the root namespace of your interpreter (so they can be directly imported into your code with `import <module_name>`):
 - `ptv_timetable` for interacting with the PTV Timetable API;
@@ -58,13 +63,79 @@ This package adds three modules into the root namespace of your interpreter (so 
 
 Each module defines data types that encapsulate the responses from the APIs to allow access by attribute reference (`.`) to take advantage of autocompletion systems in IDEs where available. This format also allows each field to be documented, which is not a feature that is available in the raw `dict`s returned by the APIs.
 
+### PTV Timetable API
+
 To use the Timetable API service, you will first need to obtain credentials from PTV:
 - Send an email to [APIKeyRequest@ptv.vic.gov.au](mailto:APIKeyRequest@ptv.vic.gov.au) with the subject line `PTV Timetable API - request for key`.
 - You will receive a user ID and a UUID-format signing key in response. This may take several days depending on volume of requests; you will *not* receive confirmation that your request was received, so hang tight!<br />
  (Details: http://ptv.vic.gov.au/ptv-timetable-api/)
-- Specify the credentials when instantiating the `ptv_timetable.TimetableAPI` class: `TimetableAPI(dev_id, key)`
 
-Credentials are not required for the `tramtracker` and `vline` modules.
+Import the `ptv_timetable` module:
+```python
+from ptv_timetable import *
+```
+
+This adds the `TimetableAPI` class and a number of constants for use in method arguments.
+
+Create a new instance of `TimetableAPI` and provide your user ID and signing key:
+```python
+timetable = TimetableAPI(dev_id, key)
+```
+
+You can now communicate with the API using the instance methods.
+
+There is also an `asyncio` version, which you can set up as follows:
+```python
+import asyncio
+
+from aiohttp.client import ClientSession
+from ptv_timetable.asyncapi import *
+
+async def main() -> None:
+    async with ClientSession() as session:
+        timetable = AsyncTimetableAPI(dev_id, key, session)
+        # Your code here
+        # e.g. routes = await timetable.list_routes(METROPOLITAN_TRAIN)
+    return
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### TramTracker data service
+Import the `tramtracker` module and instantiate `TramTrackerAPI`:
+```python
+from tramtracker import *
+
+tracker = TramTrackerAPI()
+
+# Your code here
+```
+
+Or, for asynchronous use:
+```python
+import asyncio
+
+from aiohttp.client import ClientSession
+from tramtracker.asyncapi import *
+
+async def main() -> None:
+    async with ClientSession() as session:
+        tracker = AsyncTramTrackerAPI(session)
+        # Your code here
+    return
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Southern Cross station V/Line departures and arrivals
+Import the `vline` module and call `next_services()`:
+```python
+import vline
+
+departures, arrivals, as_at = vline.next_services()
+```
 
 ### Logging
 
@@ -74,9 +145,11 @@ Some actions are logged under the logger names `ptv-timetable.ptv_timetable`, `p
 
 To report problems with the package or otherwise give feedback, [go to the Issues tab of the repository](https://gitlab.com/pizza1016/ptv-timetable/-/issues).
 
-## Contributing
+[//]: # ()
+[//]: # (## Contributing)
 
-All constructive contributions are welcome! By contributing, you agree to license your contributions under the Apache Licence 2.0.
+[//]: # ()
+[//]: # (All constructive contributions are welcome! By contributing, you agree to license your contributions under the Apache Licence 2.0.)
 
 ## Copyright and licensing
 
@@ -93,7 +166,7 @@ This project's source code is licensed under the Apache Licence 2.0; however, da
 | **BUS**                                                                                                                                                                                                                                                      | Use in `route_type` parameters to specify the metropolitan or regional bus network.                                                                                                                                    |
 | **REGIONAL_TRAIN<br/>REG_TRAIN<br/>COACH<br/>VLINE**                                                                                                                                                                                                         | Use in `route_type` parameters to specify the regional train or coach network.                                                                                                                                         |
 | **EXPAND_**<_property_>                                                                                                                                                                                                                                      | Use in `expand` parameters to tell the API to return the specified properties in full.                                                                                                                                 |
-| _class_ **TimetableAPI(**_dev_id, key, *, calls=1, period=10, ratelimit_handler=ratelimit.decorators.sleep_and_retry_**)**                                                                                                                                   | Constructs a new instance of the `TimetableAPI` class with the supplied credentials.<br/><br/>To obtain your own set of credentials, follow the instructions on [this page](http://ptv.vic.gov.au/ptv-timetable-api/). |
+| _class_ **TimetableAPI(**_dev_id, key, *, calls=1, period=10, ratelimit_handler=ratelimit.decorators.sleep_and_retry, session=None_**)**                                                                                                                     | Constructs a new instance of the `TimetableAPI` class with the supplied credentials.<br/><br/>To obtain your own set of credentials, follow the instructions on [this page](http://ptv.vic.gov.au/ptv-timetable-api/). |
 | TimetableAPI.**list_route_directions(**_route_id_**)**                                                                                                                                                                                                       | List directions for a specified route.<br/><br/>API operation: `/v3/directions/route/{route_id}`                                                                                                                       |
 | TimetableAPI.**get_direction(**_direction_id, route_type=None_**)**                                                                                                                                                                                          | List directions with a specified identifier.<br/><br/>API operation: `/v3/directions/{direction_id}/route_type/{route_type}`                                                                                           |
 | TimetableAPI.**get_pattern(**_run_ref, route_type, stop_id=None, date=None, include_skipped_stops=None, expand=None, include_geopath=None_**)**                                                                                                              | Retrieve the stopping pattern and times of arrival at each stop for a particular run.<br/><br/>API operation: `/v3/pattern/run/{run_ref}/route_type/{route_type}`                                                      |
@@ -112,18 +185,37 @@ This project's source code is licensed under the Apache Licence 2.0; however, da
 | TimetableAPI.**list_outlets(**_latitude=None, longitude=None, max_distance=None, max_results=None_**)**                                                                                                                                                      | List ticket outlets near a specified location.<br/><br/>API operation: `/v3/outlets/location/{latitude},{longitude}`                                                                                                   |
 | TimetableAPI.**search(**_search_term, route_types=None, latitude=None, longitude=None, max_distance=None, include_outlets=None, match_stop_by_locality=None, match_route_by_locality=None, match_stop_by_gtfs_stop_id=None_**)**                             | Search for a stop, route or ticket outlet by name.<br/><br/>API operation: `/v3/search/{search_term}`                                                                                                                  |
 
+### ptv_timetable/asyncapi.py
+
+| Constant/function/method                                                                           | Description                                                                                                                                                                                                                                         |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <_constant_>                                                                                       | All constants in `ptv_timetable\__init__.py` are also available here.                                                                                                                                                                               |
+| _class_ **AsyncTimetableAPI(**_dev_id, key, session, *, calls=1, period=10_**)**                   | Constructs a new instance of the `AsyncTimetableAPI` class with the supplied credentials and `aiohttp.client.ClientSession` session.                                                                                                                |
+| _classmethod_ AsyncTimetableAPI.**create(**_dev_id, key, session=None, *, calls=1, period=10_**)** | Constructs a new instance of the `AsyncTimetableAPI` class with the supplied credentials. This alternative constructor does not require a `ClientSession` to be provided, with the instance itself managing the opening and closing of the session. |
+| _async_ AsyncTimetableAPI.**_\<method\>_(**_\<args\>_**)**                                         | All methods described in `ptv_timetable.TimetableAPI` have the same functionality here but supports `asyncio`.                                                                                                                                      |
+
+
 ### tramtracker/\_\_init__.py
 
-| Constant/function/method                                                                                                                      | Description                                                         |
-|-----------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| _class_ **TramTrackerService(**_*, calls=1, period=10, ratelimit_handler=ratelimit.decorators.sleep_and_retry_**)**                           | Constructs a new instance of the `TramTrackerService` class.        |
-| TramTrackerService.**list_destinations()**                                                                                                    | List all destinations on the tram network.                          |
-| TramTrackerService.**list_stops(**_route_id, up_direction_**)**                                                                               | List stops for a specified route and direction of travel.           |
-| TramTrackerService.**get_stop(**_stop_id_**)**                                                                                                | Return details about a specified stop.                              |
-| TramTrackerService.**list_routes_for_stop(**_stop_id_**)**                                                                                    | List the routes serving a specified stop.                           |
-| TramTrackerService.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                |
-| TramTrackerService.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.      |
-| TramTrackerService.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia. |
+| Constant/function/method                                                                                                                  | Description                                                         |
+|-------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| _class_ **TramTrackerAPI(**_*, calls=1, period=10, ratelimit_handler=ratelimit.decorators.sleep_and_retry, session=None_**)**             | Constructs a new instance of the `TramTrackerAPI` class.            |
+| TramTrackerAPI.**list_destinations()**                                                                                                    | List all destinations on the tram network.                          |
+| TramTrackerAPI.**list_stops(**_route_id, up_direction_**)**                                                                               | List stops for a specified route and direction of travel.           |
+| TramTrackerAPI.**get_stop(**_stop_id_**)**                                                                                                | Return details about a specified stop.                              |
+| TramTrackerAPI.**list_routes_for_stop(**_stop_id_**)**                                                                                    | List the routes serving a specified stop.                           |
+| TramTrackerAPI.**next_trams(**_stop_id, route_id=None, low_floor_tram=False, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)** | List the next tram departures from a specified stop.                |
+| TramTrackerAPI.**get_route_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                               | Return the route's colour on public information paraphernalia.      |
+| TramTrackerAPI.**get_route_text_colour(**_route_id, as_of=datetime.now(tz=ZoneInfo("Australia/Melbourne"))_**)**                          | Return the route's text colour on public information paraphernalia. |
+
+
+### tramtracker/asyncapi.py
+
+| Constant/function/method                                                                | Description                                                                                                                                                                                                                                                                                      |
+|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| _class_ **AsyncTramTrackerAPI(**_session, *, calls=1, period=10_**)**                   | Constructs a new instance of the `AsyncTramTrackerAPI` class with the supplied credentials and `aiohttp.client.ClientSession` session.                                                                                                                                                           |
+| _classmethod_ AsyncTramTrackerAPI.**create(**_session=None, *, calls=1, period=10_**)** | Constructs a new instance of the `AsyncTramTrackerAPI` class with the supplied credentials and `aiohttp.client.ClientSession` session. This alternative constructor does not require a `ClientSession` to be provided, with the instance itself managing the opening and closing of the session. |
+| _async_ AsyncTramTrackerAPI.**\<_method_\>(**_\<args\>_**)**                            | All methods described in `tramtracker.TramTrackerAPI` have the same functionality here but supports `asyncio`.                                                                                                                                                                                   |
 
 ### vline/\_\_init__.py
 
