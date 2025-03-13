@@ -18,49 +18,49 @@ UUID_PATTERN: Final = re.compile(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa
 """Regular expression for a universally unique identifier"""
 
 METROPOLITAN_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
+"""Metropolitan trains. For use in ``route_type`` parameters"""
 METRO_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
+"""Metropolitan trains. For use in ``route_type`` parameters"""
 MET_TRAIN: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
+"""Metropolitan trains. For use in ``route_type`` parameters"""
 METRO: Literal[0] = 0
-"""Metropolitan trains. For use in `route_type` parameters"""
+"""Metropolitan trains. For use in ``route_type`` parameters"""
 TRAM: Literal[1] = 1
-"""Metropolitan trams. For use in `route_type` parameters"""
+"""Metropolitan trams. For use in ``route_type`` parameters"""
 BUS: Literal[2] = 2
-"""Metropolitan & regional buses. For use in `route_type` parameters"""
+"""Metropolitan & regional buses. For use in ``route_type`` parameters"""
 REGIONAL_TRAIN: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
+"""Regional trains & coaches. For use in ``route_type`` parameters"""
 REG_TRAIN: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
+"""Regional trains & coaches. For use in ``route_type`` parameters"""
 COACH: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
+"""Regional trains & coaches. For use in ``route_type`` parameters"""
 VLINE: Literal[3] = 3
-"""Regional trains & coaches. For use in `route_type` parameters"""
+"""Regional trains & coaches. For use in ``route_type`` parameters"""
 
 EXPAND_ALL: Literal["All"] = "All"
-"""Return all object properties in full. For use in `expand` parameters"""
+"""Return all object properties in full. For use in ``expand`` parameters"""
 EXPAND_STOP: Literal["Stop"] = "Stop"
-"""Return stop properties. For use in `expand` parameters"""
+"""Return stop properties. For use in ``expand`` parameters"""
 EXPAND_ROUTE: Literal["Route"] = "Route"
-"""Return route properties. For use in `expand` parameters"""
+"""Return route properties. For use in ``expand`` parameters"""
 EXPAND_RUN: Literal["Run"] = "Run"
-"""Return run properties. For use in `expand` parameters"""
+"""Return run properties. For use in ``expand`` parameters"""
 EXPAND_DIRECTION: Literal["Direction"] = "Direction"
-"""Return direction properties. For use in `expand` parameters"""
+"""Return direction properties. For use in ``expand`` parameters"""
 EXPAND_DISRUPTION: Literal["Disruption"] = "Disruption"
-"""Return disruption properties. For use in `expand` parameters"""
+"""Return disruption properties. For use in ``expand`` parameters"""
 EXPAND_VEHICLE_DESCRIPTOR: Literal["VehicleDescriptor"] = "VehicleDescriptor"
-"""Return vehicle descriptor properties. For use in `expand` parameters"""
+"""Return vehicle descriptor properties. For use in ``expand`` parameters"""
 EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
-"""Return vehicle position properties. For use in `expand` parameters"""
+"""Return vehicle position properties. For use in ``expand`` parameters"""
 EXPAND_NONE: Literal["None"] = "None"
-"""Don't return any object properties. For use in `expand` parameters"""
+"""Don't return any object properties. For use in ``expand`` parameters"""
 
 @final
 @enum.unique
 class _NotProvidedType(enum.Enum):
-    """Type of the ``NOT_PROVIDED`` constant."""
+    """Type of the :const:`NOT_PROVIDED` constant."""
 
     NOT_PROVIDED = enum.auto()
     """Sentinel value that indicates that the API operation used does not return the information in this field"""
@@ -81,7 +81,7 @@ class _NotProvidedType(enum.Enum):
             return "NOT_PROVIDED"
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
 
-NOT_PROVIDED = _NotProvidedType.NOT_PROVIDED
+NOT_PROVIDED: Final = _NotProvidedType.NOT_PROVIDED
 """Sentinel value that indicates that the API operation used does not return the information in this field"""
 
 @dataclass(kw_only=True, slots=True)
@@ -97,9 +97,9 @@ class TimetableData(object, metaclass=ABCMeta):
         ...
 
     def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
-        """Converts this :class:`TimetableData` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+        """Converts this :class:`TimetableData` dataclass instance to a :class:`dict` that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a :func:`~copy.deepcopy` of everything else. The result can be customised by providing a ``dict_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+        This is a convenient shorthand for :func:`dataclasses.asdict(self) <dataclasses.asdict>`.
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
@@ -115,9 +115,9 @@ class TimetableData(object, metaclass=ABCMeta):
         ...
 
     def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
-        """Converts this :class:`TimetableData` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+        """Converts this :class:`TimetableData` dataclass instance to a :class:`tuple` of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a :func:`~copy.deepcopy` of everything else. The result can be customised by providing a ``tuple_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+        This is a convenient shorthand for :func:`dataclasses.astuple(self) <dataclasses.astuple>`.
 
         :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
@@ -478,17 +478,17 @@ class Route(TimetableData):
     geometry: list[PathGeometry] | None | _NotProvidedType = NOT_PROVIDED
     """Physical geometry of this route"""
     route_service_status: TypedDict("RouteServiceStatus", {"description": str, "timestamp": datetime}) | _NotProvidedType = NOT_PROVIDED
-    """Service status of the route; NOT_PROVIDED if API did not provide this information"""
+    """Service status of the route; :const:`NOT_PROVIDED` if API did not provide this information"""
 
     # From /v3/disruptions/...
     route_direction_id: int | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, combined identifier for the route and travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    """For a disruption, combined identifier for the route and travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
     direction_id: int | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, identifier of travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    """For a disruption, identifier of travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
     direction_name: str | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, destination of travel direction affected by the disruption; NOT_PROVIDED if not applicable"""
+    """For a disruption, destination of travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
     service_time: str | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, time of the run/service affected by the disruption; NOT_PROVIDED if not applicable, or disruption affects multiple or no runs/services"""
+    """For a disruption, time of the run/service affected by the disruption; :const:`NOT_PROVIDED` if not applicable, or disruption affects multiple or no runs/services"""
 
     @classmethod
     @override
@@ -540,35 +540,35 @@ class Stop(TimetableData):
     stop_id: int
     """Identifier of this stop"""
     route_type: int | _NotProvidedType = NOT_PROVIDED
-    """Identifier of the travel mode of this stop; NOT_PROVIDED if this was created by 'Disruptions'"""
+    """Identifier of the travel mode of this stop; :const:`NOT_PROVIDED` if this was created by 'Disruptions'"""
     stop_name: str
     """Name of this stop"""
     locality: str | _NotProvidedType = NOT_PROVIDED
-    """Locality (suburb/town) this stop is in; NOT_PROVIDED if the API response did not return this information"""
+    """Locality (suburb/town) this stop is in; :const:`NOT_PROVIDED` if the API response did not return this information"""
     stop_latitude: float | _NotProvidedType = NOT_PROVIDED
-    """Latitude coordinate of the stop's location; NOT_PROVIDED if the API response did not return this information"""
+    """Latitude coordinate of the stop's location; :const:`NOT_PROVIDED` if the API response did not return this information"""
     stop_longitude: float | _NotProvidedType = NOT_PROVIDED
-    """Longitude coordinate of the stop's location; NOT_PROVIDED if the API response did not return this information"""
+    """Longitude coordinate of the stop's location; :const:`NOT_PROVIDED` if the API response did not return this information"""
     stop_distance: float | _NotProvidedType = NOT_PROVIDED
-    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or NOT_PROVIDED"""
+    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or :const:`NOT_PROVIDED`"""
     stop_landmark: str | _NotProvidedType = NOT_PROVIDED
-    """Notable landmarks near this stop; "" (empty string) if none; NOT_PROVIDED if this was created by 'Disruptions'"""
+    """Notable landmarks near this stop; "" (empty string) if none; :const:`NOT_PROVIDED` if this was created by 'Disruptions'"""
     stop_sequence: int | _NotProvidedType = NOT_PROVIDED
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
-    """Ticketing information for this stop; NOT_PROVIDED if the API response did not return this information"""
+    """Ticketing information for this stop; :const:`NOT_PROVIDED` if the API response did not return this information"""
     interchange: list[TypedDict("StopInterchange", {"route_id": int, "advertised": bool})] | _NotProvidedType = NOT_PROVIDED
-    """Routes available to interchange with from this stop; NOT_PROVIDED if the API response did not return this information"""
+    """Routes available to interchange with from this stop; :const:`NOT_PROVIDED` if the API response did not return this information"""
 
     # From /v3/stops/...
     point_id: int | _NotProvidedType = NOT_PROVIDED
-    """Identifier of this stop in the PTV static timetable dump; NOT_PROVIDED if the API operation doesn't use this field"""
+    """Identifier of this stop in the PTV static timetable dump; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     disruption_ids: list[int] | _NotProvidedType = NOT_PROVIDED
-    """Current or future disruptions affecting this stop; NOT_PROVIDED if the API operation doesn't use this field"""
+    """Current or future disruptions affecting this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     routes: list[Route] | _NotProvidedType = NOT_PROVIDED
-    """List of routes serving this stop; NOT_PROVIDED if the API operation doesn't use this field"""
+    """List of routes serving this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     operating_hours: str | _NotProvidedType = NOT_PROVIDED
-    """Description of railway station opening hours; NOT_PROVIDED if the API operation doesn't use this field"""
+    """Description of railway station opening hours; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     mode_id: int | _NotProvidedType = NOT_PROVIDED
     """Purpose unclear; appears to correspond to disruption modes, which is not currently implemented in this module as it duplicates the purpose of RouteType"""
     station_details_id: int | _NotProvidedType = NOT_PROVIDED
@@ -576,17 +576,17 @@ class Stop(TimetableData):
     flexible_stop_opening_hours: str | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns empty string)"""
     stop_contact: StopContact | _NotProvidedType = NOT_PROVIDED
-    """Operator contact information for this stop; NOT_PROVIDED if not requested from API"""
+    """Operator contact information for this stop; :const:`NOT_PROVIDED` if not requested from API"""
     stop_location: StopLocation | _NotProvidedType = NOT_PROVIDED
-    """Location information about this stop; NOT_PROVIDED if not requested from API"""
+    """Location information about this stop; :const:`NOT_PROVIDED` if not requested from API"""
     stop_amenities: StopAmenities | _NotProvidedType = NOT_PROVIDED
-    """Facilities available at this stop; NOT_PROVIDED if not requested from API"""
+    """Facilities available at this stop; :const:`NOT_PROVIDED` if not requested from API"""
     stop_accessibility: StopAccessibility | _NotProvidedType = NOT_PROVIDED
-    """Information about accessibility features available at this stop; NOT_PROVIDED if not requested from API"""
+    """Information about accessibility features available at this stop; :const:`NOT_PROVIDED` if not requested from API"""
     stop_staffing: StopStaffing | _NotProvidedType = NOT_PROVIDED
-    """Staffing information for this stop; NOT_PROVIDED if not requested from API"""
+    """Staffing information for this stop; :const:`NOT_PROVIDED` if not requested from API"""
     station_type: Literal["Premium Station", "Host Station", "Unstaffed Station"] | None | _NotProvidedType = NOT_PROVIDED
-    """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes; NOT_PROVIDED if the API operation doesn't use this field"""
+    """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     station_description: str | _NotProvidedType = NOT_PROVIDED
     """Additional information about this stop"""
 
@@ -656,9 +656,9 @@ class Departure(TimetableData):
 
     @property
     def departure_time(self: Self) -> datetime:
-        """Returns :attribute:`estimated_departure` if its value is not ``None``, otherwise returns :attribute:`scheduled_departure`.
+        """Returns `estimated_departure` if its value is not ``None``, otherwise returns `scheduled_departure`.
 
-        :return: :attribute:`estimated_departure` if not ``None``, else :attribute:`scheduled_departure`
+        :return: `estimated_departure` if not ``None``, else `scheduled_departure`
         """
         return self.estimated_departure if self.estimated_departure is not None else self.scheduled_departure
 
@@ -1024,7 +1024,7 @@ class Outlet(TimetableData):
     outlet_notes: str | None
     """Additional notes about the ticket outlet"""
     outlet_distance: float | _NotProvidedType = NOT_PROVIDED
-    """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, NOT_PROVIDED if the operation doesn't use this field"""
+    """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, :const:`NOT_PROVIDED` if the operation doesn't use this field"""
 
     @classmethod
     @override

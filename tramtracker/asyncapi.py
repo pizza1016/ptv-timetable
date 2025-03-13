@@ -20,15 +20,15 @@ _logger.addHandler(logging.NullHandler())
 
 
 class AsyncTramTrackerAPI(object):
-    """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
+    """Interface class for the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
     def __init__(self: Self, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
         """Creates a new :class:`AsyncTramTrackerAPI` instance.
 
-        :param session:           Calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instance to be used internally).  If you wish to let the instance handle the session, use the alternative constructor method ``.create()`` instead
+        :param session:           Calls will be made using this HTTP session; this allows a :class:`~aiohttp.ClientSession` to be used as a context manager. If you wish to let the instance handle the session, use the alternative constructor method :meth:`create` instead
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
-        :return:                  The new instance
+        :return:                  ``None``
         """
 
         self._limiter: Final[AsyncLimiter] = AsyncLimiter(calls, period)
@@ -45,7 +45,8 @@ class AsyncTramTrackerAPI(object):
     async def create(cls: Callable[..., Self], session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
         """Creates a new :class:`AsyncTramTrackerAPI` instance.
 
-        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`aiohttp.client.ClientSession` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instance to be used internally)
+        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~aiohttp.ClientSession` to be used as a context manager (default is to create a new :class:`~aiohttp.ClientSession` instance to be used internally)
+        :type session:            ~aiohttp.ClientSession | None
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :return:                  The new instance
@@ -120,8 +121,8 @@ class AsyncTramTrackerAPI(object):
     async def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
         """Returns a list of stops on the specified route and direction of travel.
 
-        :param route_id:     The route identifier, as returned by ``list_destinations()``
-        :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described in ``list_destinations()``
+        :param route_id:     The route identifier, as returned by :meth:`list_destinations()`
+        :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described by :meth:`list_destinations()`
         :return:             A list of stops on the route
         """
 

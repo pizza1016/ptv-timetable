@@ -64,3 +64,15 @@ publish:
   interruptible: false
   when: manual
   manual_confirmation: "Publish new version to Python Package Index and GitLab Package Registry?"
+
+docs:
+  stage: deploy
+  script:
+    - python -m pip install sphinx
+    - cd docs
+    - sphinx-build -n --color source build
+  pages:
+    publish: docs/build
+  interruptible: true
+  when: manual
+  manual_confirmation: "Update docs?"

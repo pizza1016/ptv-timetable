@@ -23,8 +23,7 @@ class TramTrackerError(OSError):
     """Raised when the TramTracker data service returns an error."""
 
     def __init__(self: Self, message: str, *args: object) -> None:
-        """
-        Constructs a new exception instance with the specified error message. This is used to raise an exception when the TramTracker data service responds with an error.
+        """Constructs a new exception instance with the specified error message. This is used to raise an exception when the TramTracker data service responds with an error.
 
         :param message: Error message to display
         :param args:    Any other positional-only arguments to pass to the constructor of the parent class
@@ -51,9 +50,9 @@ class TramTrackerData(object, metaclass=ABCMeta):
         ...
 
     def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, Any]]], _T] | None = None) -> _T | dict[str, Any]:
-        """Converts this :class:`TramTrackerData` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``dict_factory`` function.
+        """Converts this :class:`TramTrackerData` dataclass instance to a dict that maps its field names to their corresponding values, recursing into any dataclasses, dicts, lists and tuples and doing a :func:`~copy.deepcopy()` of everything else. The result can be customised by providing a ``dict_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+        This is a convenient shorthand for :func:`dataclasses.asdict(self) <dataclasses.asdict>`.
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
@@ -69,9 +68,9 @@ class TramTrackerData(object, metaclass=ABCMeta):
         ...
 
     def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[Any]], _T] | None = None) -> tuple[Any, ...] | _T:
-        """Converts this :class:`TramTrackerData` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a ``copy.deepcopy()`` of everything else. The result can be customised by providing a ``tuple_factory`` function.
+        """Converts this :class:`TramTrackerData` dataclass instance to a tuple of its fields' values, recursing into any dataclasses, dicts, lists and tuples and doing a :func:`copy.deepcopy()` of everything else. The result can be customised by providing a ``tuple_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+        This is a convenient shorthand for :func:`dataclasses.astuple(self) <dataclasses.astuple>`.
 
         :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``

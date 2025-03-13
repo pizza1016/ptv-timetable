@@ -21,15 +21,15 @@ _logger.addHandler(logging.NullHandler())
 
 
 class TramTrackerAPI(object):
-    """Interface class with the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
+    """Interface class for the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
     def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
-        """Initialises a new TramTrackerAPI instance.
+        """Initialises a new :class:`TramTrackerAPI` instance.
 
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
-        :param ratelimit_handler: Function decorator that handles :class:`ratelimit.exception.RateLimitException` without re-raising it; defaults to ``ratelimit.decorators.sleep_and_retry``. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
-        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`requests.sessions.Session` to be used as a context manager (default is to create a new :class:`requests.sessions.Session` instance to be used internally)
+        :param ratelimit_handler: Function decorator that handles :class:`~ratelimit.exception.RateLimitException` without re-raising it; defaults to :func:`~ratelimit.decorators.sleep_and_retry`. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
+        :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~requests.sessions.Session` to be used as a context manager (default is to create a new :class:`~requests.sessions.Session` instance to be used internally)
         :return:                  ``None``
         """
 
@@ -102,8 +102,8 @@ class TramTrackerAPI(object):
     def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
         """Returns a list of stops on the specified route and direction of travel.
 
-        :param route_id:     The route identifier, as returned by ``list_destinations()``
-        :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described in ``list_destinations()``
+        :param route_id:     The route identifier, as returned by :meth:`list_destinations()`
+        :param up_direction: Set to ``True`` to get stops in the "up" direction or ``False`` to get stops in the "down" direction, as described by :meth:`list_destinations()`
         :return:             A list of stops on the route
         """
 

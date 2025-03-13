@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.4.0 (2025-01-__)
+## 0.4.1 (2025-03-__)
+- Created full API reference
+  - Consequential edits to docstrings
+  - Type hinting fixes
+
+## 0.4.0 (2025-02-28)
 - New modules `ptv_timetable.asyncapi` and `tramtracker.asyncapi` to allow for asynchronous operations using the built-in `asyncio` library
   - Consequential modifications to dataclasses in `ptv_timetable.types`
 - Moved constants and types in `ptv_timetable` and `tramtracker` to `ptv_timetable.types` and `tramtracker.types`, respectively (they are still accessible from `ptv_timetable` and `tramtracker`)

@@ -8,6 +8,10 @@ Tested on Python version: ≥ 3.12
 
 ---
 
+## Documentation
+
+The full public API documentation can be found at: https://pizza1016.gitlab.io/ptv-timetable 
+
 ## Overview
 
 This package of modules aims to simplify the process of retrieving and manipulating real-time data for public transport in Victoria, Australia and document each operation and response supported by the APIs.

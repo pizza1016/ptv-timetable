@@ -42,17 +42,17 @@ class Departure(object):
     """Estimated time (in minutes) before the service departs; timedelta(minutes=0) indicates now"""
 
     @overload
-    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, str | datetime | PlatformNumber | timedelta]:
+    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, str | datetime | timedelta | PlatformNumber]:
         ...
 
     @overload
-    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | PlatformNumber | timedelta]]], _T]) -> _T:
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | timedelta | PlatformNumber]]], _T]) -> _T:
         ...
 
-    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | PlatformNumber | timedelta]]], _T] | None = None) -> _T | dict[str, Any]:
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | timedelta | PlatformNumber]]], _T] | None = None) -> _T | dict[str, str | datetime | timedelta | PlatformNumber]:
         """Returns this instance's fields as a :class:`dict`. The result can be customised by providing a ``dict_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+        This is a convenient shorthand for :func:`dataclasses.asdict(self)`.
 
         :param dict_factory: If specified, dict creation will be customised with this function
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
@@ -60,17 +60,17 @@ class Departure(object):
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
     @overload
-    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[Any, ...]:
+    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[str, datetime, str, PlatformNumber, timedelta]:
         ...
 
     @overload
-    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | PlatformNumber | timedelta]], _T]) -> _T:
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | timedelta | PlatformNumber]], _T]) -> _T:
         ...
 
-    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | PlatformNumber | timedelta]], _T] | None = None) -> tuple[Any, ...] | _T:
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | timedelta | PlatformNumber]], _T] | None = None) -> _T | tuple[str, datetime, str, PlatformNumber, timedelta]:
         """Returns this instance's fields' values as a :class:`tuple`, in order of declaration. The result can be customised by providing a ``tuple_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+        This is a convenient shorthand for :func:`dataclasses.astuple(self) <dataclasses.astuple>`.
 
         :param tuple_factory: If specified, tuple creation will be customised with this function
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
@@ -89,20 +89,20 @@ class Arrival(object):
     platform: PlatformNumber
     """Platform number the service is expected to arrive at"""
     arriving_in: timedelta
-    """Estimated time (in minutes) before the service arrives; timedelta(minutes=0) indicates now"""
+    """Estimated time (in minutes) before the service arrives; ``timedelta(minutes=0)`` indicates now"""
 
     @overload
-    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, str | datetime | PlatformNumber | timedelta]:
+    def as_dict(self: Self, *, dict_factory: None = None) -> dict[str, str | datetime | timedelta | PlatformNumber]:
         ...
 
     @overload
-    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | PlatformNumber | timedelta]]], _T]) -> _T:
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | timedelta | PlatformNumber]]], _T]) -> _T:
         ...
 
-    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | PlatformNumber | timedelta]]], _T] | None = None) -> _T | dict[str, Any]:
+    def as_dict[_T](self: Self, *, dict_factory: Callable[[list[tuple[str, str | datetime | timedelta | PlatformNumber]]], _T] | None = None) -> _T | dict[str, str | datetime | timedelta | PlatformNumber]:
         """Returns this instance's fields as a :class:`dict`. The result can be customised by providing a ``dict_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.asdict(self)``.
+        This is a convenient shorthand for :func:`dataclasses.asdict(self)`.
 
         :param dict_factory: If specified, dict creation will be customised with this function
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
@@ -110,17 +110,17 @@ class Arrival(object):
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
     @overload
-    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[Any, ...]:
+    def as_tuple(self: Self, *, tuple_factory: None = None) -> tuple[datetime, str, PlatformNumber, timedelta]:
         ...
 
     @overload
-    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | PlatformNumber | timedelta]], _T]) -> _T:
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | timedelta | PlatformNumber]], _T]) -> _T:
         ...
 
-    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | PlatformNumber | timedelta]], _T] | None = None) -> tuple[Any, ...] | _T:
+    def as_tuple[_T](self: Self, *, tuple_factory: Callable[[list[str | datetime | timedelta | PlatformNumber]], _T] | None = None) -> _T | tuple[datetime, str, PlatformNumber, timedelta] | _T:
         """Returns this instance's fields' values as a :class:`tuple`, in order of declaration. The result can be customised by providing a ``tuple_factory`` function.
 
-        This is a convenient shorthand for ``dataclasses.astuple(self)``.
+        This is a convenient shorthand for :func:`dataclasses.astuple(self)`.
 
         :param tuple_factory: If specified, tuple creation will be customised with this function
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
@@ -163,8 +163,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_starttag(self: Self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data.
-        """
+        """Method used by :class:`html.HTMLParser` to process HTML data."""
         if tag == "div":
             attrs: defaultdict[str, str | None] = defaultdict(lambda: None, attrs)
             if attrs["class"] is not None and len(self._stack) == 0:
@@ -182,8 +181,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_data(self: Self, data: str) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data.
-        """
+        """Method used by :class:`html.HTMLParser` to process HTML data."""
         if self._current is not None and len(self._stack) > 0:
             # Departing services
             if "timeTableCell" in self._stack[-1]:
@@ -222,8 +220,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_endtag(self: Self, tag: str) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data.
-        """
+        """Method used by :class:`html.HTMLParser` to process HTML data."""
         if len(self._stack) > 0:
             html_class = self._stack.pop()
             if "depatureDesktopBrowser" in html_class:
