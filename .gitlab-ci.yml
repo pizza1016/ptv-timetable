@@ -68,7 +68,7 @@ publish:
 docs:
   stage: deploy
   script:
-    - python -m pip install sphinx
+    - python -m pip install sphinx aiohttp aiolimiter ratelimit requests tzdata  # need to import third-party libraries used by project
     - cd docs
     - sphinx-build -n --color source build
   pages:
