@@ -1,6 +1,9 @@
 ``tramtracker.types`` — Common constants and data types used by ``tramtracker`` and ``tramtracker.asyncapi``
 ============================================================================================================
 
+.. versionadded:: 0.4.0
+    Moved common constants and types from :mod:`tramtracker` here so that they can be shared with :mod:`tramtracker.asyncapi`.
+
 .. py:currentmodule:: tramtracker.types
 
 Summary

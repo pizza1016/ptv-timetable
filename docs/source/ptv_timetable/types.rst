@@ -1,6 +1,13 @@
 ``ptv_timetable.types`` — Common constants and data types used by ``ptv_timetable`` and ``ptv_timetable.asyncapi``
 ==================================================================================================================
 
+
+.. versionadded:: 0.4.0
+    Moved common constants and types from :mod:`ptv_timetable` here so that they can be shared with :mod:`ptv_timetable.asyncapi`.
+
+.. versionchanged:: 0.3.0
+    Added :class:`_NotProvidedType` as a possible type for certain attributes; some previously returned :const:`None`, which was ambiguous.
+
 .. py:currentmodule:: ptv_timetable.types
 
 Summary

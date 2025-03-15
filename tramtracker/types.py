@@ -56,6 +56,8 @@ class TramTrackerData(object, metaclass=ABCMeta):
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+
+        .. versionadded:: 0.2.1
         """
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
@@ -74,6 +76,8 @@ class TramTrackerData(object, metaclass=ABCMeta):
 
         :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+
+        .. versionadded:: 0.2.1
         """
         return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
 

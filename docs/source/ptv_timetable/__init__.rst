@@ -160,6 +160,15 @@ Classes & methods
         :param ratelimit_handler: Function decorator that handles `ratelimit.exception.RateLimitException <https://github.com/tomasbasham/ratelimit>`_ without re-raising it; defaults to `ratelimit.decorators.sleep_and_retry <https://github.com/tomasbasham/ratelimit>`_. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
         :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~requests.sessions.Session` to be used as a context manager (default is to create a new :class:`~requests.sessions.Session` instance to be used internally)
 
+        .. versionchanged:: 0.2.0
+            Added the ``calls`` and ``period`` parameters.
+
+        .. versionchanged:: 0.2.1
+            Added the ``ratelimit_handler`` parameter.
+
+        .. versionchanged:: 0.4.0
+            Added the ``session`` parameter.
+
         .. automethod:: build_arg_string
         .. automethod:: call
         .. automethod:: fare_estimate

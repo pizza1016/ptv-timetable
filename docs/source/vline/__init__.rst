@@ -1,6 +1,8 @@
 ``vline`` — Interface for retrieving live passenger information from the V/Line website
 =======================================================================================
 
+.. versionadded:: 0.3.0
+
 .. py:currentmodule:: vline
 
 Summary

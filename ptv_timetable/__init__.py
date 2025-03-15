@@ -194,6 +194,9 @@ class TimetableAPI(object):
         :param route_type:   Return the directions with the specified route type
         :type route_type:    ~typing.Literal[0, 1, 2, 3] | None
         :return:             List of directions
+
+        .. versionchanged:: 0.2.0
+            Renamed from ``list_directions`` to ``get_direction``.
         """
 
         req = f"/v3/directions/{direction_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
@@ -267,7 +270,10 @@ class TimetableAPI(object):
         """Returns the names and identifiers of all route types.
 
         :return: A list of records containing the aforementioned fields
-        :rtype:  list[dict[~typing.Literal["route_type_name", "route_type"], str | int]]
+        :rtype:  list[~typing.TypedDict("RouteType", {"route_type_name": str, "route_type": int})]
+
+        .. versionchanged:: 0.3.0
+            Changed return type from :class:`dict` to :class:`~typing.TypedDict`
         """
 
         return self.call("/v3/route_types")["route_types"]

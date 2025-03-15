@@ -60,7 +60,10 @@ EXPAND_NONE: Literal["None"] = "None"
 @final
 @enum.unique
 class _NotProvidedType(enum.Enum):
-    """Type of the :const:`NOT_PROVIDED` constant."""
+    """Type of the :const:`NOT_PROVIDED` constant.
+
+    .. versionadded:: 0.3.0
+    """
 
     NOT_PROVIDED = enum.auto()
     """Sentinel value that indicates that the API operation used does not return the information in this field"""
@@ -82,7 +85,10 @@ class _NotProvidedType(enum.Enum):
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
 
 NOT_PROVIDED: Final = _NotProvidedType.NOT_PROVIDED
-"""Sentinel value that indicates that the API operation used does not return the information in this field"""
+"""Sentinel value that indicates that the API operation used does not return the information in this field
+
+.. versionadded:: 0.3.0
+"""
 
 @dataclass(kw_only=True, slots=True)
 class TimetableData(object, metaclass=ABCMeta):
@@ -103,6 +109,8 @@ class TimetableData(object, metaclass=ABCMeta):
 
         :param dict_factory: If specified, dict creation will be customised with this function (including for nested dataclasses)
         :return:             The result of ``dataclasses.asdict(self) if dict_factory is None else dataclasses.asdict(self, dict_factory=dict_factory)``
+
+        .. versionadded:: 0.2.0
         """
         return asdict(self) if dict_factory is None else asdict(self, dict_factory=dict_factory)
 
@@ -121,6 +129,8 @@ class TimetableData(object, metaclass=ABCMeta):
 
         :param tuple_factory: If specified, tuple creation will be customised with this function (including for nested dataclasses)
         :return:              The result of ``dataclasses.astuple(self) if tuple_factory is None else dataclasses.astuple(self, tuple_factory=tuple_factory)``
+
+        .. versionadded:: 0.2.0
         """
         return astuple(self) if tuple_factory is None else astuple(self, tuple_factory=tuple_factory)
 
@@ -140,6 +150,8 @@ class TimetableData(object, metaclass=ABCMeta):
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return:       The newly constructed instance
+
+        .. versionadded:: 0.4.0
         """
         return cls.load(**kwargs)
 
@@ -478,7 +490,11 @@ class Route(TimetableData):
     geometry: list[PathGeometry] | None | _NotProvidedType = NOT_PROVIDED
     """Physical geometry of this route"""
     route_service_status: TypedDict("RouteServiceStatus", {"description": str, "timestamp": datetime}) | _NotProvidedType = NOT_PROVIDED
-    """Service status of the route; :const:`NOT_PROVIDED` if API did not provide this information"""
+    """Service status of the route; :const:`NOT_PROVIDED` if API did not provide this information
+    
+    .. versionchanged:: 0.3.0
+        Changed attribute type from :class:`dict` to :class:`~typing.TypedDict`.
+    """
 
     # From /v3/disruptions/...
     route_direction_id: int | None | _NotProvidedType = NOT_PROVIDED
@@ -558,7 +574,11 @@ class Stop(TimetableData):
     stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
     """Ticketing information for this stop; :const:`NOT_PROVIDED` if the API response did not return this information"""
     interchange: list[TypedDict("StopInterchange", {"route_id": int, "advertised": bool})] | _NotProvidedType = NOT_PROVIDED
-    """Routes available to interchange with from this stop; :const:`NOT_PROVIDED` if the API response did not return this information"""
+    """Routes available to interchange with from this stop; :const:`NOT_PROVIDED` if the API response did not return this information
+    
+    .. versionchanged:: 0.3.1
+        Changed attribute type from :class:`dict` to :class:`~typing.TypedDict`.
+    """
 
     # From /v3/stops/...
     point_id: int | _NotProvidedType = NOT_PROVIDED
@@ -640,7 +660,11 @@ class Departure(TimetableData):
     at_platform: bool
     """Whether the train servicing this run is stopped at the platform"""
     platform_number: str
-    """Expected platform number the train will depart from; this may change at any time up to prior to arriving at the stop"""
+    """Expected platform number the train will depart from; this may change at any time up to prior to arriving at the stop
+    
+    .. versionchanged:: 0.3.1
+        Changed attribute type from (the erroneous) :class:`int` to :class:`str`.
+    """
     flags: str
     """Unclear; appears to be some sort of run code"""
     departure_sequence: int
@@ -659,6 +683,8 @@ class Departure(TimetableData):
         """Returns `estimated_departure` if its value is not ``None``, otherwise returns `scheduled_departure`.
 
         :return: `estimated_departure` if not ``None``, else `scheduled_departure`
+
+        .. versionadded:: 0.3.1
         """
         return self.estimated_departure if self.estimated_departure is not None else self.scheduled_departure
 
@@ -739,7 +765,10 @@ class VehicleDescriptor(TimetableData):
 
 @dataclass(kw_only=True, slots=True)
 class RunInterchange(TimetableData):
-    """Contains information about the preceding or subsequent service of a particular run."""
+    """Contains information about the preceding or subsequent service of a particular run.
+
+    .. versionadded:: 0.3.1
+    """
 
     run_ref: str
     """Identifier of this run"""
@@ -943,6 +972,8 @@ class StoppingPattern(TimetableData):
         Returns the stopping pattern as a simple sequence of stop identifiers.
 
         :return: A list of stop identifiers.
+
+        .. versionadded:: 0.2.0
         """
         return [departure.stop_id for departure in self.departures]
 

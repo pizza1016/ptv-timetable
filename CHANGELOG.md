@@ -10,9 +10,11 @@
   - Consequential modifications to dataclasses in `ptv_timetable.types`
 - Moved constants and types in `ptv_timetable` and `tramtracker` to `ptv_timetable.types` and `tramtracker.types`, respectively (they are still accessible from `ptv_timetable` and `tramtracker`)
 - Breaking change: `tramtracker.TramTrackerService` has been renamed to `tramtracker.TramTrackerAPI`
-- An instance of `ptv_timetable.TimetableAPI` and `ptv_timetable.TramTrackerAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
+- An instance of `ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerAPI` now uses a single `requests.sessions.Session` instance for all calls made through it (instead of using `requests.get()` which creates a new session on each call)
+  - Added the `session` parameter to the constructors of `ptv_timetable.TimetableAPI` and `tramtracker.TramTrackerAPI`
 - Type hinting adjustments
   - Added `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType`, which are all `TypedDict` subclasses, and made consequential type hint changes
+  - Replaced `dict` hint with `typing.TypedDict` in return type of `ptv_timetable.list_disruption_modes()`
   - Added missing return types in overloaded signatures of `ptv_timetable.search()`
 - Fixed bugs:
   - Stray `PathGeometry()` in `ptv_timetable.types.Route.load()` from earlier version (now `PathGeometry.load()`)
