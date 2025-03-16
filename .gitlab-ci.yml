@@ -56,8 +56,9 @@ build:
 
 publish:
   stage: deploy
-  dependencies:
-    - build
+  needs:
+    - job: build
+      artifacts: true
   id_tokens:
     PYPI_ID_TOKEN:
       aud: pypi
