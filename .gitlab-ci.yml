@@ -71,8 +71,7 @@ publish:
     - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi --username gitlab-ci-token --password ${CI_JOB_TOKEN} --skip-existing --verbose dist/*  # upload to GitLab Package Registry
     - python -m twine upload --repository-url https://upload.pypi.org/legacy/ --username __token__ --password ${api_token} --skip-existing --verbose dist/*  # upload to Python Package Index
   interruptible: false
-  rules:
-    - when: manual
+  when: manual
   manual_confirmation: "Publish new version to Python Package Index and GitLab Package Registry?"
 
 docs:
@@ -84,6 +83,5 @@ docs:
   pages:
     publish: docs/build
   interruptible: true
-  rules:
-    - when: manual
+  when: manual
   manual_confirmation: "Update docs?"
