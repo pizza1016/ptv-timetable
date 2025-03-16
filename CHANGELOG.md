@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.1 (2025-03-__)
+## 0.4.1 (2025-03-17)
 - Created full API reference
   - Consequential edits to docstrings
   - Type hinting fixes

@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path('..', '..').resolve()))
 project = 'ptv-timetable'
 copyright = '%Y pizza1016'
 author = 'pizza1016'
-release = '0.4.0'
+release = '0.4.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

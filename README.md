@@ -2,8 +2,8 @@
 
 Python utilities for interacting with real-time information for public transport in Victoria, Australia, via the [Public Transport Victoria](https://ptv.vic.gov.au) (PTV) [Timetable API](https://timetableapi.ptv.vic.gov.au/swagger/ui/index), [Yarra Trams](https://yarratrams.com.au/)' [TramTracker data service](https://tramtracker.com.au/pid.html) and the [V/Line website](https://www.vline.com.au).
 
-Package version: 0.4.0<br />
-Last updated: 28 February 2025<br />
+Package version: 0.4.1<br />
+Last updated: 17 March 2025<br />
 Tested on Python version: ≥ 3.12
 
 This repository is hosted on GitLab and mirrored on GitHub. **If you are viewing on GitHub, please send any issues, comments and feedback [there](https://gitlab.com/pizza1016/ptv-timetable).**
