@@ -98,62 +98,49 @@ class TimetableAPI(object):
         return
 
     @staticmethod
-    def build_arg_string(*params: tuple[str, str | int | bool | Iterable[str | int] | None] | str | int | bool | Iterable[str | int] | None, s: str = "") -> str:
-        """Builds a URL argument string using the specified parameter-value pairs. Automatically expands values that are :class:`~collections.abc.Iterable`. Ignores values that are ``None``.
+    def generate_url_params(**params: str | int | float | bool | Iterable[str | int] | None) -> str:
+        """Generates a URL search parameters string for the specified parameter-value pairs. Automatically expands values that are :class:`~collections.abc.Iterable`. Ignores values that are ``None``.
 
-        :param params: Tuples of (param, value) pairs, or the param and values themselves (must contain the exact number of arguments to complete the URL)
-        :param s:      Optionally, the string to append to
-        :return:       Modified URL string
+        :param params: Keyword parameters and arguments to incorporate into the string. To use values from a :class:`dict`, prefix the argument with ``**``
+        :return:       The generated string, including the initial "?" (unless there are no parameters)
+
+        .. versionadded:: 0.5.0
+            Replaced method ``build_arg_string``
         """
 
-        i = 0
-        while i < len(params):
-            if isinstance(params[i], tuple):
-                if isinstance(params[i][1], str) or type(params[i][1]) is int:
-                    s += f"{"&" if "?" in s else "?"}{params[i][0]}={params[i][1]}"
-                elif type(params[i][1]) is bool:
-                    s += f"{"&" if "?" in s else "?"}{params[i][0]}={"true" if params[i][1] else "false"}"
-                elif isinstance(params[i][1], Iterable):
-                    for value in params[i][1]:
-                        if isinstance(value, str) or type(value) is int:
-                            s += f"{"&" if "?" in s else "?"}{params[i][0]}={value}"
-                        else:
-                            raise TypeError(f"second element of argument {i} ({params[i]}) contains values that are neither str nor int")
-                elif params[i][1] is not None:
-                    raise TypeError(f"second element of argument {i} ({params[i]}) must be str, int, bool or Iterable[str | int], not {type(params[i]).__name__}")
-                i += 1
-
-            elif isinstance(params[i], str):
-                if i + 1 >= len(params):
-                    raise ValueError(f"not enough arguments provided (missing value for {params[i]})")
-                elif isinstance(params[i + 1], str) or type(params[i + 1]) is int:
-                    s += f"{"&" if "?" in s else "?"}{params[i]}={params[i + 1]}"
-                elif type(params[i + 1]) is bool:
-                    s += f"{"&" if "?" in s else "?"}{params[i]}={"true" if params[i + 1] else "false"}"
-                elif isinstance(params[i + 1], Iterable):
-                    for value in params[i + 1]:
-                        if isinstance(value, str) or type(value) is int:
-                            s += f"{"&" if "?" in s else "?"}{params[i]}={value}"
-                        else:
-                            raise TypeError(f"argument {i + 1} ({params[i + 1]}) contains values that are neither str nor int")
-                elif params[i + 1] is not None:
-                    raise TypeError(f"argument {i + 1} ({params[i + 1]}) must be str, int, bool or Iterable[str | int], not {type(params[i + 1]).__name__}")
-                i += 2
-
+        parsed = []
+        for param, arg in params.items():
+            if arg is None:
+                continue
+            elif isinstance(arg, bool):
+                parsed.append(f"{param}={"true" if arg else "false"}")
+            elif isinstance(arg, str | int | float):
+                parsed.append(f"{param}={arg}")
+            elif isinstance(arg, Iterable):
+                for value in arg:
+                    if isinstance(value, str | int) and not isinstance(value, bool):
+                        parsed.append(f"{param}={value}")
+                    else:
+                        raise TypeError(f"iterable in argument of parameter '{param}' must contain str or int only, not {type(value).__name__}")
             else:
-                raise TypeError(f"argument {i} ({params[i]}) is not tuple or str")
+                raise TypeError(f"argument of parameter '{param}' must be str, int, float, bool or Iterable[str | int], not {type(arg).__name__}")
 
-        return s
+        if len(parsed) == 0:
+            return ""
+        return "?" + "&".join(parsed)
 
-    def call(self: Self, request: str) -> _PTVResponseType | _FareEstimateResponseType:
-        """Make the request to the API and format the result. This will be rate-limited based on the options provided when this instance was created.
+    def request(self: Self, path: str) -> _responsetypes.APIResponse:
+        """Requests the specified data from the Timetable API. This will be rate-limited based on the options provided when this instance was created.
 
-        :param request: API request string
-        :return:        Result of API request as a :class:`dict`
-        :rtype:         dict[str, ...]
+        :param path: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
+        :return:     The result of the API request as a :class:`dict`
+
+        .. versionchanged:: 0.5.0
+            Renamed method from ``call``; updated return type signature to be more specific
         """
 
-        url = self._encode_url(request)
+        url = self._sign(path)
+
         _logger.debug("Requesting from: " + url)
         r: Response = self._get(url)
         try:
@@ -165,11 +152,14 @@ class TimetableAPI(object):
         _logger.debug("Response: " + str(result))
         return result
 
-    def _encode_url(self: Self, request: str) -> str:
-        """Appends the signature and base URL to the request string.
+    def _sign(self: Self, request: str) -> str:
+        """Appends the credentials, signature and base URL to the request string.
 
-        :param request: API request string
-        :return:        API request URL
+        :param request: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
+        :return:        The full API request URL
+
+        .. versionchanged:: 0.5.0
+            Renamed method from ``_encode_url``
         """
 
         raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
@@ -183,7 +173,7 @@ class TimetableAPI(object):
         :return:         List of directions
         """
 
-        return [Direction.load(**item) for item in self.call(f"/v3/directions/route/{route_id}")["directions"]]
+        return [Direction.load(**item) for item in self.request(f"/v3/directions/route/{route_id}")["directions"]]
 
     def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
         """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
@@ -199,8 +189,8 @@ class TimetableAPI(object):
             Renamed from ``list_directions`` to ``get_direction``.
         """
 
-        req = f"/v3/directions/{direction_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
-        return [Direction.load(**item) for item in self.call(req)["directions"]]
+        path = f"/v3/directions/{direction_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
+        return [Direction.load(**item) for item in self.request(path)["directions"]]
 
     def get_pattern(self: Self,
                     run_ref: str | int,
@@ -225,16 +215,16 @@ class TimetableAPI(object):
         :return:                      The stopping pattern of the specified run
         """
 
-        req = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
+        path = f"/v3/pattern/run/{run_ref}/route_type/{route_type}"
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = self.build_arg_string("stop_id", stop_id, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "include_skipped_stops", include_skipped_stops, "expand", expand, "include_geopath", include_geopath, s=req)
+        path += self.generate_url_params(stop_id=stop_id, date_utc=date.astimezone(timezone.utc).isoformat() if date is not None else None, include_skipped_stops=include_skipped_stops, expand=expand, include_geopath=include_geopath)
 
-        res = self.call(req)
+        res = self.request(path)
         return StoppingPattern.load(**res)
 
     def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
@@ -251,8 +241,8 @@ class TimetableAPI(object):
         if geopath_date is not None and geopath_date.tzinfo is None:
             geopath_date = geopath_date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = self.build_arg_string("include_geopath", include_geopath, "geopath_utc", geopath_date, s=f"/v3/routes/{route_id}")
-        return Route.load(**self.call(req)["route"])
+        path = f"/v3/routes/{route_id}" + self.generate_url_params(include_geopath=include_geopath, geopath_utc=geopath_date.astimezone(timezone.utc).isoformat())
+        return Route.load(**self.request(path)["route"])
 
     def list_routes(self: Self, route_types: Iterable[RouteType] | RouteType | None = None, route_name: str | None = None) -> list[Route]:
         """Returns all routes of all (or specified) types.
@@ -263,8 +253,8 @@ class TimetableAPI(object):
         :return:            A list of routes
         """
 
-        req = self.build_arg_string("route_types", route_types, "route_name", route_name, s="/v3/routes")
-        return [Route.load(**item) for item in self.call(req)["routes"]]
+        path = "/v3/routes" + self.generate_url_params(route_types=route_types, route_name=route_name)
+        return [Route.load(**item) for item in self.request(path)["routes"]]
 
     def list_route_types(self: Self) -> list[TypedDict("RouteType", {"route_type_name": str, "route_type": int})]:
         """Returns the names and identifiers of all route types.
@@ -276,7 +266,7 @@ class TimetableAPI(object):
             Changed return type from :class:`dict` to :class:`~typing.TypedDict`
         """
 
-        return self.call("/v3/route_types")["route_types"]
+        return self.request("/v3/route_types")["route_types"]
 
     def get_run(self: Self,
                 run_ref: str | int,
@@ -296,16 +286,16 @@ class TimetableAPI(object):
         :return:                A list of runs (this will still be a list even if there's only one exact match)
         """
 
-        req = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
+        path = f"/v3/runs/{run_ref}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = self.build_arg_string("expand", expand, "include_geopath", include_geopath, "date_utc", date.astimezone(timezone.utc).isoformat(), s=req)
+        path += self.generate_url_params(expand=expand, include_geopath=include_geopath, date_utc=date.astimezone(timezone.utc).isoformat())
 
-        return [Run.load(**item) for item in self.call(req)["runs"]]
+        return [Run.load(**item) for item in self.request(path)["runs"]]
 
     def list_runs(self: Self,
                   route_id: int,
@@ -323,16 +313,16 @@ class TimetableAPI(object):
         :return:           A list of runs
         """
 
-        req = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
+        path = f"/v3/runs/route/{route_id}" + (f"/route_type/{route_type}" if route_type is not None else "")
 
         if isinstance(date, str):
             date = datetime.fromisoformat(date)
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = self.build_arg_string("expand", expand, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, s=req)
+        path += self.generate_url_params(expand=expand, date_utc=date.astimezone(timezone.utc).isoformat() if date is not None else None)
 
-        return [Run.load(**item) for item in self.call(req)["runs"]]
+        return [Run.load(**item) for item in self.request(path)["runs"]]
 
     @overload
     def get_stop(self: Self,
@@ -407,31 +397,36 @@ class TimetableAPI(object):
         :return:                   Details of the specified stop
         """
 
-        req = f"/v3/stops/{stop_id}/route_type/{route_type}"
-        req = self.build_arg_string("stop_location", stop_location, "stop_amenities", stop_amenities, "stop_accessibility", stop_accessibility, "stop_contact", stop_contact, "stop_ticket", stop_ticket, "gtfs", gtfs, "stop_staffing", stop_staffing, "stop_disruptions", stop_disruptions, s=req)
+        path = f"/v3/stops/{stop_id}/route_type/{route_type}"
+        path += self.generate_url_params(stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_contact=stop_contact, stop_ticket=stop_ticket, gtfs=gtfs, stop_staffing=stop_staffing, stop_disruptions=stop_disruptions)
 
-        res = self.call(req)["stop"]
+        res = self.request(path)["stop"]
         return Stop.load(**res)
 
     def list_stops(self: Self,
                    route_id: int,
                    route_type: RouteType,
                    direction_id: int | None = None,
-                   stop_disruptions: bool | None = None
+                   stop_disruptions: bool | None = None,
+                   include_advertised_interchange: bool | None = None
                    ) -> list[Stop]:
         """Returns a list of all stops on the specified route.
 
-        :param route_id:         The route identifier
-        :param route_type:       The route type of the specified route
-        :type route_type:        ~typing.Literal[0, 1, 2, 3]
-        :param direction_id:     Specify a direction identifier to include stop sequence information in the list
-        :param stop_disruptions: Whether to include stop disruption information
-        :return:                 A list of all stops on the route
+        :param route_id:                       The route identifier
+        :param route_type:                     The route type of the specified route
+        :type route_type:                      ~typing.Literal[0, 1, 2, 3]
+        :param direction_id:                   Specify a direction identifier to include stop sequence information in the list
+        :param stop_disruptions:               Whether to include stop disruption information
+        :param include_advertised_interchange: Whether to include information about interchanges to other routes in each stop
+        :return:                               A list of all stops on the route
+
+        .. versionchanged:: 0.5.0
+            Added new ``include_advertised_interchange`` parameter
         """
 
-        req = f"/v3/stops/route/{route_id}/route_type/{route_type}"
-        req = self.build_arg_string("direction_id", direction_id, "stop_disruptions", stop_disruptions, s=req)
-        return [Stop.load(**item) for item in self.call(req)["stops"]]
+        path = f"/v3/stops/route/{route_id}/route_type/{route_type}"
+        path += self.generate_url_params(direction_id=direction_id, stop_disruptions=stop_disruptions, include_advertised_interchange=include_advertised_interchange)
+        return [Stop.load(**item) for item in self.request(path)["stops"]]
 
     def list_stops_near_location(self: Self,
                                  latitude: float,
@@ -453,10 +448,10 @@ class TimetableAPI(object):
         :return:                 A list of stops in the specified search parameters
         """
 
-        req = f"/v3/stops/location/{latitude},{longitude}"
-        req = self.build_arg_string("route_types", route_types, "max_results", max_results, "max_distance", max_distance, "stop_disruptions", stop_disruptions, s=req)
+        path = f"/v3/stops/location/{latitude},{longitude}"
+        path += self.generate_url_params(route_types=route_types, max_results=max_results, max_distance=max_distance, stop_disruptions=stop_disruptions)
 
-        return [Stop.load(**item) for item in self.call(req)["stops"]]
+        return [Stop.load(**item) for item in self.request(path)["stops"]]
 
     # route_id is specified - force platform_numbers to be None
     # gtfs is not specified
@@ -468,7 +463,6 @@ class TimetableAPI(object):
                         platform_numbers: None = None,
                         direction_id: int | None = None,
                         gtfs: Literal[False, None] = None,
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -489,7 +483,6 @@ class TimetableAPI(object):
                         platform_numbers: Iterable[str | int] | str | int | None = None,
                         direction_id: int | None = None,
                         gtfs: Literal[False, None] = None,
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -509,7 +502,6 @@ class TimetableAPI(object):
                         direction_id: int | None = None,
                         *,
                         gtfs: Literal[True],
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -529,7 +521,6 @@ class TimetableAPI(object):
                         direction_id: int | None = None,
                         *,
                         gtfs: Literal[True],
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -548,7 +539,6 @@ class TimetableAPI(object):
                         platform_numbers: None,
                         direction_id: int | None,
                         gtfs: Literal[True],
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -568,7 +558,6 @@ class TimetableAPI(object):
                         platform_numbers: Iterable[str | int] | str | int | None,
                         direction_id: int | None,
                         gtfs: Literal[True],
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -585,7 +574,6 @@ class TimetableAPI(object):
                         platform_numbers: Iterable[str | int] | str | int | None = None,
                         direction_id: int | None = None,
                         gtfs: bool | None = None,
-                        include_advertised_interchange: bool | None = None,
                         date: datetime | str | None = None,
                         max_results: int | None = None,
                         include_cancelled: bool | None = None,
@@ -595,20 +583,22 @@ class TimetableAPI(object):
                         ) -> DeparturesResponse:
         """Returns a list of departures from the specified stop.
 
-        :param route_type:                     Transport mode identifier
-        :param stop_id:                        Stop identifier; must be :class:`str` if ``gtfs`` is set to ``True``; otherwise, must be :class:`int`
-        :param route_id:                       If specified, show only departures for the specified route. Only one of '`route_id`' and '`platform_numbers`' should be specified.
-        :param platform_numbers:               If specified, show only departures from the specified platform numbers. Only one of '`route_id`' and '`platform_numbers`' should be specified.
-        :param direction_id:                   If specified, show only departures travelling towards the specified direction
-        :param gtfs:                           Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
-        :param include_advertised_interchange: Whether to include stop interchange information in result (server default is ``False``)
-        :param date:                           If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
-        :param max_results:                    Return only this number of departures
-        :param include_cancelled:              Whether to include departures that are cancelled (server default is ``False``)
-        :param look_backwards:                 If set to ``True``, departures that arrive at their terminating destinations prior to the date specified in 'date' are returned instead (server default is ``False``)
-        :param expand:                         Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
-        :param include_geopath:                Include the run's path geometry (server default is ``False``)
-        :return:                               The requested departure information and any associated stop, route, run, direction and disruption data
+        :param route_type:        Transport mode identifier
+        :param stop_id:           Stop identifier; must be :class:`str` if ``gtfs`` is set to ``True``; otherwise, must be :class:`int`
+        :param route_id:          If specified, show only departures for the specified route. Only one of '`route_id`' and '`platform_numbers`' should be specified.
+        :param platform_numbers:  If specified, show only departures from the specified platform numbers. Only one of '`route_id`' and '`platform_numbers`' should be specified.
+        :param direction_id:      If specified, show only departures travelling towards the specified direction
+        :param gtfs:              Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
+        :param date:              If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param max_results:       Return only this number of departures
+        :param include_cancelled: Whether to include departures that are cancelled (server default is ``False``)
+        :param look_backwards:    If set to ``True``, departures that arrive at their terminating destinations prior to the date specified in 'date' are returned instead (server default is ``False``)
+        :param expand:            Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
+        :param include_geopath:   Include the run's path geometry (server default is ``False``)
+        :return:                  The requested departure information and any associated stop, route, run, direction and disruption data
+
+        .. versionchanged:: 0.5.0
+            Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned
         """
 
         if isinstance(date, str):
@@ -616,10 +606,10 @@ class TimetableAPI(object):
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        req = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
-        req = self.build_arg_string("platform_numbers", platform_numbers, "direction_id", direction_id, "gtfs", gtfs, "include_advertised_interchange", include_advertised_interchange, "date_utc", date.astimezone(timezone.utc).isoformat() if date is not None else None, "max_results", max_results, "include_cancelled", include_cancelled, "look_backwards", look_backwards, "expand", expand, "include_geopath", include_geopath, s=req)
+        path = f"/v3/departures/route_type/{route_type}/stop/{stop_id}" + (f"/route/{route_id}" if route_id is not None else "")
+        path += self.generate_url_params(platform_numbers=platform_numbers, direction_id=direction_id, gtfs=gtfs, date_utc=date.astimezone(timezone.utc).isoformat() if date is not None else None, max_results=max_results, include_cancelled=include_cancelled, look_backwards=look_backwards, expand=expand, include_geopath=include_geopath)
 
-        res = self.call(req)
+        res = self.request(path)
         return DeparturesResponse.load(**res)
 
     @overload
@@ -657,10 +647,10 @@ class TimetableAPI(object):
         :return:                  A list of disruptions
         """
 
-        req = "/v3/disruptions" + (f"/route/{route_id}" if route_id is not None else "") + (f"/stop/{stop_id}" if stop_id is not None else "")
-        req = self.build_arg_string("route_types", route_types, "disruption_modes", disruption_modes, "disruption_status", disruption_status, s=req)
+        path = "/v3/disruptions" + (f"/route/{route_id}" if route_id is not None else "") + (f"/stop/{stop_id}" if stop_id is not None else "")
+        path += self.generate_url_params(route_types=route_types, disruption_modes=disruption_modes, disruption_status=disruption_status)
 
-        res = self.call(req)["disruptions"]
+        res = self.request(path)["disruptions"]
         ret = []
         for category in res.values():
             ret.extend(category)
@@ -674,7 +664,7 @@ class TimetableAPI(object):
         :return:              The disruption with the specified identifier
         """
 
-        res = self.call(f"/v3/disruptions/{disruption_id}")["disruption"]
+        res = self.request(f"/v3/disruptions/{disruption_id}")["disruption"]
         return Disruption.load(**res)
 
     def list_disruption_modes(self: Self) -> list[TypedDict("DisruptionMode", {"disruption_mode": int, "disruption_mode_name": str})]:
@@ -682,9 +672,12 @@ class TimetableAPI(object):
 
         :return: A list of disruption modes
         :rtype: list[dict[~typing.Literal["disruption_mode", "disruption_mode_name"], int | str]]
+
+        .. versionchanged:: 0.3.0
+            Changed return type from :class:`dict` to :class:`~typing.TypedDict`
         """
 
-        return self.call("/v3/disruptions/modes")["disruption_modes"]
+        return self.request("/v3/disruptions/modes")["disruption_modes"]
 
     def fare_estimate(self: Self,
                       zone_a: int,
@@ -692,6 +685,7 @@ class TimetableAPI(object):
                       touch_on: datetime | str | None = None,
                       touch_off: datetime | str | None = None,
                       is_free_fare_zone: bool | None = None,
+                      is_overlap_zone: bool | None = None,
                       route_types: Iterable[RouteType] | RouteType | None = None
                       ) -> FareEstimate:
         """Returns the estimated fare for the specified journey details.
@@ -701,9 +695,13 @@ class TimetableAPI(object):
         :param touch_on:          If specified, estimate the fare for the journey commencing at the specified touch on time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :param touch_off:         If specified, estimate the fare for the journey concluding at the specified touch off time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :param is_free_fare_zone: Whether the journey is entirely within a free fare zone
+        :param is_overlap_zone:   Whether the journey is entirely within the overlap of two (or more) zones
         :param route_types:       If specified, estimate the fare for the journey travelling through the specified fare zone(s)
         :type route_types:        ~collections.abc.Iterable[~typing.Literal[0, 1, 2, 3]] | ~typing.Literal[0, 1, 2, 3] | None
         :return:                  Object containing the estimated fares
+
+        .. versionchanged:: 0.5.0
+            Added `is_overlap_zone` parameter
         """
 
         if type(touch_on) is str:
@@ -715,10 +713,10 @@ class TimetableAPI(object):
         if touch_off is not None and touch_off.tzinfo is None:
             touch_off = touch_off.replace(tzinfo=TZ_MELBOURNE)
 
-        req = f"/v3/fare_estimate/min_zone/{min(zone_a, zone_b)}/max_zone/{max(zone_a, zone_b)}"
-        req = self.build_arg_string("touch_on", touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, "touch_off", touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, "is_free_fare_zone", is_free_fare_zone, "travelled_route_types", route_types, s=req)
+        path = f"/v3/fare_estimate/min_zone/{min(zone_a, zone_b)}/max_zone/{max(zone_a, zone_b)}"
+        path += self.generate_url_params(touch_on=touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, touch_off=touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, is_journey_in_free_tram_zone=is_free_fare_zone, is_journey_in_overlap_zone=is_overlap_zone, travelled_route_types=route_types)
 
-        res = self.call(req)["FareEstimateResult"]
+        res = self.request(path)["FareEstimateResult"]
         return FareEstimate.load(**res)
 
     @overload
@@ -752,10 +750,10 @@ class TimetableAPI(object):
         :return:             A list of ticket outlets
         """
 
-        req = "/v3/outlets" + (f"/location/{latitude},{longitude}" if latitude is not None and longitude is not None else "")
-        req = self.build_arg_string("max_distance", max_distance, "max_results", max_results, s=req)
+        path = "/v3/outlets" + (f"/location/{latitude},{longitude}" if latitude is not None and longitude is not None else "")
+        path += self.generate_url_params(max_distance=max_distance, max_results=max_results)
 
-        res = self.call(req)["outlets"]
+        res = self.request(path)["outlets"]
         return [Outlet.load(**item) for item in res]
 
     @overload
@@ -825,8 +823,8 @@ class TimetableAPI(object):
         :return:                           All matching stops, routes and ticket outlets
         """
 
-        req = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"
-        req = self.build_arg_string("route_types", route_types, "latitude", latitude, "longitude", longitude, "max_distance", max_distance, "include_outlets", include_outlets, "match_stop_by_suburb", match_stop_by_locality, "match_route_by_suburb", match_route_by_locality, "match_stop_by_gtfs_stop_id", match_stop_by_gtfs_stop_id, s=req)
+        path = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"
+        path += self.generate_url_params(route_types=route_types, latitude=latitude, longitude=longitude, max_distance=max_distance, include_outlets=include_outlets, match_stop_by_suburb=match_stop_by_locality, match_route_by_suburb=match_route_by_locality, match_stop_by_gtfs_stop_id=match_stop_by_gtfs_stop_id)
 
-        res = self.call(req)
+        res = self.request(path)
         return SearchResult.load(**res)

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 (2026-\_\_-\_\_)
+- Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - `build_arg_string()` static method has been fully replaced with `generate_url_params()` with an entirely different signature
+  - `call()` has been renamed to `request()`
+  - `_encode_url()` has been renamed to `_sign()`
+  - Consequential edits to other methods to use the new and renamed methods, including renaming local `req` variables to `path`
+  - `include_advertised_interchange` parameter has been removed from `list_departures()` as it is no longer supported by the API
+- Added new parameter `include_advertised_interchange` to `ptv_timetable.TimetableAPI.list_stops()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.list_stops()`
+- Added new parameter `is_overlap_zone` to `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()`
+- Fixed bugs:
+  - `geopath_date` value in `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` was not converted to string before being sent to the API
+  - some URL parameter names in `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()` were incorrect
+
 ## 0.4.1 (2025-03-17)
 - Created full API reference
   - Consequential edits to docstrings
