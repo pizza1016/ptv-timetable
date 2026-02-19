@@ -11,7 +11,7 @@ Data from the PTV Timetable API is open government data that is separately licen
 
 Data from the Yarra Trams TramTracker service is proprietary data by Yarra Journey Makers Pty Ltd and their terms of use can be found at https://yarratrams.com.au/terms-conditions.
 
-Data from the V/Line website is proprietary data by V/Line Corporation, a statutory authority of the state government of Victoria and their terms of use can be found at https://www.vline.com.au/Terms-of-use.
+Data from the V/Line website is proprietary data by V/Line Corporation, a statutory authority of the state government of Victoria, and their terms of use can be found at https://www.vline.com.au/Terms-of-use.
 
 **If you need to avoid using data that is not freely licensed, do *not* use the `tramtracker` and `vline` modules.**
 
