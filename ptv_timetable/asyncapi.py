@@ -247,6 +247,14 @@ class AsyncTimetableAPI(object):
         res = await self.request(path)
         return await StoppingPattern.aload(**res)
 
+    @overload
+    async def get_route(self: Self, route_id: int, include_geopath: Literal[False] | None = None) -> Route:
+        ...
+
+    @overload
+    async def get_route(self: Self, route_id: int, include_geopath: Literal[True], geopath_date: datetime | str | None = None) -> Route:
+        ...
+
     async def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 

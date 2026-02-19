@@ -227,6 +227,14 @@ class TimetableAPI(object):
         res = self.request(path)
         return StoppingPattern.load(**res)
 
+    @overload
+    def get_route(self: Self, route_id: int, include_geopath: Literal[False] | None = None) -> Route:
+        ...
+
+    @overload
+    def get_route(self: Self, route_id: int, include_geopath: Literal[True], geopath_date: datetime | str | None = None) -> Route:
+        ...
+
     def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 

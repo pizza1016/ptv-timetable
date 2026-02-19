@@ -9,6 +9,7 @@
   - `include_advertised_interchange` parameter has been removed from `list_departures()` as it is no longer supported by the API
 - Added new parameter `include_advertised_interchange` to `ptv_timetable.TimetableAPI.list_stops()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.list_stops()`
 - Added new parameter `is_overlap_zone` to `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()`
+- Added overloads to `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` to indicate that `geopath_date` should only be provided if `include_geopath` is `True`
 - Fixed bugs:
   - `geopath_date` value in `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` was not converted to string before being sent to the API
   - some URL parameter names in `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()` were incorrect
