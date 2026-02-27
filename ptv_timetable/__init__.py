@@ -770,8 +770,8 @@ class TimetableAPI(object):
                route_types: Iterable[RouteType] | RouteType | None = None,
                *,
                include_outlets: bool | None = None,
-               match_stop_by_suburb: bool | None = None,
-               match_route_by_suburb: bool | None = None,
+               match_stop_by_locality: bool | None = None,
+               match_route_by_locality: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ) -> SearchResult:
         ...
@@ -784,8 +784,8 @@ class TimetableAPI(object):
                longitude: float,
                max_distance: float | None = None,
                include_outlets: bool | None = None,
-               match_stop_by_suburb: bool | None = None,
-               match_route_by_suburb: bool | None = None,
+               match_stop_by_locality: bool | None = None,
+               match_route_by_locality: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ) -> SearchResult:
         ...
@@ -798,8 +798,8 @@ class TimetableAPI(object):
                longitude: float,
                max_distance: float | None = None,
                include_outlets: bool | None = None,
-               match_stop_by_suburb: bool | None = None,
-               match_route_by_suburb: bool | None = None,
+               match_stop_by_locality: bool | None = None,
+               match_route_by_locality: bool | None = None,
                match_stop_by_gtfs_stop_id: bool | None = None
                ) -> SearchResult:
         ...
