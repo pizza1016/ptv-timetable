@@ -13,6 +13,7 @@
 - Fixed bugs:
   - `geopath_date` value in `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` was not converted to string before being sent to the API
   - some URL parameter names in `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()` were incorrect
+- Updated documentation
 
 ## 0.4.1 (2025-03-17)
 - Created full API reference

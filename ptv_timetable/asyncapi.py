@@ -150,7 +150,7 @@ class AsyncTimetableAPI(object):
         return "?" + "&".join(parsed)
 
     async def request(self: Self, path: str) -> _responsetypes.APIResponse:
-        """Requests the specified data from the Timetable API. This will be rate-limited based on the options provided when this instance was created.
+        """Requests the data at the specified path from the Timetable API. This will be rate-limited based on the options provided when this instance was created.
 
         :param path: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
         :return:     The result of the API request as a :class:`dict`
@@ -199,7 +199,7 @@ class AsyncTimetableAPI(object):
         return [await Direction.aload(**item) for item in (await self.request(f"/v3/directions/route/{route_id}"))["directions"]]
 
     async def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
-        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
+        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel with the same identifier for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
 
         If the direction is shared by multiple routes (e.g. Flinders Street), a :class:`~ptv_timetable.types.Direction` object will be added to the :class:`list` for *each* route.
 
@@ -226,7 +226,7 @@ class AsyncTimetableAPI(object):
         :param run_ref:               The run identifier
         :param route_type:            The run's travel mode identifier
         :type route_type:             ~typing.Literal[0, 1, 2, 3]
-        :param stop_id:               Include only the stop with the specified stop ID
+        :param stop_id:               Doesn't appear to have any effect on the response
         :param date:                  Doesn't appear to have any effect on the response
         :param include_skipped_stops: Include a list of stops that are skipped by the pattern (server default is ``False``)
         :param expand:                Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_DISRUPTION`)
@@ -260,7 +260,7 @@ class AsyncTimetableAPI(object):
 
         :param route_id:        The route identifier
         :param include_geopath: Include the route's path geometry (server default is ``False``)
-        :param geopath_date:    Retrieve the path geometry valid at the specified geopath_date (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param geopath_date:    Retrieve the path geometry valid at the specified ``geopath_date`` (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :return:                Details of the specified route
         """
 
@@ -303,10 +303,10 @@ class AsyncTimetableAPI(object):
         """Returns a list of all runs with the specified run identifier and, optionally, the specified route type.
 
         :param run_ref:         The run identifier
-        :param route_type:      Return runs of the specified type only
+        :param route_type:      If specified, return runs of the specified type only
         :type route_type:       ~typing.Literal[0, 1, 2, 3] | None
         :param expand:          Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
-        :param date:            Return only data from the specified date. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param date:            If specified, return only data from the specified date. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :param include_geopath: Include the run's path geometry (server default is ``False``)
         :return:                A list of runs (this will still be a list even if there's only one exact match)
         """
@@ -441,8 +441,8 @@ class AsyncTimetableAPI(object):
         :param route_type:                     The route type of the specified route
         :type route_type:                      ~typing.Literal[0, 1, 2, 3]
         :param direction_id:                   Specify a direction identifier to include stop sequence information in the list
-        :param stop_disruptions:               Whether to include stop disruption information
-        :param include_advertised_interchange: Whether to include information about interchanges to other routes in each stop
+        :param stop_disruptions:               Whether to include stop disruption information (server default is ``False``)
+        :param include_advertised_interchange: Whether to include information about interchanges to other routes in each stop (server default is ``False``)
         :return:                               A list of all stops on the route
 
         .. versionchanged:: 0.5.0
@@ -471,7 +471,7 @@ class AsyncTimetableAPI(object):
         :param max_results:      Maximum number of stops to be returned (server default is 30)
         :param max_distance:     Maximum radius from the specified location to search, in metres (server default is 300 metres)
         :param stop_disruptions: Whether to include stop disruption information (server default is ``False``)
-        :return:                 A list of stops in the specified search parameters
+        :return:                 A list of stops matching the specified search parameters
         """
 
         path = f"/v3/stops/location/{latitude},{longitude}"
@@ -611,16 +611,16 @@ class AsyncTimetableAPI(object):
 
         :param route_type:        Transport mode identifier
         :param stop_id:           Stop identifier; must be :class:`str` if ``gtfs`` is set to ``True``; otherwise, must be :class:`int`
-        :param route_id:          If specified, show only departures for the specified route. Only one of '`route_id`' and '`platform_numbers`' should be specified.
-        :param platform_numbers:  If specified, show only departures from the specified platform numbers. Only one of '`route_id`' and '`platform_numbers`' should be specified.
+        :param route_id:          If specified, show only departures for the specified route. Only one of ``route_id`` and ``platform_numbers`` should be specified.
+        :param platform_numbers:  If specified, show only departures from the specified platform number(s). Only one of ``route_id`` and ``platform_numbers`` should be specified.
         :param direction_id:      If specified, show only departures travelling towards the specified direction
-        :param gtfs:              Whether the value specified in stop_id is a General Transit Feed Specification identifier (server default is ``False``)
-        :param date:              If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
-        :param max_results:       Return only this number of departures
-        :param include_cancelled: Whether to include departures that are cancelled (server default is ``False``)
-        :param look_backwards:    If set to ``True``, departures that arrive at their terminating destinations prior to the date specified in 'date' are returned instead (server default is ``False``)
+        :param gtfs:              Whether the value specified in ``stop_id`` is a General Transit Feed Specification identifier (server default is ``False``)
+        :param date:              If specified, show departures from the public transport day (24-hour period from 3 am Melbourne time) that contains the specified date and time (server default is current time). If ``look_backwards`` is ``True``, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param max_results:       If specified, limits the number of departures returned to this value
+        :param include_cancelled: Whether to include departures that have been cancelled (server default is ``False``)
+        :param look_backwards:    If set to ``True``, departures that arrive at their terminating destinations prior to the date specified in ``date`` are returned instead (server default is ``False``)
         :param expand:            Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
-        :param include_geopath:   Include the run's path geometry (server default is ``False``)
+        :param include_geopath:   If set to ``True``, include the run's path geometry (server default is ``False``)
         :return:                  The requested departure information and any associated stop, route, run, direction and disruption data
 
         .. versionchanged:: 0.5.0
@@ -667,8 +667,8 @@ class AsyncTimetableAPI(object):
 
         :param route_id:          If route identifier is specified, list only disruptions for the specified route. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
         :param stop_id:           If stop identifier is specified, list only disruptions for the specified stop. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
-        :param route_types:       If specified, list only disruptions for the specified travel modes. Does not work with ``route_id`` or ``stop_id``
-        :param disruption_modes:  If specified, list only disruptions for the specified disruption modes. Does not work with ``route_id`` or ``stop_id``
+        :param route_types:       If specified, list only disruptions for the specified travel mode(s). Does not work with ``route_id`` or ``stop_id``
+        :param disruption_modes:  If specified, list only disruptions for the specified disruption mode(s). Does not work with ``route_id`` or ``stop_id``
         :param disruption_status: If specified, list only disruptions with the specified status
         :return:                  A list of disruptions
         """
@@ -713,15 +713,15 @@ class AsyncTimetableAPI(object):
                             ) -> FareEstimate:
         """Returns the estimated fare for the specified journey details.
 
-        :param zone_a:            With zone_b, the lowest and highest zones travelled through (order independent)
-        :param zone_b:            As per zone_a
+        :param zone_a:            With ``zone_b``, the lowest and highest zones travelled through (order independent)
+        :param zone_b:            As per ``zone_a``
         :param touch_on:          If specified, estimate the fare for the journey commencing at the specified touch on time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :param touch_off:         If specified, estimate the fare for the journey concluding at the specified touch off time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :param is_free_fare_zone: Whether the journey is entirely within a free fare zone
         :param is_overlap_zone:   Whether the journey is entirely within the overlap of two (or more) zones
-        :param route_types:       If specified, estimate the fare for the journey travelling through the specified fare zone(s)
+        :param route_types:       If specified, estimate the fare for the journey using the specified route type(s)
         :type route_types:        ~collections.abc.Iterable[~typing.Literal[0, 1, 2, 3]] | ~typing.Literal[0, 1, 2, 3] | None
-        :return:                  Object containing the estimated fares
+        :return:                  Object containing the estimated fares, or ``None`` if the specified journey is outside the myki fare system
 
         .. versionchanged:: 0.5.0
             Added `is_overlap_zone` parameter
@@ -838,12 +838,12 @@ class AsyncTimetableAPI(object):
         :param route_types:                Return stops and routes with the specified travel mode type(s) only
         :param latitude:                   Latitude coordinate of the location to search
         :param longitude:                  Longitude coordinate of the location to search
-        :param max_distance:               Radius, from centre location (specified in latitude and longitude parameters), of area to search in, in metres (server default is 300 metres). Can only be used if ``latitude`` and ``longitude`` are specified
+        :param max_distance:               Radius, from centre location (specified in the ``latitude`` and ``longitude`` parameters), of area to search in, in metres (server default is 300 metres). Can only be used if ``latitude`` and ``longitude`` are specified
         :param include_outlets:            Whether to include ticket outlets in search result (server default is ``True``)
         :param match_stop_by_locality:     Whether to include stops in the search result where their localities match the search term (server default is ``True``)
         :param match_route_by_locality:    Whether to include routes in the search result where their localities match the search term (server default is ``True``)
         :param match_stop_by_gtfs_stop_id: Whether to include stops in the search result when the search term is treated as a General Transit Feed Specification stop identifier (server default is ``False``)
-        :return:                           All matching stops, routes and ticket outlets
+        :return:                           All matching stops, routes and/or ticket outlets
         """
 
         path = f"/v3/search/{urllib.parse.quote(search_term, safe="", encoding="utf-8")}"

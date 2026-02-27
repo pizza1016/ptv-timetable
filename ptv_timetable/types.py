@@ -290,31 +290,31 @@ class StopAmenities(TimetableData):
     replacement_bus_stop_location: str
     """Appears to be deprecated/unused (always returns empty string). Location of the replacement bus stop"""
     QTEM: None
-    """Appears to be deprecated/unused (always returns None)"""
+    """Appears to be deprecated/unused (always returns ``None``)"""
     bike_storage: None
-    """Appears to be deprecated/unused (always returns None)"""
+    """Appears to be deprecated/unused (always returns ``None``)"""
     PID: bool
     """Whether there are passenger information displays at this stop"""
     ATM: None
-    """Appears to be deprecated/unused (always returns None). Whether there is an automated teller machine at this stop"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether there is an automated teller machine at this stop"""
     travellers_aid: bool | None
     """Whether Traveller's Aid facilities are available at this stop; None if not applicable"""
     premium_stop: None
-    """Appears to be deprecated/unused (always returns None)"""
+    """Appears to be deprecated/unused (always returns ``None``)"""
     PSOs: None
-    """Appears to be deprecated/unused (always returns None). Whether Protective Services Officers patrol this stop; None if not applicable"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether Protective Services Officers patrol this stop; None if not applicable"""
     melb_bike_share: None
     """Defunct (scheme no longer exists). Whether there are Melbourne Bike Share bicycle rentals available at this stop; None if not applicable or information unavailable"""
     luggage_storage: None
-    """Appears to be deprecated/unused (always returns empty string). Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
     luggage_check_in: None
-    """Appears to be deprecated/unused (always returns empty string). Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
     toilet: bool
     """Whether there is a public toilet at or near this stop"""
     taxi_rank: bool
     """Whether there is a taxi rank at or near this stop"""
     car_parking: int | None
-    """Number of fee-free parking spaces at this stop; None if not applicable"""
+    """Number of fee-free parking spaces at this stop; ``None`` if not applicable"""
     cctv: bool
     """Whether there are closed-circuit television cameras at this stop"""
 
@@ -556,7 +556,7 @@ class Stop(TimetableData):
     stop_id: int
     """Identifier of this stop"""
     route_type: int | _NotProvidedType = NOT_PROVIDED
-    """Identifier of the travel mode of this stop; :const:`NOT_PROVIDED` if this was created by 'Disruptions'"""
+    """Identifier of the travel mode of this stop; :const:`NOT_PROVIDED` if this was created by the Disruptions API"""
     stop_name: str
     """Name of this stop"""
     locality: str | _NotProvidedType = NOT_PROVIDED
@@ -566,9 +566,9 @@ class Stop(TimetableData):
     stop_longitude: float | _NotProvidedType = NOT_PROVIDED
     """Longitude coordinate of the stop's location; :const:`NOT_PROVIDED` if the API response did not return this information"""
     stop_distance: float | _NotProvidedType = NOT_PROVIDED
-    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, 0.0 or :const:`NOT_PROVIDED`"""
+    """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, ``0.0`` or :const:`NOT_PROVIDED`"""
     stop_landmark: str | _NotProvidedType = NOT_PROVIDED
-    """Notable landmarks near this stop; "" (empty string) if none; :const:`NOT_PROVIDED` if this was created by 'Disruptions'"""
+    """Notable landmarks near this stop; ``""`` (empty string) if none; :const:`NOT_PROVIDED` if this was created by the Disruptions API"""
     stop_sequence: int | _NotProvidedType = NOT_PROVIDED
     """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
     stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
@@ -584,13 +584,13 @@ class Stop(TimetableData):
     point_id: int | _NotProvidedType = NOT_PROVIDED
     """Identifier of this stop in the PTV static timetable dump; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     disruption_ids: list[int] | _NotProvidedType = NOT_PROVIDED
-    """Current or future disruptions affecting this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
+    """Current and/or future disruptions affecting this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     routes: list[Route] | _NotProvidedType = NOT_PROVIDED
     """List of routes serving this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     operating_hours: str | _NotProvidedType = NOT_PROVIDED
     """Description of railway station opening hours; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     mode_id: int | _NotProvidedType = NOT_PROVIDED
-    """Purpose unclear; appears to correspond to disruption modes, which is not currently implemented in this module as it duplicates the purpose of RouteType"""
+    """Purpose unclear"""
     station_details_id: int | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns 0)"""
     flexible_stop_opening_hours: str | _NotProvidedType = NOT_PROVIDED
@@ -712,17 +712,17 @@ class VehiclePosition(TimetableData):
     """Represents the position of the attached vehicle."""
 
     latitude: float | None
-    """Latitude coordinate of the vehicle's position; None if this information is unavailable"""
+    """Latitude coordinate of the vehicle's position; ``None`` if this information is unavailable"""
     longitude: float | None
-    """Longitude coordinate of the vehicle's position; None if this information is unavailable"""
+    """Longitude coordinate of the vehicle's position; ``None`` if this information is unavailable"""
     easting: float | None
-    """Easting of the vehicle's position in the easting-northing system; None if this information is unavailable"""
+    """Easting of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
     northing: float | None
-    """Northing of the vehicle's position easting-northing system; None if this information is unavailable"""
+    """Northing of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
     direction: str
     """Description of the direction of travel (e.g. "inbound", "outbound")"""
     bearing: float | None
-    """Vehicle's current direction of travel in degrees clockwise from geographic north; None if this information is unavailable"""
+    """Vehicle's current direction of travel in degrees clockwise from geographic north; ``None`` if this information is unavailable"""
     supplier: str
     """Source of vehicle information"""
     as_of: datetime | None
@@ -743,15 +743,15 @@ class VehicleDescriptor(TimetableData):
     """Describes information about a vehicle on a run."""
 
     operator: str | None
-    """Transport operator responsible for the vehicle; None or "" (empty string) if this information is unavailable"""
+    """Transport operator responsible for the vehicle; ``None`` or ``""`` (empty string) if this information is unavailable"""
     id: str | None
-    """Vehicle identifier used by the operator; None if this information is unavailable"""
+    """Vehicle identifier used by the operator; ``None`` if this information is unavailable"""
     low_floor: bool | None
-    """Whether the vehicle allows for step-free access at designated stops; None if this information is unavailable"""
+    """Whether the vehicle allows for step-free access at designated stops; ``None`` if this information is unavailable"""
     air_conditioned: bool | None
-    """Whether the vehicle is air-conditioned; None if this information is unavailable"""
+    """Whether the vehicle is air-conditioned; ``None`` if this information is unavailable"""
     description: str | None
-    """Description of the vehicle make/model and configuration; None if this information is unavailable"""
+    """Description of the vehicle make/model and configuration; ``None`` if this information is unavailable"""
     supplier: str | None
     """Source of vehicle information"""
     length: str | None
@@ -781,7 +781,7 @@ class RunInterchange(TimetableData):
     destination_name: str
     """Public-facing destination name of this run"""
     advertised: bool
-    """Whether the service swap is intended to be shown to passengers on public-facing signage"""
+    """Whether the service swap is intended to be shown to passengers on public-facing displays"""
 
     @classmethod
     @override
@@ -818,9 +818,9 @@ class Run(TimetableData):
     geometry: list[PathGeometry]
     """Physical geometry of this run's journey; [] (empty list) if not requested from API"""
     interchange: dict[Literal["feeder", "distributor"], RunInterchange | None] | None
-    """Indicates, if any, the run this service was operating before commencing ("feeder"), and the run this service will operate after terminating ("distributor"); None if no information available, or this information was not requested from the API"""
 
     # Undocumented
+    """Indicates, if any, the run this service was operating before it commenced ("feeder"), and the run this service will operate after terminating ("distributor"); None if no information available"""
     run_note: str | None
     """Notes about this run"""
 
