@@ -1,6 +1,10 @@
 # Changelog
 
 ## 0.5.0 (2026-\_\_-\_\_)
+- Breaking change: New internal module `ptv_timetable._responsetypes` to model the structure of the raw JSON response data transmitted by the server
+  - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsetypes` module
+  - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
+  - Updated type hints and docstrings to reflect new metadata and observations
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `build_arg_string()` static method has been fully replaced with `generate_url_params()` with an entirely different signature
   - `call()` has been renamed to `request()`

@@ -2,13 +2,15 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import datetime
-from typing import Any, Final, final, Literal, overload, override, Self, TypedDict
+from typing import Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
 from zoneinfo import ZoneInfo
 import enum
 import platform
 import re
 if platform.system() == "Windows":
     import tzdata
+
+from . import _responsetypes
 
 __all__ = ["TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
@@ -57,6 +59,7 @@ EXPAND_VEHICLE_POSITION: Literal["VehiclePosition"] = "VehiclePosition"
 EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties. For use in ``expand`` parameters"""
 
+
 @final
 @enum.unique
 class _NotProvidedType(enum.Enum):
@@ -78,17 +81,18 @@ class _NotProvidedType(enum.Enum):
             return "_NotProvidedType.NOT_PROVIDED"
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
 
-
     def __str__(self: Self) -> str:
         if self is self.NOT_PROVIDED:
             return "NOT_PROVIDED"
         raise TypeError(f"expected _NotProvidedType, got {type(self).__name__}")
+
 
 NOT_PROVIDED: Final = _NotProvidedType.NOT_PROVIDED
 """Sentinel value that indicates that the API operation used does not return the information in this field
 
 .. versionadded:: 0.3.0
 """
+
 
 @dataclass(kw_only=True, slots=True)
 class TimetableData(object, metaclass=ABCMeta):
@@ -136,22 +140,28 @@ class TimetableData(object, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Any) -> Self:
         """Constructs a new instance of this class by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return:       The newly constructed instance
+
+        .. versionchanged:: 0.5.0
+            Updated parameter type signature
         """
         ...
 
     @classmethod
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Any) -> Self:
         """Asynchronously constructs a new instance of this class by converting the specified API response data.
 
         :param kwargs: A dictionary unpacking with the data to instantiate
         :return:       The newly constructed instance
 
         .. versionadded:: 0.4.0
+
+        .. versionchanged:: 0.5.0
+            Updated parameter type signature
         """
         return cls.load(**kwargs)
 
@@ -171,7 +181,7 @@ class PathGeometry(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.PathGeometry]) -> Self:
         return cls(**kwargs)
 
 
@@ -196,7 +206,7 @@ class StopTicket(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopTicket]) -> Self:
         return cls(**kwargs)
 
 
@@ -215,7 +225,7 @@ class StopContact(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopContact]) -> Self:
         return cls(**kwargs)
 
 
@@ -240,7 +250,7 @@ class StopLocation(TimetableData):
     road_type_secondary: str
     """Road name suffix for 'second_stop_name'"""
     bay_number: int
-    """For bus interchanges, the bay number of the particular stop"""
+    """For bus interchanges, the bay number of the particular stop; ``0`` if not applicable"""
     latitude: float
     """Latitude coordinate of this stop's location"""
     longitude: float
@@ -248,7 +258,7 @@ class StopLocation(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopLocation]) -> Self:
         bay_number = kwargs.pop("bay_nbr")
         locality = kwargs.pop("suburb")
         secondary_stop_name = kwargs.pop("second_stop_name")
@@ -281,15 +291,15 @@ class StopAmenities(TimetableData):
     """Number of luggage lockers at this stop"""
     kiosk: bool
     """Meaning unclear"""
-    seat: str
+    seat: Literal[""]
     """Appears to be deprecated/unused (always returns empty string)"""
-    stairs: str
+    stairs: Literal[""]
     """Appears to be deprecated/unused (always returns empty string)"""
-    baby_change_facility: str
+    baby_change_facility: Literal[""]
     """Appears to be deprecated/unused (always returns empty string)"""
     parkiteer: None
-    """Appears to be deprecated/unused (always returns None). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop"""
-    replacement_bus_stop_location: str
+    """Appears to be deprecated/unused (always returns ``None``). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop"""
+    replacement_bus_stop_location: Literal[""]
     """Appears to be deprecated/unused (always returns empty string). Location of the replacement bus stop"""
     QTEM: None
     """Appears to be deprecated/unused (always returns ``None``)"""
@@ -322,7 +332,7 @@ class StopAmenities(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAmenityDetails]) -> Self:
         replacement_bus_stop_location = kwargs.pop("replacement_bus_stop_loc")
         if kwargs["car_parking"] == "":
             car_parking = None
@@ -339,29 +349,29 @@ class Wheelchair(TimetableData):
     accessible_ramp: bool
     """Whether there is ramp access to this stop or its platforms"""
     parking: bool | None
-    """Whether there is DDA-compliant parking at this stop; None if not applicable"""
+    """Whether there is DDA-compliant parking at this stop; ``None`` if not applicable"""
     telephone: bool | None
-    """Whether there is a DDA-compliant telephone at this stop; None if not applicable"""
+    """Whether there is a DDA-compliant telephone at this stop; ``None`` if not applicable"""
     toilet: bool | None
-    """Whether there is a DDA-compliant toilet at this stop; None if not applicable"""
+    """Whether there is a DDA-compliant toilet at this stop; ``None`` if not applicable"""
     low_ticket_counter: bool | None
-    """Whether there is a DDA-compliant low ticket counter at this stop; None if not applicable"""
+    """Whether there is a DDA-compliant low ticket counter at this stop; ``None`` if not applicable"""
     manoeuvring: bool | None
-    """Whether there is enough space for mobility devices to board or alight a public transport vehicle; None if not applicable or information unavailable"""
+    """Whether there is enough space for mobility devices to board or alight a public transport vehicle; ``None`` if not applicable or information unavailable"""
     raised_platform: bool | None
-    """Whether the platform at this stop is raised to the height of the vehicle's floor; None if not applicable or information unavailable"""
+    """Whether the platform at this stop is raised to the height of the vehicle's floor; ``None`` if not applicable or information unavailable"""
     raised_platform_shelter: bool | None
-    """Whether there is shelter near the raised platform; None if not applicable or information unavailable"""
+    """Whether there is shelter near the raised platform; ``None`` if not applicable or information unavailable"""
     ramp: bool | None
-    """Whether there are ramps with a height to length ratio less than 1:14 at this stop; None if not applicable or information unavailable"""
-    secondary_path: bool | None
-    """Whether there is a path outside this stop perimeter or boundary connecting to this stop that is accessible; None if not applicable or information unavailable"""
+    """Whether there are ramps with a height to length ratio less than 1:14 at this stop; ``None`` if not applicable or information unavailable"""
     steep_ramp: bool | None
-    """Whether there are ramps with a height to length ratio greater than 1:14 at this stop; None if not applicable or information unavailable"""
+    """Whether there are ramps with a height to length ratio greater than 1:14 at this stop; ``None`` if not applicable or information unavailable"""
+    secondary_path: bool | None
+    """Whether there is a path outside this stop perimeter or boundary connecting to this stop that is accessible; ``None`` if not applicable or information unavailable"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAccessibilityWheelchair]) -> Self:
         manoeuvring = kwargs.pop("manouvering")
         raised_platform_shelter = kwargs.pop("raised_platform_shelther")
         return cls(manoeuvring=manoeuvring, raised_platform_shelter=raised_platform_shelter, **kwargs)
@@ -371,10 +381,10 @@ class Wheelchair(TimetableData):
 class StopAccessibility(TimetableData):
     """Accessibility information for the attached stop."""
 
-    platform_number: str | None
-    """The platform number of the stop that the data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
     lighting: bool
     """Whether there is lighting at this stop"""
+    platform_number: str | None
+    """The platform number of the stop that the data in this instance applies to; 0 if it applies to the entire stop in general; None if not applicable"""
     audio_customer_information: bool | None
     """Whether there is at least one facility that provides audio passenger information at this stop; None if not applicable"""
     escalator: bool | None
@@ -396,7 +406,7 @@ class StopAccessibility(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAccessibility]) -> Self:
         wheelchair = kwargs.pop("wheelchair")
         return cls(wheelchair=Wheelchair.load(**wheelchair), **kwargs)
 
@@ -470,7 +480,7 @@ class StopStaffing(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopStaffing]) -> Self:
         wed_pm_to = kwargs.pop("wed_pm_To")
         return cls(wed_pm_to=wed_pm_to, **kwargs)
 
@@ -500,17 +510,17 @@ class Route(TimetableData):
 
     # From /v3/disruptions/...
     route_direction_id: int | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, combined identifier for the route and travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
+    """For a disruption, combined identifier for the route and travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
     direction_id: int | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, identifier of travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
+    """For a disruption, identifier of travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
     direction_name: str | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, destination of travel direction affected by the disruption; :const:`NOT_PROVIDED` if not applicable"""
+    """For a disruption, destination of travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
     service_time: str | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, time of the run/service affected by the disruption; :const:`NOT_PROVIDED` if not applicable, or disruption affects multiple or no runs/services"""
+    """For a disruption, time of the run/service affected by the disruption; ``""`` (empty string) if disruption affects multiple or no runs/services; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseRoute]) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
             geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
@@ -520,18 +530,21 @@ class Route(TimetableData):
         if route_service_status is not NOT_PROVIDED:
             route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
         if "direction" in kwargs:
-            direction = kwargs.pop("direction")
-            route_direction_id = direction["route_direction_id"]
-            direction_id = direction["direction_id"]
-            direction_name = direction["direction_name"]
-            service_time = direction["service_time"]
+            if kwargs["direction"] is not None:
+                direction = kwargs.pop("direction")
+                route_direction_id = direction["route_direction_id"]
+                direction_id = direction["direction_id"]
+                direction_name = direction["direction_name"]
+                service_time = direction["service_time"]
+            else:
+                route_direction_id = direction_id = direction_name = service_time = None
         else:
             route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.BaseRoute]) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
             geometry = [await PathGeometry.aload(**item) for item in kwargs.pop("geopath")]
@@ -541,11 +554,14 @@ class Route(TimetableData):
         if route_service_status is not NOT_PROVIDED:
             route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
         if "direction" in kwargs:
-            direction = kwargs.pop("direction")
-            route_direction_id = direction["route_direction_id"]
-            direction_id = direction["direction_id"]
-            direction_name = direction["direction_name"]
-            service_time = direction["service_time"]
+            if kwargs["direction"] is not None:
+                direction = kwargs.pop("direction")
+                route_direction_id = direction["route_direction_id"]
+                direction_id = direction["direction_id"]
+                direction_name = direction["direction_name"]
+                service_time = direction["service_time"]
+            else:
+                route_direction_id = direction_id = direction_name = service_time = None
         else:
             route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
@@ -572,10 +588,10 @@ class Stop(TimetableData):
     stop_landmark: str | _NotProvidedType = NOT_PROVIDED
     """Notable landmarks near this stop; ``""`` (empty string) if none; :const:`NOT_PROVIDED` if this was created by the Disruptions API"""
     stop_sequence: int | _NotProvidedType = NOT_PROVIDED
-    """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is 0"""
+    """Sort key for this stop along a route or run that is the subject of the API call; if neither were provided, value is ``0``"""
     stop_ticket: StopTicket | _NotProvidedType = NOT_PROVIDED
     """Ticketing information for this stop; :const:`NOT_PROVIDED` if the API response did not return this information"""
-    interchange: list[TypedDict("StopInterchange", {"route_id": int, "advertised": bool})] | _NotProvidedType = NOT_PROVIDED
+    interchange: list[_responsetypes.InterchangeRoute] | _NotProvidedType = NOT_PROVIDED
     """Routes available to interchange with from this stop; :const:`NOT_PROVIDED` if the API response did not return this information
     
     .. versionchanged:: 0.3.1
@@ -593,30 +609,30 @@ class Stop(TimetableData):
     """Description of railway station opening hours; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     mode_id: int | _NotProvidedType = NOT_PROVIDED
     """Purpose unclear"""
-    station_details_id: int | _NotProvidedType = NOT_PROVIDED
+    station_details_id: Literal[0] | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns 0)"""
-    flexible_stop_opening_hours: str | _NotProvidedType = NOT_PROVIDED
+    flexible_stop_opening_hours: Literal[""] | _NotProvidedType = NOT_PROVIDED
     """Appears to be deprecated/unused (always returns empty string)"""
-    stop_contact: StopContact | _NotProvidedType = NOT_PROVIDED
-    """Operator contact information for this stop; :const:`NOT_PROVIDED` if not requested from API"""
-    stop_location: StopLocation | _NotProvidedType = NOT_PROVIDED
-    """Location information about this stop; :const:`NOT_PROVIDED` if not requested from API"""
-    stop_amenities: StopAmenities | _NotProvidedType = NOT_PROVIDED
-    """Facilities available at this stop; :const:`NOT_PROVIDED` if not requested from API"""
-    stop_accessibility: StopAccessibility | _NotProvidedType = NOT_PROVIDED
-    """Information about accessibility features available at this stop; :const:`NOT_PROVIDED` if not requested from API"""
-    stop_staffing: StopStaffing | _NotProvidedType = NOT_PROVIDED
-    """Staffing information for this stop; :const:`NOT_PROVIDED` if not requested from API"""
+    stop_contact: StopContact | None | _NotProvidedType = NOT_PROVIDED
+    """Operator contact information for this stop; ``None`` if not requested from API; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
+    stop_location: StopLocation | None | _NotProvidedType = NOT_PROVIDED
+    """Location information about this stop; ``None`` if not requested from API; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
+    stop_amenities: StopAmenities | None | _NotProvidedType = NOT_PROVIDED
+    """Facilities available at this stop; ``None`` if not requested from API; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
+    stop_accessibility: StopAccessibility | None | _NotProvidedType = NOT_PROVIDED
+    """Information about accessibility features available at this stop; ``None`` if not requested from API; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
+    stop_staffing: StopStaffing | None | _NotProvidedType = NOT_PROVIDED
+    """Staffing information for this stop; ``None`` if not requested from API; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     station_type: Literal["Premium Station", "Host Station", "Unstaffed Station"] | None | _NotProvidedType = NOT_PROVIDED
     """Type of metropolitan train station: a premium station is staffed from first to last train and a host station is staffed only in the morning peak; None for other modes; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
-    station_description: str | _NotProvidedType = NOT_PROVIDED
+    station_description: str | None | _NotProvidedType = NOT_PROVIDED
     """Additional information about this stop"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StopBasic]) -> Self:
         stop_name = kwargs.pop("stop_name").strip()
-        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
+        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else NOT_PROVIDED
         stop_ticket = StopTicket.load(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", NOT_PROVIDED)
         routes = [Route.load(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", NOT_PROVIDED)
         stop_contact = StopContact.load(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", NOT_PROVIDED)
@@ -628,9 +644,9 @@ class Stop(TimetableData):
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.StopBasic]) -> Self:
         stop_name = kwargs.pop("stop_name").strip()
-        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else None
+        locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else NOT_PROVIDED
         stop_ticket = await StopTicket.aload(**kwargs.pop("stop_ticket")) if "stop_ticket" in kwargs and kwargs["stop_ticket"] is not None else kwargs.pop("stop_ticket", NOT_PROVIDED)
         routes = [await Route.aload(**item) for item in kwargs.pop("routes")] if "routes" in kwargs and kwargs["routes"] is not None else kwargs.pop("routes", NOT_PROVIDED)
         stop_contact = await StopContact.aload(**kwargs.pop("stop_contact")) if "stop_contact" in kwargs and kwargs["stop_contact"] is not None else kwargs.pop("stop_contact", NOT_PROVIDED)
@@ -671,14 +687,12 @@ class Departure(TimetableData):
     """Unclear; appears to be some sort of run code"""
     departure_sequence: int
     """Sort key for this stop in a sequence of stops for this run"""
+    departure_note: str | None
+    """Notes about this departure (appears to be used to indicate whether a metropolitan train service runs via the City Loop or not)"""
 
     # From /v3/pattern/...
     skipped_stops: list[Stop] | _NotProvidedType = NOT_PROVIDED
     """After departing from this stop, a sequence of stops that are skipped prior to arriving at the next departure point"""
-
-    # Undocumented
-    departure_note: str | None
-    """Notes about this departure (appears to be used to indicate whether a metropolitan train service runs via the City Loop or not)"""
 
     @property
     def departure_time(self: Self) -> datetime:
@@ -692,19 +706,19 @@ class Departure(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.Departure]) -> Self:
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
-        skipped_stops = [Stop.load(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
+        skipped_stops = [Stop.load(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", NOT_PROVIDED)
         kwargs.pop("run_id")
         return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.Departure]) -> Self:
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
-        skipped_stops = [await Stop.aload(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", None)
+        skipped_stops = [await Stop.aload(**item) for item in kwargs.pop("skipped_stops")] if "skipped_stops" in kwargs and kwargs["skipped_stops"] is not None else kwargs.pop("skipped_stops", NOT_PROVIDED)
         kwargs.pop("run_id")
         return cls(scheduled_departure=scheduled_departure, estimated_departure=estimated_departure, skipped_stops=skipped_stops, **kwargs)
 
@@ -734,7 +748,7 @@ class VehiclePosition(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.VehiclePosition]) -> Self:
         as_of = datetime.fromisoformat(kwargs.pop("datetime_utc")).astimezone(TZ_MELBOURNE) if kwargs["datetime_utc"] is not None else kwargs.pop("datetime_utc")
         expires = datetime.fromisoformat(kwargs.pop("expiry_time")).astimezone(TZ_MELBOURNE) if kwargs["expiry_time"] is not None else kwargs.pop("expiry_time")
         return cls(as_of=as_of, expires=expires, **kwargs)
@@ -754,14 +768,14 @@ class VehicleDescriptor(TimetableData):
     """Whether the vehicle is air-conditioned; ``None`` if this information is unavailable"""
     description: str | None
     """Description of the vehicle make/model and configuration; ``None`` if this information is unavailable"""
-    supplier: str | None
+    supplier: str
     """Source of vehicle information"""
     length: str | None
-    """Length of the vehicle; None if this information is unavailable"""
+    """Length of the vehicle; ``None`` if this information is unavailable"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.VehicleDescriptor]) -> Self:
         return cls(**kwargs)
 
 
@@ -787,7 +801,7 @@ class RunInterchange(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.InterchangeRun]) -> Self:
         return cls(**kwargs)
 
 
@@ -818,17 +832,15 @@ class Run(TimetableData):
     vehicle_descriptor: VehicleDescriptor | None
     """Information on the vehicle operating this service, where available; None if this information was not requested from the API"""
     geometry: list[PathGeometry]
-    """Physical geometry of this run's journey; [] (empty list) if not requested from API"""
+    """Physical geometry of this run's journey; ``[]`` (empty list) if not requested from API"""
     interchange: dict[Literal["feeder", "distributor"], RunInterchange | None] | None
-
-    # Undocumented
     """Indicates, if any, the run this service was operating before it commenced ("feeder"), and the run this service will operate after terminating ("distributor"); None if no information available"""
     run_note: str | None
     """Notes about this run"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseRun]) -> Self:
         kwargs.pop("run_id")
         destination_name = kwargs.pop("destination_name")
         if destination_name is not None:
@@ -840,7 +852,7 @@ class Run(TimetableData):
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.BaseRun]) -> Self:
         kwargs.pop("run_id")
         destination_name = kwargs.pop("destination_name")
         if destination_name is not None:
@@ -868,7 +880,7 @@ class Direction(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseDirection]) -> Self:
         return cls(**kwargs)
 
 
@@ -909,7 +921,7 @@ class Disruption(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.Disruption]) -> Self:
         published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
         last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
         from_date = datetime.fromisoformat(kwargs.pop("from_date")).astimezone(TZ_MELBOURNE)
@@ -920,7 +932,7 @@ class Disruption(TimetableData):
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.Disruption]) -> Self:
         published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
         last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
         from_date = datetime.fromisoformat(kwargs.pop("from_date")).astimezone(TZ_MELBOURNE)
@@ -949,7 +961,7 @@ class StoppingPattern(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.StoppingPattern]) -> Self:
         disruptions = [Disruption.load(**item) for item in kwargs.pop("disruptions")]
         departures = [Departure.load(**item) for item in kwargs.pop("departures")]
         stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()}
@@ -960,7 +972,7 @@ class StoppingPattern(TimetableData):
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.StoppingPattern]) -> Self:
         disruptions = [await Disruption.aload(**item) for item in kwargs.pop("disruptions")]
         departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
         stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()}
@@ -982,43 +994,41 @@ class StoppingPattern(TimetableData):
 
 @dataclass(kw_only=True, slots=True)
 class DeparturesResponse(TimetableData):
-    """Response from the departures API request; also contains any relevant route, service and stop details."""
+    """Response from the departures API request; also contains any relevant route, service and stop details if requested."""
 
     departures: list[Departure]
     """Departures returned from the API request"""
-    stops: dict[int, Stop]
+    stops: dict[int, Stop] | None
     """Mapping of stop identifiers to stop objects related to the returned departures"""
-    routes: dict[int, Route]
+    routes: dict[int, Route] | None
     """Mapping of route identifiers to route objects related to the returned departures"""
-    runs: dict[str, Run]
+    runs: dict[str, Run] | None
     """Mapping of run identifiers to run objects related to the returned departures"""
-    directions: dict[int, Direction]
+    directions: dict[int, Direction] | None
     """Mapping of direction identifiers to direction objects related to the returned departures"""
-    disruptions: dict[int, Disruption]
+    disruptions: dict[int, Disruption] | None
     """Mapping of disruption identifiers to disruption objects related to the returned departures"""
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.DeparturesResponse]) -> Self:
         departures = [Departure.load(**item) for item in kwargs.pop("departures")]
-        stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()}
-        routes = {int(key): Route.load(**value) for key, value in kwargs.pop("routes").items()}
-        runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()}
-        directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()}
-        disruptions = {int(key): Disruption.load(**value) for key, value in kwargs.pop("disruptions").items()}
-        kwargs.pop("status")
+        stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()} if kwargs["stops"] != {} else None
+        routes = {int(key): Route.load(**value) for key, value in kwargs.pop("routes").items()} if kwargs["routes"] != {} else None
+        runs = {key: Run.load(**value) for key, value in kwargs.pop("runs").items()} if kwargs["runs"] != {} else None
+        directions = {int(key): Direction.load(**value) for key, value in kwargs.pop("directions").items()} if kwargs["directions"] != {} else None
+        disruptions = {int(key): Disruption.load(**value) for key, value in kwargs.pop("disruptions").items()} if kwargs["disruptions"] != {} else None
         return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.DeparturesResponse]) -> Self:
         departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
-        stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()}
-        routes = {int(key): await Route.aload(**value) for key, value in kwargs.pop("routes").items()}
-        runs = {key: await Run.aload(**value) for key, value in kwargs.pop("runs").items()}
-        directions = {int(key): await Direction.aload(**value) for key, value in kwargs.pop("directions").items()}
-        disruptions = {int(key): await Disruption.aload(**value) for key, value in kwargs.pop("disruptions").items()}
-        kwargs.pop("status")
+        stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()} if kwargs["stops"] != {} else None
+        routes = {int(key): await Route.aload(**value) for key, value in kwargs.pop("routes").items()} if kwargs["routes"] != {} else None
+        runs = {key: await Run.aload(**value) for key, value in kwargs.pop("runs").items()} if kwargs["runs"] != {} else None
+        directions = {int(key): await Direction.aload(**value) for key, value in kwargs.pop("directions").items()} if kwargs["directions"] != {} else None
+        disruptions = {int(key): await Disruption.aload(**value) for key, value in kwargs.pop("disruptions").items()} if kwargs["disruptions"] != {} else None
         return cls(departures=departures, stops=stops, routes=routes, runs=runs, directions=directions, disruptions=disruptions)
 
 
@@ -1061,7 +1071,7 @@ class Outlet(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.Outlet]) -> Self:
         street_address = kwargs.pop("outlet_name")
         locality = kwargs.pop("outlet_suburb")
         outlet_business_hour_thu = kwargs.pop("outlet_business_hour_thur")
@@ -1174,7 +1184,7 @@ class FareEstimate(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list[dict] | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.FareEstimateResult]) -> Self:
         early_bird_travel = kwargs.pop("IsEarlyBird")
         free_fare_zone = kwargs.pop("IsJourneyInFreeTramZone")
         weekend = kwargs.pop("IsThisWeekendJourney")
@@ -1230,7 +1240,7 @@ class SearchResult(TimetableData):
 
     @classmethod
     @override
-    def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.SearchResult]) -> Self:
         stops = [Stop.load(**item) for item in kwargs.pop("stops")]
         routes = [Route.load(**item) for item in kwargs.pop("routes")]
         outlets = [Outlet.load(**item) for item in kwargs.pop("outlets")]
@@ -1239,7 +1249,7 @@ class SearchResult(TimetableData):
 
     @classmethod
     @override
-    async def aload(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
+    async def aload(cls: Self, **kwargs: Unpack[_responsetypes.SearchResult]) -> Self:
         stops = [await Stop.aload(**item) for item in kwargs.pop("stops")]
         routes = [await Route.aload(**item) for item in kwargs.pop("routes")]
         outlets = [await Outlet.aload(**item) for item in kwargs.pop("outlets")]

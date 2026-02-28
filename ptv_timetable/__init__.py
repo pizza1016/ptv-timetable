@@ -5,36 +5,14 @@ from hmac import HMAC
 from ratelimit import limits, sleep_and_retry
 from requests.models import Response
 from requests.sessions import Session
-from typing import Final, Literal, overload, Required, Self, TypedDict
+from typing import Final, Literal, overload, Self
 import logging
 import urllib.parse
 
 from .types import *
+from . import _responsetypes
 
 __all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
-
-type _Values = str | int | float | bool | _Record
-type _Record = dict[str, _Values | dict[str, _Values] | list[_Values]]
-
-
-class _PTVResponseType(TypedDict, total=False):
-    directions: list[_Record]
-    disruption: _Record
-    disruptions: _Record
-    disruption_modes: list[_Record]
-    outlets: list[_Record]
-    route: _Record
-    routes: list[_Record]
-    route_types: list[_Record]
-    runs: list[_Record]
-    stop: _Record
-    stops: list[_Record]
-    status: Required[TypedDict("Status", {"version": str, "health": int})]
-
-class _FareEstimateResponseType(TypedDict, total=False):
-    FareEstimateResult: _Record
-    FareEstimateResultStatus: Required[TypedDict("FareEstimateResultStatus", {"Message": str, "StatusCode": int})]
-
 
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
 type RouteType = Literal[0, 1, 2, 3]
@@ -264,14 +242,16 @@ class TimetableAPI(object):
         path = "/v3/routes" + self.generate_url_params(route_types=route_types, route_name=route_name)
         return [Route.load(**item) for item in self.request(path)["routes"]]
 
-    def list_route_types(self: Self) -> list[TypedDict("RouteType", {"route_type_name": str, "route_type": int})]:
+    def list_route_types(self: Self) -> list[_responsetypes.RouteType]:
         """Returns the names and identifiers of all route types.
 
         :return: A list of records containing the aforementioned fields
-        :rtype:  list[~typing.TypedDict("RouteType", {"route_type_name": str, "route_type": int})]
 
         .. versionchanged:: 0.3.0
             Changed return type from :class:`dict` to :class:`~typing.TypedDict`
+
+        .. versionchanged:: 0.5.0
+            Updated return type signature
         """
 
         return self.request("/v3/route_types")["route_types"]
@@ -677,14 +657,16 @@ class TimetableAPI(object):
         res = self.request(f"/v3/disruptions/{disruption_id}")["disruption"]
         return Disruption.load(**res)
 
-    def list_disruption_modes(self: Self) -> list[TypedDict("DisruptionMode", {"disruption_mode": int, "disruption_mode_name": str})]:
+    def list_disruption_modes(self: Self) -> list[_responsetypes.DisruptionMode]:
         """Returns the names and identifiers of all disruption modes.
 
         :return: A list of disruption modes
-        :rtype: list[dict[~typing.Literal["disruption_mode", "disruption_mode_name"], int | str]]
 
         .. versionchanged:: 0.3.0
             Changed return type from :class:`dict` to :class:`~typing.TypedDict`
+
+        .. versionchanged:: 0.5.0
+            Updated return type signature
         """
 
         return self.request("/v3/disruptions/modes")["disruption_modes"]

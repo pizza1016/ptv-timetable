@@ -8,6 +8,7 @@ Welcome! This is the full public API reference for the `ptv-timetable package <h
 
    ptv_timetable/__init__
    ptv_timetable/asyncapi
+   ptv_timetable/_responsetypes
    ptv_timetable/types
    tramtracker/__init__
    tramtracker/asyncapi
