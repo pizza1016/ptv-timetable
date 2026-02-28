@@ -5,15 +5,19 @@
   - `build_arg_string()` static method has been fully replaced with `generate_url_params()` with an entirely different signature
   - `call()` has been renamed to `request()`
   - `_encode_url()` has been renamed to `_sign()`
+  - `fare_estimate()` has been renamed to `get_fare_estimate()`
   - Consequential edits to other methods to use the new and renamed methods, including renaming local `req` variables to `path`
   - `include_advertised_interchange` parameter has been removed from `list_departures()` as it is no longer supported by the API
-- Added new parameter `include_advertised_interchange` to `ptv_timetable.TimetableAPI.list_stops()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.list_stops()`
-- Added new parameter `is_overlap_zone` to `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()`
-- Added overloads to `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` to indicate that `geopath_date` should only be provided if `include_geopath` is `True`
-- Fixed bugs:
-  - `geopath_date` value in `ptv_timetable.TimetableAPI.get_route()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.get_route()` was not converted to string before being sent to the API
-  - Some URL parameter names in `ptv_timetable.TimetableAPI.fare_estimate()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.fare_estimate()` were incorrect
-  - Corrected overload signatures in `ptv_timetable.TimetableAPI.search()` and `ptv_timetable.asyncapi.AsyncTimetableAPI.search()`
+  - Added new parameter `is_overlap_zone` to `get_fare_estimate()`, with the parameter positioned before the existing `route_types` parameter
+- Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - Added new parameter `include_advertised_interchange` to `list_stops()`
+  - Added new parameter `is_overlap_zone` to `get_fare_estimate()`
+  - Added overloads to `get_route()` to indicate that `geopath_date` should only be provided if `include_geopath` is `True`
+- Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
+  - Some URL parameter names in `get_fare_estimate()` were incorrect
+  - `get_fare_estimate()` can return `None`
+  - Corrected overload signatures in `search()`
 - Updated documentation
 
 ## 0.4.1 (2025-03-17)

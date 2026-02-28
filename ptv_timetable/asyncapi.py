@@ -702,15 +702,15 @@ class AsyncTimetableAPI(object):
 
         return (await self.request("/v3/disruptions/modes"))["disruption_modes"]
 
-    async def fare_estimate(self: Self,
-                            zone_a: int,
-                            zone_b: int,
-                            touch_on: datetime | str | None = None,
-                            touch_off: datetime | str | None = None,
-                            is_free_fare_zone: bool | None = None,
-                            is_overlap_zone: bool | None = None,
-                            route_types: Iterable[RouteType] | RouteType | None = None
-                            ) -> FareEstimate:
+    async def get_fare_estimate(self: Self,
+                                zone_a: int,
+                                zone_b: int,
+                                touch_on: datetime | str | None = None,
+                                touch_off: datetime | str | None = None,
+                                is_free_fare_zone: bool | None = None,
+                                is_overlap_zone: bool | None = None,
+                                route_types: Iterable[RouteType] | RouteType | None = None
+                                ) -> FareEstimate | None:
         """Returns the estimated fare for the specified journey details.
 
         :param zone_a:            With ``zone_b``, the lowest and highest zones travelled through (order independent)
@@ -724,7 +724,7 @@ class AsyncTimetableAPI(object):
         :return:                  Object containing the estimated fares, or ``None`` if the specified journey is outside the myki fare system
 
         .. versionchanged:: 0.5.0
-            Added `is_overlap_zone` parameter
+            Renamed method from ``fare_estimate``. Added ``is_overlap_zone`` parameter.
         """
 
         if type(touch_on) is str:
@@ -740,7 +740,7 @@ class AsyncTimetableAPI(object):
         path += await self.generate_url_params(touch_on=touch_on.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_on is not None else None, touch_off=touch_off.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M") if touch_off is not None else None, is_journey_in_free_tram_zone=is_free_fare_zone, is_journey_in_overlap_zone=is_overlap_zone, travelled_route_types=route_types)
 
         res = (await self.request(path))["FareEstimateResult"]
-        return await FareEstimate.aload(**res)
+        return await FareEstimate.aload(**res) if res is not None else None
 
     @overload
     async def list_outlets(self: Self,
