@@ -235,9 +235,9 @@ class StopLocation(TimetableData):
     """Name of one of the roads near this stop (usually the crossing road, or "at" road), or a nearby landmark"""
     road_type_primary: str
     """Road name suffix for 'primary_stop_name'"""
-    second_stop_name: str
+    secondary_stop_name: str
     """Name of one of the roads near this stop (usually the road of travel, or "on" road); may be empty"""
-    road_type_second: str
+    road_type_secondary: str
     """Road name suffix for 'second_stop_name'"""
     bay_number: int
     """For bus interchanges, the bay number of the particular stop"""
@@ -251,10 +251,12 @@ class StopLocation(TimetableData):
     def load(cls: Self, **kwargs: str | int | float | bool | list | dict | None) -> Self:
         bay_number = kwargs.pop("bay_nbr")
         locality = kwargs.pop("suburb")
+        secondary_stop_name = kwargs.pop("second_stop_name")
+        road_type_secondary = kwargs.pop("road_type_second")
         gps = kwargs.pop("gps")
         latitude = gps["latitude"]
         longitude = gps["longitude"]
-        return cls(bay_number=bay_number, locality=locality, latitude=latitude, longitude=longitude, **kwargs)
+        return cls(bay_number=bay_number, locality=locality, secondary_stop_name=secondary_stop_name, road_type_secondary=road_type_secondary, latitude=latitude, longitude=longitude, **kwargs)
 
 
 @dataclass(kw_only=True, slots=True)

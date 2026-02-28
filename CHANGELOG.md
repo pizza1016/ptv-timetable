@@ -9,6 +9,8 @@
   - Consequential edits to other methods to use the new and renamed methods, including renaming local `req` variables to `path`
   - `include_advertised_interchange` parameter has been removed from `list_departures()` as it is no longer supported by the API
   - Added new parameter `is_overlap_zone` to `get_fare_estimate()`, with the parameter positioned before the existing `route_types` parameter
+- Breaking change in `ptv_timetable.types`:
+  - In dataclass `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Added new parameter `include_advertised_interchange` to `list_stops()`
   - Added new parameter `is_overlap_zone` to `get_fare_estimate()`
