@@ -8,28 +8,28 @@ Summary
 
 .. autosummary::
 
-   AsyncTimetableAPI
-   AsyncTimetableAPI.create
-   AsyncTimetableAPI.build_arg_string
-   AsyncTimetableAPI.call
-   AsyncTimetableAPI.fare_estimate
-   AsyncTimetableAPI.get_direction
-   AsyncTimetableAPI.get_disruption
-   AsyncTimetableAPI.get_pattern
-   AsyncTimetableAPI.get_route
-   AsyncTimetableAPI.get_run
-   AsyncTimetableAPI.get_stop
-   AsyncTimetableAPI.list_departures
-   AsyncTimetableAPI.list_disruption_modes
-   AsyncTimetableAPI.list_disruptions
-   AsyncTimetableAPI.list_outlets
-   AsyncTimetableAPI.list_route_directions
-   AsyncTimetableAPI.list_route_types
-   AsyncTimetableAPI.list_routes
-   AsyncTimetableAPI.list_runs
-   AsyncTimetableAPI.list_stops
-   AsyncTimetableAPI.list_stops_near_location
-   AsyncTimetableAPI.search
+    AsyncTimetableAPI
+    AsyncTimetableAPI.create
+    AsyncTimetableAPI.generate_url_params
+    AsyncTimetableAPI.get_direction
+    AsyncTimetableAPI.get_disruption
+    AsyncTimetableAPI.get_fare_estimate
+    AsyncTimetableAPI.get_pattern
+    AsyncTimetableAPI.get_route
+    AsyncTimetableAPI.get_run
+    AsyncTimetableAPI.get_stop
+    AsyncTimetableAPI.list_departures
+    AsyncTimetableAPI.list_disruption_modes
+    AsyncTimetableAPI.list_disruptions
+    AsyncTimetableAPI.list_outlets
+    AsyncTimetableAPI.list_route_directions
+    AsyncTimetableAPI.list_route_types
+    AsyncTimetableAPI.list_routes
+    AsyncTimetableAPI.list_runs
+    AsyncTimetableAPI.list_stops
+    AsyncTimetableAPI.list_stops_near_location
+    AsyncTimetableAPI.request
+    AsyncTimetableAPI.search
 
 .. py:module:: ptv_timetable.asyncapi
     :synopsis: Wrapper for the PTV Timetable API
@@ -163,11 +163,11 @@ Classes & methods
         :return:        The new instance
 
         .. automethod:: create
-        .. automethod:: build_arg_string
-        .. automethod:: call
-        .. automethod:: fare_estimate
+        .. automethod:: generate_url_params
+        .. automethod:: request
         .. automethod:: get_direction
         .. automethod:: get_disruption
+        .. automethod:: get_fare_estimate
         .. automethod:: get_pattern
         .. automethod:: get_route
         .. automethod:: get_run
@@ -210,9 +210,9 @@ Classes & methods
             :type route_type:                      ~typing.Literal[0, 1, 2, 3]
             :param stop_id:                        Stop identifier; must be :class:`str` if ``gtfs`` is set to ``True``; otherwise, must be :class:`int`
             :type stop_id:                         int | str
-            :param route_id:                       If specified, show only departures for the specified route. Only one of 'route_id' and 'platform_numbers' should be specified.
+            :param route_id:                       If specified, show only departures for the specified route. Only one of ``route_id`` and ``platform_numbers`` should be specified.
             :type route_id:                        int | None
-            :param platform_numbers:               If specified, show only departures from the specified platform numbers. Only one of 'route_id' and 'platform_numbers' should be specified.
+            :param platform_numbers:               If specified, show only departures from the specified platform numbers. Only one of ``route_id`` and ``platform_numbers`` should be specified.
             :type platform_numbers:                ~collections.abc.Iterable[str | int] | None
             :param direction_id:                   If specified, show only departures travelling towards the specified direction
             :type direction_id:                    int | None
@@ -220,9 +220,9 @@ Classes & methods
             :type gtfs:                            bool | None
             :param include_advertised_interchange: Whether to include stop interchange information in result (server default is ``False``)
             :type include_advertised_interchange:  bool | None
-            :param date:                           If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If 'look_backwards' is True, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified.
+            :param date:                           If specified, show departures from the specified date (server default is current date). Appears to ignore the time fields. If ``look_backwards`` is ``True``, show departures that arrive at their terminating destinations prior to the specified date instead. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
             :type date:                            ~datetime.datetime | str | None
-            :param max_results:                    Return only this number of departures
+            :param max_results:                    If specified, limits the number of departures returned to this value
             :type max_results:                     int | None
             :param include_cancelled:              Whether to include departures that are cancelled (server default is ``False``)
             :type include_cancelled:               bool | None
@@ -243,9 +243,9 @@ Classes & methods
 
             Returns a list of all disruptions or, if specified, the disruptions for the specified route and/or stop.
 
-            :param route_id:          If route identifier is specified, list only disruptions for the specified route. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+            :param route_id:          If route identifier is specified, list only disruptions for the specified route. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
             :type route_id:           int | None
-            :param stop_id:           If stop identifier is specified, list only disruptions for the specified stop. If both route_id and stop_id are specified, list only disruptions for the specified route and stop
+            :param stop_id:           If stop identifier is specified, list only disruptions for the specified stop. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
             :type stop_id:            int | None
             :param route_types:       If specified, list only disruptions for the specified travel modes. Does not work with ``route_id`` or ``stop_id``
             :type route_types:        ~collections.abc.Iterable[~typing.Literal[0, 1, 2, 3]] | ~typing.Literal[0, 1, 2, 3] | None
