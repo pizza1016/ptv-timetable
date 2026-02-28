@@ -13,6 +13,7 @@
   - Added new parameter `include_advertised_interchange` to `list_stops()`
   - Added new parameter `is_overlap_zone` to `get_fare_estimate()`
   - Added overloads to `get_route()` to indicate that `geopath_date` should only be provided if `include_geopath` is `True`
+  - Changed `list_disruptions()` and `list_outlets()` overload signatures to permit intermediate positional `None` arguments instead of requiring keyword arguments
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - Some URL parameter names in `get_fare_estimate()` were incorrect

@@ -640,19 +640,21 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def list_disruptions(self: Self,
-                               *,
-                               route_types: Iterable[RouteType] | RouteType | None = None,
-                               disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
-                               disruption_status: Literal["Current", "Planned"] | None = None
+                               route_id: int | None = None,
+                               stop_id: int | None = None,
+                               route_types: None = None,
+                               disruption_modes: None = None,
+                               disruption_status: Literal["current", "planned"] | None = None
                                ) -> list[Disruption]:
         ...
 
     @overload
     async def list_disruptions(self: Self,
-                               route_id: int | None = None,
-                               stop_id: int | None = None,
-                               *,
-                               disruption_status: Literal["Current", "Planned"] | None = None
+                               route_id: None = None,
+                               stop_id: None = None,
+                               route_types: Iterable[RouteType] | RouteType | None = None,
+                               disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
+                               disruption_status: Literal["current", "planned"] | None = None
                                ) -> list[Disruption]:
         ...
 
@@ -661,7 +663,7 @@ class AsyncTimetableAPI(object):
                                stop_id: int | None = None,
                                route_types: Iterable[RouteType] | RouteType | None = None,
                                disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
-                               disruption_status: Literal["Current", "Planned"] | None = None
+                               disruption_status: Literal["current", "planned"] | None = None
                                ) -> list[Disruption]:
         """Returns a list of all disruptions or, if specified, the disruptions for the specified route and/or stop.
 
@@ -744,7 +746,9 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def list_outlets(self: Self,
-                           *,
+                           latitude: None = None,
+                           longitude: None = None,
+                           max_distance: None = None,
                            max_results: int | None = None
                            ) -> list[Outlet]:
         ...
