@@ -15,7 +15,7 @@ from . import _responsetypes
 __all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
 type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
-type RouteType = Literal[0, 1, 2, 3]
+type RouteTypeType = Literal[0, 1, 2, 3]
 
 _logger: Final = logging.getLogger("ptv-timetable.ptv_timetable")
 """Logger for this module"""
@@ -153,7 +153,7 @@ class TimetableAPI(object):
 
         return [Direction.load(**item) for item in self.request(f"/v3/directions/route/{route_id}")["directions"]]
 
-    def get_direction(self: Self, direction_id: int, route_type: RouteType | None = None) -> list[Direction]:
+    def get_direction(self: Self, direction_id: int, route_type: RouteTypeType | None = None) -> list[Direction]:
         """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel with the same identifier for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
 
         If the direction is shared by multiple routes (e.g. Flinders Street), a :class:`~ptv_timetable.types.Direction` object will be added to the :class:`list` for *each* route.
@@ -172,7 +172,7 @@ class TimetableAPI(object):
 
     def get_pattern(self: Self,
                     run_ref: str | int,
-                    route_type: RouteType,
+                    route_type: RouteTypeType,
                     stop_id: int | None = None,
                     date: datetime | str | None = None,
                     include_skipped_stops: bool | None = None,
@@ -230,7 +230,7 @@ class TimetableAPI(object):
         path = f"/v3/routes/{route_id}" + self.generate_url_params(include_geopath=include_geopath, geopath_utc=geopath_date.astimezone(timezone.utc).isoformat())
         return Route.load(**self.request(path)["route"])
 
-    def list_routes(self: Self, route_types: Iterable[RouteType] | RouteType | None = None, route_name: str | None = None) -> list[Route]:
+    def list_routes(self: Self, route_types: Iterable[RouteTypeType] | RouteTypeType | None = None, route_name: str | None = None) -> list[Route]:
         """Returns all routes of all (or specified) types.
 
         :param route_types: Return only the routes of the specified type(s)
@@ -258,7 +258,7 @@ class TimetableAPI(object):
 
     def get_run(self: Self,
                 run_ref: str | int,
-                route_type: RouteType | None = None,
+                route_type: RouteTypeType | None = None,
                 expand: Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | None = None,
                 date: datetime | str | None = None,
                 include_geopath: bool | None = None
@@ -287,7 +287,7 @@ class TimetableAPI(object):
 
     def list_runs(self: Self,
                   route_id: int,
-                  route_type: RouteType | None = None,
+                  route_type: RouteTypeType | None = None,
                   expand: Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | None = None,
                   date: datetime | str | None = None
                   ) -> list[Run]:
@@ -315,7 +315,7 @@ class TimetableAPI(object):
     @overload
     def get_stop(self: Self,
                  stop_id: int,
-                 route_type: RouteType,
+                 route_type: RouteTypeType,
                  stop_location: bool | None = None,
                  stop_amenities: bool | None = None,
                  stop_accessibility: bool | None = None,
@@ -330,7 +330,7 @@ class TimetableAPI(object):
     @overload
     def get_stop(self: Self,
                  stop_id: str,
-                 route_type: RouteType,
+                 route_type: RouteTypeType,
                  stop_location: bool | None = None,
                  stop_amenities: bool | None = None,
                  stop_accessibility: bool | None = None,
@@ -346,7 +346,7 @@ class TimetableAPI(object):
     @overload
     def get_stop(self: Self,
                  stop_id: str,
-                 route_type: RouteType,
+                 route_type: RouteTypeType,
                  stop_location: bool | None,
                  stop_amenities: bool | None,
                  stop_accessibility: bool | None,
@@ -360,7 +360,7 @@ class TimetableAPI(object):
 
     def get_stop(self: Self,
                  stop_id: int | str,
-                 route_type: RouteType,
+                 route_type: RouteTypeType,
                  stop_location: bool | None = None,
                  stop_amenities: bool | None = None,
                  stop_accessibility: bool | None = None,
@@ -393,7 +393,7 @@ class TimetableAPI(object):
 
     def list_stops(self: Self,
                    route_id: int,
-                   route_type: RouteType,
+                   route_type: RouteTypeType,
                    direction_id: int | None = None,
                    stop_disruptions: bool | None = None,
                    include_advertised_interchange: bool | None = None
@@ -419,7 +419,7 @@ class TimetableAPI(object):
     def list_stops_near_location(self: Self,
                                  latitude: float,
                                  longitude: float,
-                                 route_types: Iterable[RouteType] | RouteType | None = None,
+                                 route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                                  max_results: int | None = None,
                                  max_distance: float | None = None,
                                  stop_disruptions: bool | None = None
@@ -445,7 +445,7 @@ class TimetableAPI(object):
     # gtfs is not specified
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: int,
                         route_id: int,
                         platform_numbers: None = None,
@@ -465,7 +465,7 @@ class TimetableAPI(object):
     # gtfs is not specified
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: int,
                         route_id: None = None,
                         platform_numbers: Iterable[str | int] | str | int | None = None,
@@ -483,7 +483,7 @@ class TimetableAPI(object):
     # route_id is specified; gtfs is specified by keyword
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: str,
                         route_id: int,
                         platform_numbers: None = None,
@@ -502,7 +502,7 @@ class TimetableAPI(object):
     # platform_numbers is specified; gtfs is specified by keyword
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: str,
                         route_id: None = None,
                         platform_numbers: Iterable[str | int] | str | int | None = None,
@@ -521,7 +521,7 @@ class TimetableAPI(object):
     # route_id and gtfs are both specified by position
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: str,
                         route_id: int,
                         platform_numbers: None,
@@ -540,7 +540,7 @@ class TimetableAPI(object):
     # also for case where both route_id and platform_numbers are not specified
     @overload
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: str,
                         route_id: None,
                         platform_numbers: Iterable[str | int] | str | int | None,
@@ -556,7 +556,7 @@ class TimetableAPI(object):
         ...
 
     def list_departures(self: Self,
-                        route_type: RouteType,
+                        route_type: RouteTypeType,
                         stop_id: int | str,
                         route_id: int | None = None,
                         platform_numbers: Iterable[str | int] | str | int | None = None,
@@ -614,7 +614,7 @@ class TimetableAPI(object):
     def list_disruptions(self: Self,
                          route_id: None = None,
                          stop_id: None = None,
-                         route_types: Iterable[RouteType] | RouteType | None = None,
+                         route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                          disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
                          disruption_status: Literal["current", "planned"] | None = None
                          ) -> list[Disruption]:
@@ -623,7 +623,7 @@ class TimetableAPI(object):
     def list_disruptions(self: Self,
                          route_id: int | None = None,
                          stop_id: int | None = None,
-                         route_types: Iterable[RouteType] | RouteType | None = None,
+                         route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                          disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
                          disruption_status: Literal["current", "planned"] | None = None
                          ) -> list[Disruption]:
@@ -678,7 +678,7 @@ class TimetableAPI(object):
                           touch_off: datetime | str | None = None,
                           is_free_fare_zone: bool | None = None,
                           is_overlap_zone: bool | None = None,
-                          route_types: Iterable[RouteType] | RouteType | None = None
+                          route_types: Iterable[RouteTypeType] | RouteTypeType | None = None
                           ) -> FareEstimate | None:
         """Returns the estimated fare for the specified journey details.
 
@@ -753,7 +753,7 @@ class TimetableAPI(object):
     @overload
     def search(self: Self,
                search_term: str,
-               route_types: Iterable[RouteType] | RouteType | None = None,
+               route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                *,
                include_outlets: bool | None = None,
                match_stop_by_locality: bool | None = None,
@@ -779,7 +779,7 @@ class TimetableAPI(object):
     @overload
     def search(self: Self,
                search_term: str,
-               route_types: Iterable[RouteType] | RouteType | None,
+               route_types: Iterable[RouteTypeType] | RouteTypeType | None,
                latitude: float,
                longitude: float,
                max_distance: float | None = None,
@@ -792,7 +792,7 @@ class TimetableAPI(object):
 
     def search(self: Self,
                search_term: str,
-               route_types: Iterable[RouteType] | RouteType | None = None,
+               route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                latitude: float | None = None,
                longitude: float | None = None,
                max_distance: float | None = None,

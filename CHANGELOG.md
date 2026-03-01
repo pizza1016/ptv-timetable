@@ -6,6 +6,7 @@
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
   - Updated type hints and docstrings to reflect new metadata and observations
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - Type alias `RouteType` has been renamed to `RouteTypeType` as it is the type of route types, not the type of routes
   - `build_arg_string()` static method has been fully replaced with `generate_url_params()` with an entirely different signature
   - `call()` has been renamed to `request()`
   - `_encode_url()` has been renamed to `_sign()`
