@@ -281,7 +281,7 @@ class TimetableAPI(object):
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        path += self.generate_url_params(expand=expand, include_geopath=include_geopath, date_utc=date.astimezone(timezone.utc).isoformat())
+        path += self.generate_url_params(expand=expand, date_utc=date.astimezone(timezone.utc).isoformat(), include_geopath=include_geopath)
 
         return [Run.load(**item) for item in self.request(path)["runs"]]
 
