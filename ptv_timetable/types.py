@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
-from datetime import datetime
 from typing import Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 import enum
 import platform
@@ -172,17 +172,23 @@ class PathGeometry(TimetableData):
 
     direction_id: int
     """Identifier of the direction of travel represented by this geometry"""
-    valid_from: str
+    valid_from: date
     """Date geometry is valid from"""
-    valid_to: str
+    valid_to: date
     """Date geometry is valid to"""
-    paths: list[str]
-    """Strings of coordinate pairs that draws the path"""
+    paths: list[list[tuple[float, float]]]
+    """List of paths representing the route or run (each path is itself a list of coordinate pairs that draw the path)"""
 
     @classmethod
     @override
     def load(cls: Self, **kwargs: Unpack[_responsetypes.PathGeometry]) -> Self:
-        return cls(**kwargs)
+        valid_from = date.fromisoformat(kwargs.pop("valid_from"))
+        valid_to = date.fromisoformat(kwargs.pop("valid_to"))
+
+        separator = re.compile(r"(?<!,) ")
+        comma = re.compile(r", ")
+        paths = [[tuple[float, float](map(float, comma.split(coord))) for coord in separator.split(path)] for path in kwargs.pop("paths")]
+        return cls(valid_from=valid_from, valid_to=valid_to, paths=paths, **kwargs)
 
 
 @dataclass(kw_only=True, slots=True)
