@@ -227,7 +227,7 @@ class TimetableAPI(object):
         if geopath_date is not None and geopath_date.tzinfo is None:
             geopath_date = geopath_date.replace(tzinfo=TZ_MELBOURNE)
 
-        path = f"/v3/routes/{route_id}" + self.generate_url_params(include_geopath=include_geopath, geopath_utc=geopath_date.astimezone(timezone.utc).isoformat())
+        path = f"/v3/routes/{route_id}" + self.generate_url_params(include_geopath=include_geopath, geopath_utc=geopath_date.astimezone(timezone.utc).isoformat() if geopath_date is not None else None)
         return Route.load(**self.request(path)["route"])
 
     def list_routes(self: Self, route_types: Iterable[RouteTypeType] | RouteTypeType | None = None, route_name: str | None = None) -> list[Route]:
