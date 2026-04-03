@@ -13,9 +13,6 @@ from . import _responsetypes
 
 __all__ = ["AsyncTimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
-type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
-type RouteTypeType = Literal[0, 1, 2, 3]
-
 _logger: Final = logging.getLogger("ptv-timetable.ptv_timetable.asyncapi")
 """Logger for this module"""
 _logger.setLevel(logging.DEBUG)
@@ -25,7 +22,7 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTimetableAPI(object):
     """Interface class for the PTV Timetable API."""
 
-    def __init__(self: Self, dev_id: str | int, key: str, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
+    def __init__(self: Self, dev_id: str | int, key: UUIDType, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
         """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
@@ -63,7 +60,7 @@ class AsyncTimetableAPI(object):
         return
 
     @classmethod
-    async def create(cls: Callable[..., Self], dev_id: str | int, key: str, session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
+    async def create(cls: Callable[..., Self], dev_id: str | int, key: UUIDType, session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
         """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
@@ -177,7 +174,7 @@ class AsyncTimetableAPI(object):
 
         return [await Direction.aload(**item) for item in (await self.request(f"/v3/directions/route/{route_id}"))["directions"]]
 
-    async def get_direction(self: Self, direction_id: int, route_type: RouteTypeType | None = None) -> list[Direction]:
+    async def get_direction(self: Self, direction_id: IdentifierType, route_type: RouteTypeType | None = None) -> list[Direction]:
         """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel with the same identifier for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
 
         If the direction is shared by multiple routes (e.g. Flinders Street), a :class:`~ptv_timetable.types.Direction` object will be added to the :class:`list` for *each* route.
@@ -194,7 +191,7 @@ class AsyncTimetableAPI(object):
     async def get_pattern(self: Self,
                           run_ref: str | int,
                           route_type: RouteTypeType,
-                          stop_id: int | None = None,
+                          stop_id: IdentifierType | None = None,
                           date: datetime | str | None = None,
                           include_skipped_stops: bool | None = None,
                           expand: ExpandType | Iterable[ExpandType] | None = None,
@@ -227,14 +224,14 @@ class AsyncTimetableAPI(object):
         return await StoppingPattern.aload(**res)
 
     @overload
-    async def get_route(self: Self, route_id: int, include_geopath: Literal[False] | None = None) -> Route:
+    async def get_route(self: Self, route_id: IdentifierType, include_geopath: Literal[False] | None = None) -> Route:
         ...
 
     @overload
-    async def get_route(self: Self, route_id: int, include_geopath: Literal[True], geopath_date: datetime | str | None = None) -> Route:
+    async def get_route(self: Self, route_id: IdentifierType, include_geopath: Literal[True], geopath_date: datetime | str | None = None) -> Route:
         ...
 
-    async def get_route(self: Self, route_id: int, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
+    async def get_route(self: Self, route_id: IdentifierType, include_geopath: bool | None = None, geopath_date: datetime | str | None = None) -> Route:
         """Returns the details of the route with the specified route identifier.
 
         :param route_id:        The route identifier
@@ -304,7 +301,7 @@ class AsyncTimetableAPI(object):
         return [await Run.aload(**item) for item in (await self.request(path))["runs"]]
 
     async def list_runs(self: Self,
-                        route_id: int,
+                        route_id: IdentifierType,
                         route_type: RouteTypeType | None = None,
                         expand: Iterable[Literal["All", "VehicleDescriptor", "VehiclePosition", "None"]] | Literal["All", "VehicleDescriptor", "VehiclePosition", "None"] | None = None,
                         date: datetime | str | None = None
@@ -332,14 +329,14 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def get_stop(self: Self,
-                       stop_id: int,
+                       stop_id: IdentifierType,
                        route_type: RouteTypeType,
                        stop_location: bool | None = None,
                        stop_amenities: bool | None = None,
                        stop_accessibility: bool | None = None,
                        stop_contact: bool | None = None,
                        stop_ticket: bool | None = None,
-                       gtfs: Literal[False, None] = None,
+                       gtfs: Literal[False] | None = None,
                        stop_staffing: bool | None = None,
                        stop_disruptions: bool | None = None
                        ) -> Stop:
@@ -347,7 +344,7 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def get_stop(self: Self,
-                       stop_id: str,
+                       stop_id: IdentifierType,
                        route_type: RouteTypeType,
                        stop_location: bool | None = None,
                        stop_amenities: bool | None = None,
@@ -377,7 +374,7 @@ class AsyncTimetableAPI(object):
         ...
 
     async def get_stop(self: Self,
-                       stop_id: int | str,
+                       stop_id: IdentifierType | str,
                        route_type: RouteTypeType,
                        stop_location: bool | None = None,
                        stop_amenities: bool | None = None,
@@ -410,7 +407,7 @@ class AsyncTimetableAPI(object):
         return await Stop.aload(**res)
 
     async def list_stops(self: Self,
-                         route_id: int,
+                         route_id: IdentifierType,
                          route_type: RouteTypeType,
                          direction_id: int | None = None,
                          stop_disruptions: bool | None = None,
@@ -436,11 +433,11 @@ class AsyncTimetableAPI(object):
         return [await Stop.aload(**item) for item in res]
 
     async def list_stops_near_location(self: Self,
-                                       latitude: float,
-                                       longitude: float,
+                                       latitude: LatitudeType,
+                                       longitude: LongitudeType,
                                        route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                                        max_results: int | None = None,
-                                       max_distance: float | None = None,
+                                       max_distance: DistanceType | None = None,
                                        stop_disruptions: bool | None = None
                                        ) -> list[Stop]:
         """Returns a list of stops near the specified location.
@@ -465,11 +462,11 @@ class AsyncTimetableAPI(object):
     @overload
     async def list_departures(self: Self,
                               route_type: RouteTypeType,
-                              stop_id: int,
-                              route_id: int,
+                              stop_id: IdentifierType,
+                              route_id: IdentifierType,
                               platform_numbers: None = None,
-                              direction_id: int | None = None,
-                              gtfs: Literal[False, None] = None,
+                              direction_id: IdentifierType | None = None,
+                              gtfs: Literal[False] | None = None,
                               date: datetime | str | None = None,
                               max_results: int | None = None,
                               include_cancelled: bool | None = None,
@@ -485,11 +482,11 @@ class AsyncTimetableAPI(object):
     @overload
     async def list_departures(self: Self,
                               route_type: RouteTypeType,
-                              stop_id: int,
+                              stop_id: IdentifierType,
                               route_id: None = None,
                               platform_numbers: Iterable[str | int] | str | int | None = None,
-                              direction_id: int | None = None,
-                              gtfs: Literal[False, None] = None,
+                              direction_id: IdentifierType | None = None,
+                              gtfs: Literal[False] | None = None,
                               date: datetime | str | None = None,
                               max_results: int | None = None,
                               include_cancelled: bool | None = None,
@@ -504,9 +501,9 @@ class AsyncTimetableAPI(object):
     async def list_departures(self: Self,
                               route_type: RouteTypeType,
                               stop_id: str,
-                              route_id: int,
+                              route_id: IdentifierType,
                               platform_numbers: None = None,
-                              direction_id: int | None = None,
+                              direction_id: IdentifierType | None = None,
                               *,
                               gtfs: Literal[True],
                               date: datetime | str | None = None,
@@ -525,7 +522,7 @@ class AsyncTimetableAPI(object):
                               stop_id: str,
                               route_id: None = None,
                               platform_numbers: Iterable[str | int] | str | int | None = None,
-                              direction_id: int | None = None,
+                              direction_id: IdentifierType | None = None,
                               *,
                               gtfs: Literal[True],
                               date: datetime | str | None = None,
@@ -542,9 +539,9 @@ class AsyncTimetableAPI(object):
     async def list_departures(self: Self,
                               route_type: RouteTypeType,
                               stop_id: str,
-                              route_id: int,
+                              route_id: IdentifierType,
                               platform_numbers: None,
-                              direction_id: int | None,
+                              direction_id: IdentifierType | None,
                               gtfs: Literal[True],
                               date: datetime | str | None = None,
                               max_results: int | None = None,
@@ -563,7 +560,7 @@ class AsyncTimetableAPI(object):
                               stop_id: str,
                               route_id: None,
                               platform_numbers: Iterable[str | int] | str | int | None,
-                              direction_id: int | None,
+                              direction_id: IdentifierType | None,
                               gtfs: Literal[True],
                               date: datetime | str | None = None,
                               max_results: int | None = None,
@@ -576,10 +573,10 @@ class AsyncTimetableAPI(object):
 
     async def list_departures(self: Self,
                               route_type: RouteTypeType,
-                              stop_id: int | str,
-                              route_id: int | None = None,
+                              stop_id: IdentifierType | str,
+                              route_id: IdentifierType | None = None,
                               platform_numbers: Iterable[str | int] | str | int | None = None,
-                              direction_id: int | None = None,
+                              direction_id: IdentifierType | None = None,
                               gtfs: bool | None = None,
                               date: datetime | str | None = None,
                               max_results: int | None = None,
@@ -621,8 +618,8 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def list_disruptions(self: Self,
-                               route_id: int | None = None,
-                               stop_id: int | None = None,
+                               route_id: IdentifierType | None = None,
+                               stop_id: IdentifierType | None = None,
                                route_types: None = None,
                                disruption_modes: None = None,
                                disruption_status: Literal["current", "planned"] | None = None
@@ -640,8 +637,8 @@ class AsyncTimetableAPI(object):
         ...
 
     async def list_disruptions(self: Self,
-                               route_id: int | None = None,
-                               stop_id: int | None = None,
+                               route_id: IdentifierType | None = None,
+                               stop_id: IdentifierType | None = None,
                                route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
                                disruption_modes: Iterable[Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100]] | Literal[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 100] | None = None,
                                disruption_status: Literal["current", "planned"] | None = None
@@ -666,7 +663,7 @@ class AsyncTimetableAPI(object):
 
         return [await Disruption.aload(**item) for item in ret]
 
-    async def get_disruption(self: Self, disruption_id: int) -> Disruption:
+    async def get_disruption(self: Self, disruption_id: IdentifierType) -> Disruption:
         """Retrieves the details of the disruption with the specified disruption identifier
 
         :param disruption_id: Disruption identifier
@@ -688,8 +685,8 @@ class AsyncTimetableAPI(object):
         return (await self.request("/v3/disruptions/modes"))["disruption_modes"]
 
     async def get_fare_estimate(self: Self,
-                                zone_a: int,
-                                zone_b: int,
+                                zone_a: FareZoneType,
+                                zone_b: FareZoneType,
                                 touch_on: datetime | str | None = None,
                                 touch_off: datetime | str | None = None,
                                 is_free_fare_zone: bool | None = None,
@@ -738,17 +735,17 @@ class AsyncTimetableAPI(object):
 
     @overload
     async def list_outlets(self: Self,
-                           latitude: float,
-                           longitude: float,
-                           max_distance: float | None = None,
+                           latitude: LatitudeType,
+                           longitude: LongitudeType,
+                           max_distance: DistanceType | None = None,
                            max_results: int | None = None
                            ) -> list[Outlet]:
         ...
 
     async def list_outlets(self: Self,
-                           latitude: float | None = None,
-                           longitude: float | None = None,
-                           max_distance: float | None = None,
+                           latitude: LatitudeType | None = None,
+                           longitude: LongitudeType | None = None,
+                           max_distance: DistanceType | None = None,
                            max_results: int | None = None
                            ) -> list[Outlet]:
         """Returns a list of all myki ticket outlets or, if specified, near the specified location.
@@ -770,21 +767,9 @@ class AsyncTimetableAPI(object):
     async def search(self: Self,
                      search_term: str,
                      route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
-                     *,
-                     include_outlets: bool | None = None,
-                     match_stop_by_locality: bool | None = None,
-                     match_route_by_locality: bool | None = None,
-                     match_stop_by_gtfs_stop_id: bool | None = None
-                     ) -> SearchResult:
-        ...
-
-    @overload
-    async def search(self: Self,
-                     search_term: str,
-                     *,
-                     latitude: float,
-                     longitude: float,
-                     max_distance: float | None = None,
+                     latitude: None = None,
+                     longitude: None = None,
+                     max_distance: None = None,
                      include_outlets: bool | None = None,
                      match_stop_by_locality: bool | None = None,
                      match_route_by_locality: bool | None = None,
@@ -796,9 +781,9 @@ class AsyncTimetableAPI(object):
     async def search(self: Self,
                      search_term: str,
                      route_types: Iterable[RouteTypeType] | RouteTypeType | None,
-                     latitude: float,
-                     longitude: float,
-                     max_distance: float | None = None,
+                     latitude: LatitudeType,
+                     longitude: LongitudeType,
+                     max_distance: DistanceType | None = None,
                      include_outlets: bool | None = None,
                      match_stop_by_locality: bool | None = None,
                      match_route_by_locality: bool | None = None,
@@ -809,9 +794,9 @@ class AsyncTimetableAPI(object):
     async def search(self: Self,
                      search_term: str,
                      route_types: Iterable[RouteTypeType] | RouteTypeType | None = None,
-                     latitude: float | None = None,
-                     longitude: float | None = None,
-                     max_distance: float | None = None,
+                     latitude: LatitudeType | None = None,
+                     longitude: LongitudeType | None = None,
+                     max_distance: DistanceType | None = None,
                      include_outlets: bool | None = None,
                      match_stop_by_locality: bool | None = None,
                      match_route_by_locality: bool | None = None,

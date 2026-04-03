@@ -2,9 +2,11 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import date, datetime
-from typing import Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
+from functools import partial, Placeholder
+from typing import Annotated, Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
 from zoneinfo import ZoneInfo
 import enum
+import operator
 import platform
 import re
 if platform.system() == "Windows":
@@ -12,7 +14,68 @@ if platform.system() == "Windows":
 
 from . import _responsetypes
 
-__all__ = ["TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+__all__ = ["DistanceType", "ExpandType", "FareZoneType", "IdentifierType", "LatitudeType", "LongitudeType", "RouteTypeType", "UUIDType", "TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+
+type _NonNegativeIntegral = Annotated[int, partial(operator.ge, Placeholder, 0)]
+"""An integer that is positive or zero
+
+.. versionadded:: 0.5.0
+"""
+type _NonNegativeReal = Annotated[float, partial(operator.ge, Placeholder, 0)]
+"""A real number that is positive or zero
+
+.. versionadded:: 0.5.0
+"""
+
+type DistanceType = _NonNegativeReal
+"""Data type of distances
+
+.. versionadded:: 0.5.0
+"""
+type ExpandType = Literal["All", "Stop", "Route", "Run", "Direction", "Disruption", "VehicleDescriptor", "VehiclePosition", "None"]
+"""Valid values for the ``expand`` parameters in API requests
+
+.. versionchanged:: 0.5.0
+    Moved from :mod:`ptv_timetable` and :mod:`ptv_timetable.asyncapi`
+"""
+type FareType = _NonNegativeReal
+"""Data type of fares
+
+.. versionadded:: 0.5.0
+"""
+type FareZoneType = _NonNegativeIntegral
+"""Data type of fare zones
+
+.. versionadded:: 0.5.0
+"""
+type IdentifierType = _NonNegativeIntegral
+"""Data type of stop, route, direction and disruption identifiers
+
+.. versionadded:: 0.5.0
+"""
+type LatitudeType = Annotated[float, partial(operator.ge, Placeholder, -90), partial(operator.le, Placeholder, 90)]
+"""Data type of the latitude (north-south) component of geographic coordinates
+
+.. versionadded:: 0.5.0
+"""
+type LongitudeType = Annotated[float, partial(operator.ge, Placeholder, -180), partial(operator.le, Placeholder, 180)]
+"""Data type of the longitude (east-west) component of geographic coordinates
+
+.. versionadded:: 0.5.0
+"""
+type RouteTypeType = Literal[0, 1, 2, 3]
+"""Data type of route types (travel modes)
+
+``0`` is for metropolitan trains, ``1`` for metropolitan trams, ``2`` for buses and ``3`` for regional trains and coaches
+
+.. versionchanged:: 0.5.0
+    Moved from :mod:`ptv_timetable` and :mod:`ptv_timetable.asyncapi` where it was named ``RouteType``
+"""
+type UUIDType = Annotated[str, lambda string: re.fullmatch(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}", string) is not None]
+"""Data type of universally unique identifiers
+
+.. versionadded:: 0.5.0
+"""
 
 TZ_MELBOURNE: Final = ZoneInfo("Australia/Melbourne")
 """Time zone of Victoria"""
@@ -170,14 +233,26 @@ class TimetableData(object, metaclass=ABCMeta):
 class PathGeometry(TimetableData):
     """Represents the physical geometry of the attached route or run."""
 
-    direction_id: int
+    direction_id: IdentifierType
     """Identifier of the direction of travel represented by this geometry"""
     valid_from: date
-    """Date geometry is valid from"""
+    """Date geometry is valid from
+    
+    .. versionchanged:: 0.5.0
+        Converted to :class:`date` object (previously :class:`str`)
+    """
     valid_to: date
-    """Date geometry is valid to"""
-    paths: list[list[tuple[float, float]]]
-    """List of paths representing the route or run (each path is itself a list of coordinate pairs that draw the path)"""
+    """Date geometry is valid to
+    
+    .. versionchanged:: 0.5.0
+        Converted to :class:`date` object (previously :class:`str`)
+    """
+    paths: list[list[tuple[LatitudeType, LongitudeType]]]
+    """List of paths representing the route or run (each path is itself a list of coordinate pairs that draw the path)
+    
+    .. versionchanged:: 0.5.0
+        Raw path strings have been parsed into :class:`list`\\s of coordinate pairs (:class:`tuple`\\s of :class:`float`\\s)
+    """
 
     @classmethod
     @override
@@ -187,7 +262,7 @@ class PathGeometry(TimetableData):
 
         separator = re.compile(r"(?<!,) ")
         comma = re.compile(r", ")
-        paths = [[tuple[float, float](map(float, comma.split(coord))) for coord in separator.split(path)] for path in kwargs.pop("paths")]
+        paths = [[tuple[LatitudeType, LongitudeType](map(float, comma.split(coord))) for coord in separator.split(path)] for path in kwargs.pop("paths")]
         return cls(valid_from=valid_from, valid_to=valid_to, paths=paths, **kwargs)
 
 
@@ -207,7 +282,7 @@ class StopTicket(TimetableData):
     """Meaning is unclear"""
     vline_reservation: bool
     """Whether a V/Line reservation is required to travel to or from this station or stop; value should not be used for modes other than V/Line"""
-    ticket_zones: list[int]
+    ticket_zones: list[FareZoneType]
     """Ticketing zone(s) this stop is in"""
 
     @classmethod
@@ -250,16 +325,24 @@ class StopLocation(TimetableData):
     primary_stop_name: str
     """Name of one of the roads near this stop (usually the crossing road, or "at" road), or a nearby landmark"""
     road_type_primary: str
-    """Road name suffix for 'primary_stop_name'"""
+    """Road name suffix for :attr:`primary_stop_name`"""
     secondary_stop_name: str
-    """Name of one of the roads near this stop (usually the road of travel, or "on" road); may be empty"""
+    """Name of one of the roads near this stop (usually the road of travel, or "on" road); may be empty
+    
+    .. versionchanged:: 0.5.0
+        Renamed from ``second_stop_name``
+    """
     road_type_secondary: str
-    """Road name suffix for 'second_stop_name'"""
+    """Road name suffix for :attr:`second_stop_name`
+    
+    .. versionchanged:: 0.5.0
+        Renamed from ``road_type_second``
+    """
     bay_number: int
     """For bus interchanges, the bay number of the particular stop; ``0`` if not applicable"""
-    latitude: float
+    latitude: LatitudeType
     """Latitude coordinate of this stop's location"""
-    longitude: float
+    longitude: LongitudeType
     """Longitude coordinate of this stop's location"""
 
     @classmethod
@@ -495,9 +578,9 @@ class StopStaffing(TimetableData):
 class Route(TimetableData):
     """Represents a route on the network."""
 
-    route_id: int
+    route_id: IdentifierType
     """Identifier of this route"""
-    route_type: int
+    route_type: RouteTypeType
     """Identifier of the travel mode of this route"""
     route_name: str
     """Name of this route"""
@@ -515,9 +598,9 @@ class Route(TimetableData):
     """
 
     # From /v3/disruptions/...
-    route_direction_id: int | None | _NotProvidedType = NOT_PROVIDED
+    route_direction_id: IdentifierType | None | _NotProvidedType = NOT_PROVIDED
     """For a disruption, combined identifier for the route and travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
-    direction_id: int | None | _NotProvidedType = NOT_PROVIDED
+    direction_id: IdentifierType | None | _NotProvidedType = NOT_PROVIDED
     """For a disruption, identifier of travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
     direction_name: str | None | _NotProvidedType = NOT_PROVIDED
     """For a disruption, destination of travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
@@ -577,19 +660,19 @@ class Route(TimetableData):
 class Stop(TimetableData):
     """Represents a particular transport stop."""
 
-    stop_id: int
+    stop_id: IdentifierType
     """Identifier of this stop"""
-    route_type: int | _NotProvidedType = NOT_PROVIDED
+    route_type: RouteTypeType | _NotProvidedType = NOT_PROVIDED
     """Identifier of the travel mode of this stop; :const:`NOT_PROVIDED` if this was created by the Disruptions API"""
     stop_name: str
     """Name of this stop"""
     locality: str | _NotProvidedType = NOT_PROVIDED
     """Locality (suburb/town) this stop is in; :const:`NOT_PROVIDED` if the API response did not return this information"""
-    stop_latitude: float | _NotProvidedType = NOT_PROVIDED
+    stop_latitude: LatitudeType | _NotProvidedType = NOT_PROVIDED
     """Latitude coordinate of the stop's location; :const:`NOT_PROVIDED` if the API response did not return this information"""
-    stop_longitude: float | _NotProvidedType = NOT_PROVIDED
+    stop_longitude: LongitudeType | _NotProvidedType = NOT_PROVIDED
     """Longitude coordinate of the stop's location; :const:`NOT_PROVIDED` if the API response did not return this information"""
-    stop_distance: float | _NotProvidedType = NOT_PROVIDED
+    stop_distance: DistanceType | _NotProvidedType = NOT_PROVIDED
     """If a location was specified in the API call, distance in metres between this stop and that location; otherwise, ``0.0`` or :const:`NOT_PROVIDED`"""
     stop_landmark: str | _NotProvidedType = NOT_PROVIDED
     """Notable landmarks near this stop; ``""`` (empty string) if none; :const:`NOT_PROVIDED` if this was created by the Disruptions API"""
@@ -605,9 +688,9 @@ class Stop(TimetableData):
     """
 
     # From /v3/stops/...
-    point_id: int | _NotProvidedType = NOT_PROVIDED
+    point_id: IdentifierType | _NotProvidedType = NOT_PROVIDED
     """Identifier of this stop in the PTV static timetable dump; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
-    disruption_ids: list[int] | _NotProvidedType = NOT_PROVIDED
+    disruption_ids: list[IdentifierType] | _NotProvidedType = NOT_PROVIDED
     """Current and/or future disruptions affecting this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
     routes: list[Route] | _NotProvidedType = NOT_PROVIDED
     """List of routes serving this stop; :const:`NOT_PROVIDED` if the API operation doesn't use this field"""
@@ -667,15 +750,15 @@ class Stop(TimetableData):
 class Departure(TimetableData):
     """Represents a specific departure from a specific stop."""
 
-    stop_id: int
+    stop_id: IdentifierType
     """Identifier of departing stop"""
-    route_id: int
+    route_id: IdentifierType
     """Identifier of route of service"""
-    direction_id: int
+    direction_id: IdentifierType
     """Travel direction identifier"""
     run_ref: str
     """Run/service identifier"""
-    disruption_ids: list[int]
+    disruption_ids: list[IdentifierType]
     """List of identifiers of disruptions affecting this stop and/or service"""
     scheduled_departure: datetime
     """Departure time of service as timetabled"""
@@ -733,9 +816,9 @@ class Departure(TimetableData):
 class VehiclePosition(TimetableData):
     """Represents the position of the attached vehicle."""
 
-    latitude: float | None
+    latitude: LatitudeType | None
     """Latitude coordinate of the vehicle's position; ``None`` if this information is unavailable"""
-    longitude: float | None
+    longitude: LongitudeType | None
     """Longitude coordinate of the vehicle's position; ``None`` if this information is unavailable"""
     easting: float | None
     """Easting of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
@@ -743,8 +826,12 @@ class VehiclePosition(TimetableData):
     """Northing of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
     direction: str
     """Description of the direction of travel (e.g. "inbound", "outbound")"""
-    bearing: float | None
-    """Vehicle's current direction of travel in degrees clockwise from geographic north; ``None`` if this information is unavailable"""
+    bearing: Annotated[float, partial(operator.ge, Placeholder, 0), partial(operator.lt, Placeholder, 360)] | None
+    """Vehicle's current direction of travel in degrees clockwise from geographic north; ``None`` if this information is unavailable
+    
+    .. versionchanged:: 0.5.0
+        Added annotation to type hint
+    """
     supplier: str
     """Source of vehicle information"""
     as_of: datetime | None
@@ -794,11 +881,11 @@ class RunInterchange(TimetableData):
 
     run_ref: str
     """Identifier of this run"""
-    route_id: int
+    route_id: IdentifierType
     """Identifier of the route this run belongs to"""
-    direction_id: int
+    direction_id: IdentifierType
     """Identifier of the direction of travel of this run"""
-    stop_id: int
+    stop_id: IdentifierType
     """Identifier of the stop where the original run (which contains this RunInterchange instance in its interchange field) changes over to this run, or vice versa"""
     destination_name: str
     """Public-facing destination name of this run"""
@@ -817,17 +904,17 @@ class Run(TimetableData):
 
     run_ref: str
     """Identifier of this run"""
-    route_id: int
+    route_id: IdentifierType
     """Identifier of the route this run belongs to"""
-    route_type: int
+    route_type: RouteTypeType
     """Identifier of the travel mode of this run"""
-    final_stop_id: int
+    final_stop_id: IdentifierType
     """Identifier of the terminating stop of this run"""
     destination_name: str | None
     """Public-facing destination name of this run; sometimes returns None (unclear why)"""
     status: Literal["scheduled", "updated"]
     """Status of this metropolitan train service; "scheduled" for all other modes"""
-    direction_id: int
+    direction_id: IdentifierType
     """Identifier of the direction of travel of this run"""
     run_sequence: int
     """Sort key for this run in a chronological list of runs for this route and direction of travel"""
@@ -873,15 +960,15 @@ class Run(TimetableData):
 class Direction(TimetableData):
     """Represents a direction of travel on a particular route."""
 
-    direction_id: int
+    direction_id: IdentifierType
     """Identifier for direction of travel"""
     direction_name: str
     """Name of direction of travel"""
     route_direction_description: str | _NotProvidedType = NOT_PROVIDED
     """Detailed description of this direction of travel along this route, as publicly displayed on the PTV website; not returned by the Departures API"""
-    route_id: int
+    route_id: IdentifierType
     """Identifier for the route specified by this direction of travel"""
-    route_type: int
+    route_type: RouteTypeType
     """Identifier for the mode of travel of this route and destination"""
 
     @classmethod
@@ -894,7 +981,7 @@ class Direction(TimetableData):
 class Disruption(TimetableData):
     """Represents a service disruption."""
 
-    disruption_id: int
+    disruption_id: IdentifierType
     """Disruption identifier"""
     title: str
     """Disruption title"""
@@ -956,13 +1043,13 @@ class StoppingPattern(TimetableData):
     """List of disruptions affecting this run or the relevant routes and stops"""
     departures: list[Departure]
     """Sequence of departures from stops made by this run"""
-    stops: dict[int, Stop]
+    stops: dict[IdentifierType, Stop]
     """Mapping of the relevant stop identifiers to Stop objects"""
-    routes: dict[int, Route]
+    routes: dict[IdentifierType, Route]
     """Mapping of the relevant route identifiers to Route objects"""
     runs: dict[str, Run]
     """Mapping of the relevant run identifiers to Run objects"""
-    directions: dict[int, Direction]
+    directions: dict[IdentifierType, Direction]
     """Mapping of the relevant travel direction identifiers to Direction objects"""
 
     @classmethod
@@ -1004,15 +1091,15 @@ class DeparturesResponse(TimetableData):
 
     departures: list[Departure]
     """Departures returned from the API request"""
-    stops: dict[int, Stop] | None
+    stops: dict[IdentifierType, Stop] | None
     """Mapping of stop identifiers to stop objects related to the returned departures"""
-    routes: dict[int, Route] | None
+    routes: dict[IdentifierType, Route] | None
     """Mapping of route identifiers to route objects related to the returned departures"""
     runs: dict[str, Run] | None
     """Mapping of run identifiers to run objects related to the returned departures"""
-    directions: dict[int, Direction] | None
+    directions: dict[IdentifierType, Direction] | None
     """Mapping of direction identifiers to direction objects related to the returned departures"""
-    disruptions: dict[int, Disruption] | None
+    disruptions: dict[IdentifierType, Disruption] | None
     """Mapping of disruption identifiers to disruption objects related to the returned departures"""
 
     @classmethod
@@ -1046,9 +1133,9 @@ class Outlet(TimetableData):
     """Outlet SLID/SPID (beats me as to what that means, but it's some sort of identifier); PTV hubs return an empty string"""
     outlet_business: str
     """Name of the business"""
-    outlet_latitude: float
+    outlet_latitude: LatitudeType
     """Latitude coordinate of the outlet's position"""
-    outlet_longitude: float
+    outlet_longitude: LongitudeType
     """Longitude coordinate of the outlet's position"""
     street_address: str
     """Street address of the outlet"""
@@ -1072,7 +1159,7 @@ class Outlet(TimetableData):
     """Outlet's business hours on Sundays"""
     outlet_notes: str | None
     """Additional notes about the ticket outlet"""
-    outlet_distance: float | _NotProvidedType = NOT_PROVIDED
+    outlet_distance: DistanceType | _NotProvidedType = NOT_PROVIDED
     """Distance of the outlet from the search location (for API search operations); 0 if no location is provided, :const:`NOT_PROVIDED` if the operation doesn't use this field"""
 
     @classmethod
@@ -1094,10 +1181,10 @@ class FareEstimate(TimetableData):
     """Whether this journey is entirely within a free fare zone"""
     weekend: bool
     """Whether this journey is made on a weekend or public holiday"""
-    zones: list[int]
+    zones: list[FareZoneType]
     """List of fare zones this fare estimate is valid for"""
 
-    full_2_hour_peak: float
+    full_2_hour_peak: FareType
     """
     Standard fare for 2 hours of travel at any time of day.
 
@@ -1105,7 +1192,7 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    full_2_hour_off_peak: float
+    full_2_hour_off_peak: FareType
     """
     Standard fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
@@ -1113,21 +1200,21 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    full_weekday_cap_peak: float
+    full_weekday_cap_peak: FareType
     """Standard daily cap for travel across the network at any time of day on weekdays"""
-    full_weekday_cap_off_peak: float
+    full_weekday_cap_off_peak: FareType
     """Standard daily cap for travel across the network on weekdays if tap on occurs entirely outside designated peak periods"""
-    full_weekend_cap: float
+    full_weekend_cap: FareType
     """Standard daily cap for travel across the network on weekends"""
-    full_holiday_cap: float
+    full_holiday_cap: FareType
     """Standard daily cap for travel across the network on statutory public holidays"""
-    full_pass_7_days_total: float
+    full_pass_7_days_total: FareType
     """Standard fare for unlimited travel for one week (total cost)"""
-    full_pass_28_to_69_days: float
+    full_pass_28_to_69_days: FareType
     """Standard fare, per day, for unlimited travel for 28 to 69 days"""
-    full_pass_70_plus_days: float
+    full_pass_70_plus_days: FareType
     """Standard fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
-    concession_2_hour_peak: float
+    concession_2_hour_peak: FareType
     """
     Concession fare for 2 hours of travel at any time of day.
 
@@ -1135,7 +1222,7 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    concession_2_hour_off_peak: float
+    concession_2_hour_off_peak: FareType
     """
     Concession fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
@@ -1143,21 +1230,21 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    concession_weekday_cap_peak: float
+    concession_weekday_cap_peak: FareType
     """Concession daily cap for travel across the network at any time of day on weekdays"""
-    concession_weekday_cap_off_peak: float
+    concession_weekday_cap_off_peak: FareType
     """Concession daily cap for travel across the network on weekdays if tap on occurs entirely outside designated peak periods"""
-    concession_weekend_cap: float
+    concession_weekend_cap: FareType
     """Concession daily cap for travel across the network on weekends"""
-    concession_holiday_cap: float
+    concession_holiday_cap: FareType
     """Concession daily cap for travel across the network on statutory public holidays"""
-    concession_pass_7_days_total: float
+    concession_pass_7_days_total: FareType
     """Concession fare for unlimited travel for one week (total cost)"""
-    concession_pass_28_to_69_days: float
+    concession_pass_28_to_69_days: FareType
     """Concession fare, per day, for unlimited travel for 28 to 69 days"""
-    concession_pass_70_plus_days: float
+    concession_pass_70_plus_days: FareType
     """Concession fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
-    senior_2_hour_peak: float
+    senior_2_hour_peak: FareType
     """
     Senior fare for 2 hours of travel at any time of day.
 
@@ -1165,7 +1252,7 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    senior_2_hour_off_peak: float
+    senior_2_hour_off_peak: FareType
     """
     Senior fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
@@ -1173,19 +1260,19 @@ class FareEstimate(TimetableData):
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
-    senior_weekday_cap_peak: float
+    senior_weekday_cap_peak: FareType
     """Senior daily cap for travel across the network at any time of day on weekdays"""
-    senior_weekday_cap_off_peak: float
+    senior_weekday_cap_off_peak: FareType
     """Senior daily cap for travel across the network on weekdays if tap on occurs entirely outside designated peak periods"""
-    senior_weekend_cap: float
+    senior_weekend_cap: FareType
     """Senior daily cap for travel across the network on weekends"""
-    senior_holiday_cap: float
+    senior_holiday_cap: FareType
     """Senior daily cap for travel across the network on statutory public holidays"""
-    senior_pass_7_days_total: float
+    senior_pass_7_days_total: FareType
     """Senior fare for unlimited travel for one week (total cost)"""
-    senior_pass_28_to_69_days: float
+    senior_pass_28_to_69_days: FareType
     """Senior fare, per day, for unlimited travel for 28 to 69 days"""
-    senior_pass_70_plus_days: float
+    senior_pass_70_plus_days: FareType
     """Senior fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
 
     @classmethod

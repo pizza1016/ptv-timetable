@@ -1,12 +1,14 @@
 # Changelog
 
 ## 0.5.0 (2026-\_\_-\_\_)
+- Breaking change: Python minimum version requirement updated from 3.12 to 3.14.2
 - Breaking change: New internal module `ptv_timetable._responsetypes` to model the structure of the raw JSON response data transmitted by the server
   - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsetypes` module
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
   - Updated type hints and docstrings to reflect new metadata and observations
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type alias `RouteType` has been renamed to `RouteTypeType` as it is the type of route types, not the type of routes
+    - It has also been moved to `ptv_timetable.types`; see below
   - `build_arg_string()` static method has been fully replaced with `generate_url_params()` with an entirely different signature
   - `call()` has been renamed to `request()`
   - `_encode_url()` has been renamed to `_sign()`
@@ -18,10 +20,15 @@
   - In dataclass `PathGeometry`, fields `valid_from` and `valid_to` are now `date` objects, and the path strings in `paths` have been parsed into lists of coordinate pairs
   - In dataclass `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - Type aliases `RouteTypeType` (as renamed above) and `ExpandType` have been moved to `ptv_timetable.types` as part of the introduction of type annotations (but remain accessible from the base modules)
   - Added new parameter `include_advertised_interchange` to `list_stops()`
   - Added new parameter `is_overlap_zone` to `get_fare_estimate()`
   - Added overloads to `get_route()` to indicate that `geopath_date` should only be provided if `include_geopath` is `True`
   - Changed `list_disruptions()` and `list_outlets()` overload signatures to permit intermediate positional `None` arguments instead of requiring keyword arguments
+  - Simplified `search()` overload signatures
+  - Updated method signatures to use new annotated types in `ptv_timetable.types`; `ExpandType` and `RouteTypeType` type aliases also moved to that module
+- Other changes in `ptv_timetable.types`:
+  - Added annotated types in compatibility with the [annotated-types](https://github.com/annotated-types/annotated-types) package
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - Some URL parameter names in `get_fare_estimate()` were incorrect

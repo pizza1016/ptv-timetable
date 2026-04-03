@@ -15,6 +15,17 @@ Summary
 
 .. autosummary::
 
+    _NonNegativeIntegral
+    _NonNegativeReal
+    DistanceType
+    ExpandType
+    FareType
+    FareZoneType
+    IdentifierType
+    LatitudeType
+    LongitudeType
+    RouteTypeType
+    UUIDType
     BUS
     COACH
     EXPAND_ALL
@@ -64,6 +75,51 @@ Summary
 
 .. py:module:: ptv_timetable.types
     :synopsis: Common constants and data types used by :mod:`ptv_timetable` and :mod:`ptv_timetable.asyncapi`
+
+Type aliases
+------------
+
+    .. py:type:: _NonNegativeIntegral
+        :canonical: typing.Annotated[int, functools.partial(operator.ge, functools.Placeholder, 0)]
+
+        An integer that is positive or zero
+
+        .. versionadded:: 0.5.0
+
+    .. py:type:: _NonNegativeReal
+        :canonical: typing.Annotated[float, functools.partial(operator.ge, functools.Placeholder, 0)]
+
+        A real number that is positive or zero
+
+        .. versionadded:: 0.5.0
+
+    .. autotype:: DistanceType
+    .. autotype:: ExpandType
+    .. autotype:: FareType
+    .. autotype:: FareZoneType
+    .. autotype:: IdentifierType
+    .. py:type:: LatitudeType
+        :canonical: typing.Annotated[float, functools.partial(operator.ge, functools.Placeholder, -90), functools.partial(operator.le, functools.Placeholder, 90)]
+
+        Data type of the latitude (north-south) component of geographic coordinates
+
+        .. versionadded:: 0.5.0
+
+    .. py:type:: LongitudeType
+        :canonical: typing.Annotated[float, functools.partial(operator.ge, functools.Placeholder, -180), functools.partial(operator.le, functools.Placeholder, 180)]
+
+        Data type of the longitude (east-west) component of geographic coordinates
+
+        .. versionadded:: 0.5.0
+
+    .. autotype:: RouteTypeType
+    .. py:type:: UUIDType
+        :canonical: typing.Annotated[str, lambda string: re.fullmatch(r"[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}", string) is not None]
+
+        Data type of universally unique identifiers
+
+        .. versionadded:: 0.5.0
+
 
 Constants
 ---------
