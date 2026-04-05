@@ -1,6 +1,9 @@
 ``ptv_timetable._responsetypes`` — Raw JSON structure of PTV Timetable API server responses
 ===========================================================================================
 
+
+.. versionadded:: 0.5.0
+
 .. py:currentmodule:: ptv_timetable._responsetypes
 
 Summary
@@ -8,6 +11,8 @@ Summary
 
 .. autosummary::
 
+    APIResponse
+    FareZoneType
     BaseDirection
     BaseRoute
     BaseRun
@@ -78,8 +83,14 @@ Summary
     ZoneInfo
 
 
-.. py:module:: ptv_timetable
+.. py:module:: ptv_timetable._responsetypes
     :synopsis: Raw JSON structure of PTV Timetable API server responses
+
+Type aliases
+------------
+
+    .. autotype:: FareZoneType
+    .. autotype:: APIResponse
 
 Classes & attributes
 --------------------

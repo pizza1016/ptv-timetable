@@ -1,8 +1,9 @@
 from typing import Literal, TypedDict
 
 type FareZoneType = int
-
+"""Data type of fare zones"""
 type APIResponse = Error | DeparturesResponse | DirectionsResponse | DisruptionResponse | DisruptionsResponse | DisruptionModesResponse | OutletResponse | OutletGeolocationResponse | RouteResponse | RoutesResponse | RouteTypesResponse | RunsResponse | SearchResult | StoppingPattern | StopsOnRouteResponse | StopsByDistanceResponse | FareEstimateResponse
+"""Union of all possible response objects"""
 
 
 class Status(TypedDict):
@@ -580,7 +581,7 @@ class Run(BaseRun):
     """Represents a particular run or service along a route."""
 
     run_id: int | Literal[-1]
-    """Identifier of this run; deprecated, use :attr:`run_ref` instead"""
+    """Identifier of this run; deprecated, use :attr:`~BaseRun.run_ref` instead"""
     route_type: int
     """Identifier of the travel mode of this run"""
     final_stop_id: int
@@ -990,7 +991,7 @@ class PassengerFare(TypedDict):
 
 
 class FareEstimateResult(TypedDict):
-    """Fare estimate for the specified travel returned by :meth:`ptv_timetable.TimetableAPI.getFareEstimate`. All fares in AUD."""
+    """Fare estimate for the specified travel returned by :meth:`ptv_timetable.TimetableAPI.get_fare_estimate`. All fares in AUD."""
 
     IsEarlyBird: bool
     """Whether the touch on and off are made at metropolitan train stations on a non-public-holiday weekday before 7:15 am Melbourne time"""
