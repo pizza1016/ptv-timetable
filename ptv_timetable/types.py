@@ -14,7 +14,7 @@ if platform.system() == "Windows":
 
 from . import _responsetypes
 
-__all__ = ["DistanceType", "ExpandType", "FareZoneType", "IdentifierType", "LatitudeType", "LongitudeType", "RouteTypeType", "UUIDType", "TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+__all__ = ["DistanceType", "ExpandType", "FareZoneType", "IdentifierType", "LatitudeType", "LongitudeType", "RouteTypeType", "UUIDType", "TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "RouteServiceStatus", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
 type _NonNegativeIntegral = Annotated[int, partial(operator.ge, Placeholder, 0)]
 """An integer that is positive or zero
@@ -575,6 +575,24 @@ class StopStaffing(TimetableData):
 
 
 @dataclass(kw_only=True, slots=True)
+class RouteServiceStatus(TimetableData):
+    """Service status information for a route.
+
+    .. versionadded:: 0.5.0
+    """
+
+    description: str
+    """Brief description of the service status"""
+    timestamp: datetime
+    """Timestamp at which the returned service status is valid; ISO 8601 full format, UTC time zone"""
+
+    @classmethod
+    @override
+    def load(cls: Self, **kwargs: Unpack[_responsetypes.RouteServiceStatus]) -> Self:
+        return cls(description=kwargs["description"], timestamp=datetime.fromisoformat(kwargs["timestamp"]).astimezone(TZ_MELBOURNE))
+
+
+@dataclass(kw_only=True, slots=True)
 class Route(TimetableData):
     """Represents a route on the network."""
 
@@ -590,11 +608,14 @@ class Route(TimetableData):
     """Identifier for this route in the General Transit Feed Specification"""
     geometry: list[PathGeometry] | None | _NotProvidedType = NOT_PROVIDED
     """Physical geometry of this route"""
-    route_service_status: TypedDict("RouteServiceStatus", {"description": str, "timestamp": datetime}) | _NotProvidedType = NOT_PROVIDED
+    route_service_status: RouteServiceStatus | _NotProvidedType = NOT_PROVIDED
     """Service status of the route; :const:`NOT_PROVIDED` if API did not provide this information
     
     .. versionchanged:: 0.3.0
         Changed attribute type from :class:`dict` to :class:`~typing.TypedDict`.
+    
+    .. versionchanged:: 0.5.0
+        Changed attribute type to :class:`RouteServiceStatus`.
     """
 
     # From /v3/disruptions/...
@@ -615,9 +636,7 @@ class Route(TimetableData):
             geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         else:
             geometry = NOT_PROVIDED
-        route_service_status = kwargs.pop("route_service_status") if "route_service_status" in kwargs else NOT_PROVIDED
-        if route_service_status is not NOT_PROVIDED:
-            route_service_status["timestamp"] = datetime.fromisoformat(route_service_status["timestamp"]).astimezone(TZ_MELBOURNE)
+        route_service_status = RouteServiceStatus.load(**kwargs.pop("route_service_status")) if "route_service_status" in kwargs else NOT_PROVIDED
         if "direction" in kwargs:
             if kwargs["direction"] is not None:
                 direction = kwargs.pop("direction")

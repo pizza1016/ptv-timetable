@@ -57,6 +57,7 @@ Summary
     Outlet
     PathGeometry
     Route
+    RouteServiceStatus
     Run
     RunInterchange
     SearchResult
@@ -182,6 +183,7 @@ Classes & methods
     .. autoclass:: Outlet
     .. autoclass:: PathGeometry
     .. autoclass:: Route
+    .. autoclass:: RouteServiceStatus
     .. autoclass:: Run
     .. autoclass:: RunInterchange
     .. autoclass:: SearchResult
