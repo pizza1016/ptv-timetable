@@ -296,7 +296,7 @@ class AsyncTimetableAPI(object):
         if date is not None and date.tzinfo is None:
             date = date.replace(tzinfo=TZ_MELBOURNE)
 
-        path += await self.generate_url_params(expand=expand, date_utc=date.astimezone(timezone.utc).isoformat(), include_geopath=include_geopath)
+        path += await self.generate_url_params(expand=expand, date_utc=date.astimezone(timezone.utc).isoformat() if date is not None else None, include_geopath=include_geopath)
 
         return [await Run.aload(**item) for item in (await self.request(path))["runs"]]
 

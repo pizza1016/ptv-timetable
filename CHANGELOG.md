@@ -31,6 +31,7 @@
   - Added annotated types in compatibility with the [annotated-types](https://github.com/annotated-types/annotated-types) package
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
+  - A `None` argument check for the `date` parameter was missing in `get_run()`
   - Some URL parameter names in `get_fare_estimate()` were incorrect
   - `get_fare_estimate()` can return `None`
   - Corrected overload signatures in `search()`
