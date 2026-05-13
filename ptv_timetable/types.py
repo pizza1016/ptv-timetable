@@ -362,7 +362,7 @@ class StopLocation(TimetableData):
 class StopAmenities(TimetableData):
     """Amenities at the attached stop."""
 
-    seat_type: Literal["", "Shelter"]
+    seat_type: Literal["", "Seat", "Shelter", "Both"]
     """Type of seating; empty string if none"""
     pay_phone: bool
     """Whether there is a public telephone at this stop"""
@@ -384,38 +384,38 @@ class StopAmenities(TimetableData):
     """Appears to be deprecated/unused (always returns empty string)"""
     stairs: Literal[""]
     """Appears to be deprecated/unused (always returns empty string)"""
-    baby_change_facility: Literal[""]
-    """Appears to be deprecated/unused (always returns empty string)"""
-    parkiteer: None
-    """Appears to be deprecated/unused (always returns ``None``). Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop"""
+    baby_change_facility: Literal["", "Y"]
+    """Whether there is a parent room at this stop; may return empty string for some stops, unclear why"""
+    parkiteer: bool | None
+    """Whether there is a Parkiteer (Bicycle Network) bicycle storage facility at this stop; may return ``None`` for some stops, unclear why"""
     replacement_bus_stop_location: Literal[""]
     """Appears to be deprecated/unused (always returns empty string). Location of the replacement bus stop"""
     QTEM: None
     """Appears to be deprecated/unused (always returns ``None``)"""
-    bike_storage: None
-    """Appears to be deprecated/unused (always returns ``None``)"""
-    PID: bool
-    """Whether there are passenger information displays at this stop"""
+    bike_storage: bool | None
+    """Whether there is a bicycle storage facility at this stop; may return ``None`` for some stops, unclear why"""
+    PID: bool | None
+    """Whether there are passenger information displays at this stop; ``None`` if not applicable or information unavailable"""
     ATM: None
     """Appears to be deprecated/unused (always returns ``None``). Whether there is an automated teller machine at this stop"""
     travellers_aid: bool | None
-    """Whether Traveller's Aid facilities are available at this stop; None if not applicable"""
+    """Whether Traveller's Aid facilities are available at this stop; ``None`` if not applicable"""
     premium_stop: None
     """Appears to be deprecated/unused (always returns ``None``)"""
     PSOs: None
-    """Appears to be deprecated/unused (always returns ``None``). Whether Protective Services Officers patrol this stop; None if not applicable"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether Protective Services Officers patrol this stop; ``None`` if not applicable"""
     melb_bike_share: None
-    """Defunct (scheme no longer exists). Whether there are Melbourne Bike Share bicycle rentals available at this stop; None if not applicable or information unavailable"""
-    luggage_storage: None
-    """Appears to be deprecated/unused (always returns ``None``). Whether luggage storage services are available at this stop; None if not applicable or information unavailable"""
+    """Defunct (scheme no longer exists). Whether there are Melbourne Bike Share bicycle rentals available at this stop; ``None`` if not applicable or information unavailable"""
+    luggage_storage: bool | None
+    """Whether luggage storage services are available at this stop; ``None`` if not applicable or information unavailable"""
     luggage_check_in: None
-    """Appears to be deprecated/unused (always returns ``None``). Whether luggage check-in facilities are available at this stop; None if not applicable or information unavailable"""
+    """Appears to be deprecated/unused (always returns ``None``). Whether luggage check-in facilities are available at this stop; ``None`` if not applicable or information unavailable"""
     toilet: bool
     """Whether there is a public toilet at or near this stop"""
     taxi_rank: bool
     """Whether there is a taxi rank at or near this stop"""
-    car_parking: int | None
-    """Number of fee-free parking spaces at this stop; ``None`` if not applicable"""
+    car_parking: str | None
+    """Number of fee-free parking spaces at this stop; may be suffixed with the "+" (plus) symbol to indicate that the value is a minimum; ``None`` if not applicable"""
     cctv: bool
     """Whether there are closed-circuit television cameras at this stop"""
 
@@ -427,7 +427,7 @@ class StopAmenities(TimetableData):
             car_parking = None
             kwargs.pop("car_parking")
         else:
-            car_parking = int(kwargs.pop("car_parking"))
+            car_parking = kwargs.pop("car_parking")
         return cls(replacement_bus_stop_location=replacement_bus_stop_location, car_parking=car_parking, **kwargs)
 
 
@@ -603,7 +603,7 @@ class Route(TimetableData):
     route_name: str
     """Name of this route"""
     route_number: str
-    """Public-facing route number of this route"""
+    """Public-facing route number of this route; empty string if no route number"""
     route_gtfs_id: str
     """Identifier for this route in the General Transit Feed Specification"""
     geometry: list[PathGeometry] | None | _NotProvidedType = NOT_PROVIDED
@@ -633,7 +633,8 @@ class Route(TimetableData):
     def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseRoute]) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
-            geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
+            geometry = [PathGeometry.load(**item) for item in kwargs["geopath"]] if len(kwargs["geopath"]) != 0 else None
+            kwargs.pop("geopath")
         else:
             geometry = NOT_PROVIDED
         route_service_status = RouteServiceStatus.load(**kwargs.pop("route_service_status")) if "route_service_status" in kwargs else NOT_PROVIDED
@@ -646,6 +647,7 @@ class Route(TimetableData):
                 service_time = direction["service_time"]
             else:
                 route_direction_id = direction_id = direction_name = service_time = None
+                kwargs.pop("direction")
         else:
             route_direction_id = direction_id = direction_name = service_time = NOT_PROVIDED
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
@@ -949,6 +951,8 @@ class Run(TimetableData):
     """Indicates, if any, the run this service was operating before it commenced ("feeder"), and the run this service will operate after terminating ("distributor"); None if no information available"""
     run_note: str | None
     """Notes about this run"""
+    external_service: Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    """Purpose unclear"""
 
     @classmethod
     @override
@@ -960,7 +964,8 @@ class Run(TimetableData):
         geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         vehicle_position = VehiclePosition.load(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
         vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
-        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
+        external_service = kwargs.pop("externalService")
+        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, external_service=external_service, **kwargs)
 
     @classmethod
     @override

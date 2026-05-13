@@ -16,9 +16,11 @@
   - Consequential edits to other methods to use the new and renamed methods, including renaming local `req` variables to `path`
   - `include_advertised_interchange` parameter has been removed from `list_departures()` as it is no longer supported by the API
   - Added new parameter `is_overlap_zone` to `get_fare_estimate()`, with the parameter positioned before the existing `route_types` parameter
-- Breaking changes in `ptv_timetable.types:
-  - In dataclass `PathGeometry`, fields `valid_from` and `valid_to` are now `date` objects, and the path strings in `paths` have been parsed into lists of coordinate pairs
-  - In dataclass `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
+- Breaking changes in `ptv_timetable.types`:
+  - `RouteServiceStatus` is now a data class instead of a `TypedDict` (in `Route.route_service_status`)
+  - In data class `PathGeometry`, fields `valid_from` and `valid_to` are now `date` objects, and the path strings in `paths` have been parsed into lists of coordinate pairs
+  - In data class `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
+  - Type of `StopAmenities.car_parking` reverted to `str` (source data type) as the value may contain symbols (e.g. "+")
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type aliases `RouteTypeType` (as renamed above) and `ExpandType` have been moved to `ptv_timetable.types` as part of the introduction of type annotations (but remain accessible from the base modules)
   - Added new parameter `include_advertised_interchange` to `list_stops()`
@@ -29,6 +31,8 @@
   - Updated method signatures to use new annotated types in `ptv_timetable.types`; `ExpandType` and `RouteTypeType` type aliases also moved to that module
 - Other changes in `ptv_timetable.types`:
   - Added annotated types in compatibility with the [annotated-types](https://github.com/annotated-types/annotated-types) package
+  - Added `Run.external_service` (recently added by server, but purpose is unclear)
+  - Notes about possible deprecation removed and type hints updated for some fields as usages, albeit rare, have been found
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - A `None` argument check for the `date` parameter was missing in `get_run()`
