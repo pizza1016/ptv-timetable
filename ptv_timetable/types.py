@@ -14,7 +14,7 @@ if platform.system() == "Windows":
 
 from . import _responsetypes
 
-__all__ = ["DistanceType", "ExpandType", "FareZoneType", "IdentifierType", "LatitudeType", "LongitudeType", "RouteTypeType", "UUIDType", "TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "RouteServiceStatus", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
+__all__ = ["DistanceType", "ExpandType", "FareZoneType", "IdentifierType", "LatitudeType", "LongitudeType", "RouteTypeType", "UUIDType", "TZ_MELBOURNE", "UUID_PATTERN", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE", "NOT_PROVIDED", "TimetableData", "PathGeometry", "StopTicket", "StopContact", "StopLocation", "StopAmenities", "Wheelchair", "StopAccessibility", "StopStaffing", "RouteServiceStatus", "Route", "Stop", "Departure", "VehiclePosition", "VehicleDescriptor", "RunInterchange", "Run", "Direction", "Disruption", "StoppingPattern", "DeparturesResponse", "Outlet", "FareEstimate", "SearchResult"]
 
 type _NonNegativeIntegral = Annotated[int, partial(operator.ge, Placeholder, 0)]
 """An integer that is positive or zero
@@ -845,8 +845,8 @@ class VehiclePosition(TimetableData):
     """Easting of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
     northing: float | None
     """Northing of the vehicle's position in the easting-northing system; ``None`` if this information is unavailable"""
-    direction: str
-    """Description of the direction of travel (e.g. "inbound", "outbound")"""
+    direction: str | None
+    """Description of the direction of travel (e.g. "inbound", "outbound"); ``None`` if this information is unavailable"""
     bearing: Annotated[float, partial(operator.ge, Placeholder, 0), partial(operator.lt, Placeholder, 360)] | None
     """Vehicle's current direction of travel in degrees clockwise from geographic north; ``None`` if this information is unavailable
     
@@ -964,8 +964,10 @@ class Run(TimetableData):
         geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         vehicle_position = VehiclePosition.load(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
         vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
+        interchange = {k: RunInterchange.load(**v) for k, v in kwargs["interchange"].items()} if kwargs["interchange"] is not None else None
+        kwargs.pop("interchange")
         external_service = kwargs.pop("externalService")
-        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, external_service=external_service, **kwargs)
+        return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, interchange=interchange, external_service=external_service, **kwargs)
 
     @classmethod
     @override
@@ -1015,7 +1017,7 @@ class Disruption(TimetableData):
     """Summary of the disruption"""
     disruption_status: Literal["Planned", "Current"]
     """Status of the disruption"""
-    disruption_type: Literal["Planned Works", "Planned Closure", "Service Information", "Minor Delays", "Major Delays", "Part Suspended"]
+    disruption_type: Literal["Planned Works", "Planned Closure", "Service Information", "Minor Delays", "Major Delays", "Part Suspended", "Station detour"]
     """Type of disruption"""
     published_on: datetime
     """Date and time this disruption was published"""
