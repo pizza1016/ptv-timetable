@@ -46,6 +46,7 @@
 - Fixed bugs in `ptv_timetable.types`:
   - `RunInterchange` was absent from `__all__`
   - `Run.interchange` `dict` values weren't converted to `RunInterchage` instances
+- The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
 - Added some unit tests
 - Updated documentation
 

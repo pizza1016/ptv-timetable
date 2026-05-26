@@ -60,7 +60,7 @@ class AsyncTimetableAPI(object):
         return
 
     @classmethod
-    async def create(cls: Callable[..., Self], dev_id: str | int, key: UUIDType, session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
+    async def create(cls: type[Self], dev_id: str | int, key: UUIDType, session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
         """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
