@@ -49,6 +49,7 @@ Summary
     UUID_PATTERN
     VLINE
     _NotProvidedType
+    ParseError
     Departure
     DeparturesResponse
     Direction
@@ -73,6 +74,7 @@ Summary
     VehicleDescriptor
     VehiclePosition
     Wheelchair
+    _error_wrapper
 
 .. py:module:: ptv_timetable.types
     :synopsis: Common constants and data types used by :mod:`ptv_timetable` and :mod:`ptv_timetable.asyncapi`
@@ -164,6 +166,7 @@ Classes & methods
 -----------------
 
     .. autoclass:: _NotProvidedType
+    .. autoclass:: ParseError
 
     .. py:class:: TimetableData
         :abstract:
@@ -198,3 +201,8 @@ Classes & methods
     .. autoclass:: VehicleDescriptor
     .. autoclass:: VehiclePosition
     .. autoclass:: Wheelchair
+
+Functions
+---------
+
+    .. autodecorator:: _error_wrapper

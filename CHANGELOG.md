@@ -31,7 +31,9 @@
   - Updated method signatures to use new annotated types in `ptv_timetable.types`; `ExpandType` and `RouteTypeType` type aliases also moved to that module
 - Other changes in `ptv_timetable.types`:
   - Added annotated types in compatibility with the [annotated-types](https://github.com/annotated-types/annotated-types) package
+  - Added `ParseError` and `@_error_wrapper`, and decorated the `.load()` and `.aload()` methods to allow the raw response data causing an exception in the parsing stage to be identified
   - Added `Run.external_service` (recently added by server, but purpose is unclear)
+  - Abstract method `TimetableData.load()` now raises `NotImplementedError`
   - Notes about possible deprecation removed and type hints updated for some fields as usages, albeit rare, have been found
   - `VehiclePosition.direction` can be `None`
   - Added new possible value for `Disruption.disruption_type`

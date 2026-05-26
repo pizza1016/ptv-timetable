@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import date, datetime
-from functools import partial, Placeholder
+from functools import partial, Placeholder, wraps
 from typing import Annotated, Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
 from zoneinfo import ZoneInfo
 import enum
@@ -157,6 +157,48 @@ NOT_PROVIDED: Final = _NotProvidedType.NOT_PROVIDED
 """
 
 
+class ParseError(Exception):
+    """Raised when there is an error parsing input data during the instantiation of a data class in this module as part of an exception chain to allow more information about the offending input data to be provided.
+
+    .. versionadded:: 0.5.0
+    """
+
+    def __init__(self: Self, data: Any = None, func: str | None = None, *args: object) -> None:
+        """Initialises an instance of this error
+
+        :param data: The input data that resulted in the error
+        :param func: The name of the callable raising the error
+        :return: ``None``
+        """
+
+        self.data = data
+        """The input data that resulted in the error"""
+        self.func = func
+        """The name of the callable raising the error"""
+
+        super().__init__(f"error parsing the data{f" in callable `{func}`" if func is not None else ""}; the offending data follows:\n" + str(data) if data is not None else "error parsing the data", *args)
+        return
+
+
+def _error_wrapper[**_P, _R](f: Callable[_P, _R]) -> Callable[_P, _R]:
+    """Wraps a callable in an exception handler so that :class:`ParserError` can be raised with context information.
+
+    :param f: The callable to wrap
+    :return: The wrapped callable
+
+    .. versionadded:: 0.5.0
+    """
+    @wraps(f)
+    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        try:
+            return f(*args, **kwargs)
+        except ParseError:
+            raise  # Pass through any error already wrapped
+        except Exception as exc:
+            raise ParseError(kwargs, f.__qualname__) from exc
+    return wrapper
+
+
 @dataclass(kw_only=True, slots=True)
 class TimetableData(object, metaclass=ABCMeta):
     """Base class for API response types."""
@@ -212,7 +254,7 @@ class TimetableData(object, metaclass=ABCMeta):
         .. versionchanged:: 0.5.0
             Updated parameter type signature
         """
-        ...
+        raise NotImplementedError("This method is abstract and must be implemented in derived classes")
 
     @classmethod
     async def aload(cls: Self, **kwargs: Any) -> Self:
@@ -256,6 +298,7 @@ class PathGeometry(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.PathGeometry]) -> Self:
         valid_from = date.fromisoformat(kwargs.pop("valid_from"))
         valid_to = date.fromisoformat(kwargs.pop("valid_to"))
@@ -287,6 +330,7 @@ class StopTicket(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopTicket]) -> Self:
         return cls(**kwargs)
 
@@ -306,6 +350,7 @@ class StopContact(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopContact]) -> Self:
         return cls(**kwargs)
 
@@ -347,6 +392,7 @@ class StopLocation(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopLocation]) -> Self:
         bay_number = kwargs.pop("bay_nbr")
         locality = kwargs.pop("suburb")
@@ -421,6 +467,7 @@ class StopAmenities(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAmenityDetails]) -> Self:
         replacement_bus_stop_location = kwargs.pop("replacement_bus_stop_loc")
         if kwargs["car_parking"] == "":
@@ -460,6 +507,7 @@ class Wheelchair(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAccessibilityWheelchair]) -> Self:
         manoeuvring = kwargs.pop("manouvering")
         raised_platform_shelter = kwargs.pop("raised_platform_shelther")
@@ -495,6 +543,7 @@ class StopAccessibility(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopAccessibility]) -> Self:
         wheelchair = kwargs.pop("wheelchair")
         return cls(wheelchair=Wheelchair.load(**wheelchair), **kwargs)
@@ -569,6 +618,7 @@ class StopStaffing(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopStaffing]) -> Self:
         wed_pm_to = kwargs.pop("wed_pm_To")
         return cls(wed_pm_to=wed_pm_to, **kwargs)
@@ -588,6 +638,7 @@ class RouteServiceStatus(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.RouteServiceStatus]) -> Self:
         return cls(description=kwargs["description"], timestamp=datetime.fromisoformat(kwargs["timestamp"]).astimezone(TZ_MELBOURNE))
 
@@ -630,6 +681,7 @@ class Route(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseRoute]) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
@@ -654,6 +706,7 @@ class Route(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.BaseRoute]) -> Self:
         route_name = kwargs.pop("route_name").strip()
         if "geopath" in kwargs:
@@ -740,6 +793,7 @@ class Stop(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StopBasic]) -> Self:
         stop_name = kwargs.pop("stop_name").strip()
         locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else NOT_PROVIDED
@@ -754,6 +808,7 @@ class Stop(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.StopBasic]) -> Self:
         stop_name = kwargs.pop("stop_name").strip()
         locality = kwargs.pop("stop_suburb") if "stop_suburb" in kwargs else NOT_PROVIDED
@@ -816,6 +871,7 @@ class Departure(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.Departure]) -> Self:
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
@@ -825,6 +881,7 @@ class Departure(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.Departure]) -> Self:
         scheduled_departure = datetime.fromisoformat(kwargs.pop("scheduled_departure_utc")).astimezone(TZ_MELBOURNE)
         estimated_departure = datetime.fromisoformat(kwargs.pop("estimated_departure_utc")).astimezone(TZ_MELBOURNE) if kwargs["estimated_departure_utc"] is not None else kwargs.pop("estimated_departure_utc")
@@ -862,6 +919,7 @@ class VehiclePosition(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.VehiclePosition]) -> Self:
         as_of = datetime.fromisoformat(kwargs.pop("datetime_utc")).astimezone(TZ_MELBOURNE) if kwargs["datetime_utc"] is not None else kwargs.pop("datetime_utc")
         expires = datetime.fromisoformat(kwargs.pop("expiry_time")).astimezone(TZ_MELBOURNE) if kwargs["expiry_time"] is not None else kwargs.pop("expiry_time")
@@ -889,6 +947,7 @@ class VehicleDescriptor(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.VehicleDescriptor]) -> Self:
         return cls(**kwargs)
 
@@ -915,6 +974,7 @@ class RunInterchange(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.InterchangeRun]) -> Self:
         return cls(**kwargs)
 
@@ -956,6 +1016,7 @@ class Run(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseRun]) -> Self:
         kwargs.pop("run_id")
         destination_name = kwargs.pop("destination_name")
@@ -971,6 +1032,7 @@ class Run(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.BaseRun]) -> Self:
         kwargs.pop("run_id")
         destination_name = kwargs.pop("destination_name")
@@ -999,6 +1061,7 @@ class Direction(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.BaseDirection]) -> Self:
         return cls(**kwargs)
 
@@ -1040,6 +1103,7 @@ class Disruption(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.Disruption]) -> Self:
         published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
         last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
@@ -1051,6 +1115,7 @@ class Disruption(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.Disruption]) -> Self:
         published_on = datetime.fromisoformat(kwargs.pop("published_on")).astimezone(TZ_MELBOURNE)
         last_updated = datetime.fromisoformat(kwargs.pop("last_updated")).astimezone(TZ_MELBOURNE)
@@ -1080,6 +1145,7 @@ class StoppingPattern(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.StoppingPattern]) -> Self:
         disruptions = [Disruption.load(**item) for item in kwargs.pop("disruptions")]
         departures = [Departure.load(**item) for item in kwargs.pop("departures")]
@@ -1091,6 +1157,7 @@ class StoppingPattern(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.StoppingPattern]) -> Self:
         disruptions = [await Disruption.aload(**item) for item in kwargs.pop("disruptions")]
         departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
@@ -1130,6 +1197,7 @@ class DeparturesResponse(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.DeparturesResponse]) -> Self:
         departures = [Departure.load(**item) for item in kwargs.pop("departures")]
         stops = {int(key): Stop.load(**value) for key, value in kwargs.pop("stops").items()} if kwargs["stops"] != {} else None
@@ -1141,6 +1209,7 @@ class DeparturesResponse(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.DeparturesResponse]) -> Self:
         departures = [await Departure.aload(**item) for item in kwargs.pop("departures")]
         stops = {int(key): await Stop.aload(**value) for key, value in kwargs.pop("stops").items()} if kwargs["stops"] != {} else None
@@ -1190,6 +1259,7 @@ class Outlet(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.Outlet]) -> Self:
         street_address = kwargs.pop("outlet_name")
         locality = kwargs.pop("outlet_suburb")
@@ -1303,6 +1373,7 @@ class FareEstimate(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.FareEstimateResult]) -> Self:
         early_bird_travel = kwargs.pop("IsEarlyBird")
         free_fare_zone = kwargs.pop("IsJourneyInFreeTramZone")
@@ -1359,6 +1430,7 @@ class SearchResult(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     def load(cls: Self, **kwargs: Unpack[_responsetypes.SearchResult]) -> Self:
         stops = [Stop.load(**item) for item in kwargs.pop("stops")]
         routes = [Route.load(**item) for item in kwargs.pop("routes")]
@@ -1368,6 +1440,7 @@ class SearchResult(TimetableData):
 
     @classmethod
     @override
+    @_error_wrapper
     async def aload(cls: Self, **kwargs: Unpack[_responsetypes.SearchResult]) -> Self:
         stops = [await Stop.aload(**item) for item in kwargs.pop("stops")]
         routes = [await Route.aload(**item) for item in kwargs.pop("routes")]
