@@ -6,6 +6,8 @@
   - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsetypes` module
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
   - Updated type hints and docstrings to reflect new metadata and observations
+- New internal module `tramtracker._responsetypes` to model the structure of the raw JSON response data transmitted by the server
+  - Updated return type of `tramtracker.TramTrackerAPI.call()` and `tramtracker.asyncapi.AsyncTramTrackerAPI.call()`
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type alias `RouteType` has been renamed to `RouteTypeType` as it is the type of route types, not the type of routes
     - It has also been moved to `ptv_timetable.types`; see below
@@ -37,6 +39,7 @@
   - Notes about possible deprecation removed and type hints updated for some fields as usages, albeit rare, have been found
   - `VehiclePosition.direction` can be `None`
   - Added new possible value for `Disruption.disruption_type`
+- The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - A `None` argument check for the `date` parameter was missing in `get_run()`
@@ -46,7 +49,8 @@
 - Fixed bugs in `ptv_timetable.types`:
   - `RunInterchange` was absent from `__all__`
   - `Run.interchange` `dict` values weren't converted to `RunInterchage` instances
-- The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
+- Fixed bugs in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
+  - `get_stop()`, `get_route_colour()` and `get_route_text_colour()` were attempting to access data at the wrong nesting level and causing `KeyError`s
 - Added some unit tests
 - Updated documentation
 
