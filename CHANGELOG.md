@@ -23,6 +23,8 @@
   - In data class `PathGeometry`, fields `valid_from` and `valid_to` are now `date` objects, and the path strings in `paths` have been parsed into lists of coordinate pairs
   - In data class `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
   - Type of `StopAmenities.car_parking` reverted to `str` (source data type) as the value may contain symbols (e.g. "+")
+- Breaking change in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
+  - `call()` now returns the full server response (previously it didn't return the wrapping object that contained the metadata); to access the actual data, access the value at the `ResponseObject` or `responseObject` keys (whichever exists)
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type aliases `RouteTypeType` (as renamed above) and `ExpandType` have been moved to `ptv_timetable.types` as part of the introduction of type annotations (but remain accessible from the base modules)
   - Added new parameter `include_advertised_interchange` to `list_stops()`
@@ -50,8 +52,6 @@
 - Fixed bugs in `ptv_timetable.types`:
   - `RunInterchange` was absent from `__all__`
   - `Run.interchange` `dict` values weren't converted to `RunInterchage` instances
-- Fixed bugs in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
-  - `get_stop()`, `get_route_colour()` and `get_route_text_colour()` were attempting to access data at the wrong nesting level and causing `KeyError`s
 - Added some unit tests
 - Updated documentation
 

@@ -84,7 +84,7 @@ class TramTrackerAPI(object):
             _logger.error("", exc_info=True)
             raise
 
-        return result["ResponseObject"] if "ResponseObject" in result else result["responseObject"]
+        return result
 
     def list_destinations(self: Self) -> list[TramDestination]:
         """Returns a list of termini for each primary tram route on the network.
@@ -98,7 +98,7 @@ class TramTrackerAPI(object):
                                 up_direction=element["IsUpDirection"],
                                 destination=element["Destination"],
                                 has_low_floor_trams=element["HasLowFloor"]
-                                ) for element in response]
+                                ) for element in response["ResponseObject"]]
 
     def list_stops(self: Self, route_id: int, up_direction: bool) -> list[TramStop]:
         """Returns a list of stops on the specified route and direction of travel.
@@ -119,7 +119,7 @@ class TramTrackerAPI(object):
                          destination=element["Destination"],
                          distance_to_location=element["DistanceToLocation"] if element["DistanceToLocation"] != 0.0 else None,
                          city_direction=element["CityDirection"]
-                         ) for element in response]
+                         ) for element in response["ResponseObject"]]
 
     def get_stop(self: Self, stop_id: int) -> TramStop:
         """Returns information about the specified stop.
@@ -150,7 +150,7 @@ class TramTrackerAPI(object):
         """
 
         response = cast(_responsetypes.RoutesResponse, self.call(f"/GetPassingRoutes.ashx?s={stop_id}"))
-        return [element["RouteNo"] for element in response]
+        return [element["RouteNo"] for element in response["ResponseObject"]]
 
     def next_trams(self: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
         """Returns the details and times of the next trams to depart from the specified stop. The number of results returned can vary, but is usually three entries per destination.
@@ -185,7 +185,7 @@ class TramTrackerAPI(object):
                               has_planned_occupation=element["HasPlannedOccupation"],
                               planned_occupation_message=element["PlannedOccupationMessage"] if element["PlannedOccupationMessage"] != "" else None,
                               estimated_departure=(EPOCH + timedelta(milliseconds=int(TIMESTAMP_PATTERN.fullmatch(element["PredictedArrivalDateTime"]).group("timestamp")))).astimezone(TZ_MELBOURNE)
-                              ) for element in response]
+                              ) for element in response["responseObject"]]
 
     def get_route_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
         """Returns the RGB hexadecimal code for the colour of the specified route as printed on public information paraphernalia.
