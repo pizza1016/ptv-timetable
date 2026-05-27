@@ -40,6 +40,7 @@
   - `VehiclePosition.direction` can be `None`
   - Added new possible value for `Disruption.disruption_type`
 - The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
+- Switched TramTracker API access from HTTP to HTTPS
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - A `None` argument check for the `date` parameter was missing in `get_run()`

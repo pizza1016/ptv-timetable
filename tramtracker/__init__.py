@@ -65,7 +65,7 @@ class TramTrackerAPI(object):
         :return:        A :class:`list` or :class:`dict` of the response data, depending on the request
         """
 
-        url = f"http://tramtracker.com.au/Controllers{request}"
+        url = f"https://tramtracker.com.au/Controllers{request}"
         _logger.debug("Requesting from: " + url)
         r: Response = self._get(url)
         try:

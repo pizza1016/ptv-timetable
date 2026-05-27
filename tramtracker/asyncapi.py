@@ -80,7 +80,7 @@ class AsyncTramTrackerAPI(object):
         :return:        A :class:`list` or :class:`dict` of the response data, depending on the request
         """
 
-        url = f"http://tramtracker.com.au/Controllers{request}"
+        url = f"https://tramtracker.com.au/Controllers{request}"
         _logger.debug("Entering rate limiter context manager")
         async with self._limiter:  # Rate limit requests
             _logger.debug("Requesting from: " + url)
