@@ -21,32 +21,48 @@ class DestinationsResponse(TypedDict):
     HasError: bool
 
 
-class Stop(TypedDict):
+class Stop1(TypedDict):
 
     StopID: None
-    Description: str | None
+    Description: str
     StopName: str
     StopNo: int
     DistanceToLocation: float
-    Destination: str | None
-    Suburb: str | None
+    Destination: None
+    Suburb: str
     Latitude: float
     Longitude: float
-    RouteNo: int
-    CityDirection: str | None
-    FlagStopNo: str | None
+    RouteNo: Literal[0]
+    CityDirection: None
+    FlagStopNo: None
+
+
+class Stop2(TypedDict):
+
+    StopID: None
+    Description: None
+    StopName: str
+    StopNo: Literal[0]
+    DistanceToLocation: float
+    Destination: None
+    Suburb: None
+    Latitude: float
+    Longitude: float
+    RouteNo: Literal[0]
+    CityDirection: str
+    FlagStopNo: str
 
 
 class StopResponse(TypedDict):
 
-    ResponseObject: Stop
+    ResponseObject: Stop2
     ResponseString: str | None
     HasError: bool
 
 
 class StopsResponse(TypedDict):
 
-    ResponseObject: list[Stop]
+    ResponseObject: list[Stop1]
     ResponseString: str | None
     HasError: bool
 
@@ -67,7 +83,7 @@ class DisruptionMessage(TypedDict):
 
 class Departure(TypedDict):
 
-    TripID: int
+    TripID: Literal[0]
     InternalRouteNo: int
     RouteNo: str
     HeadBoardRouteNo: str

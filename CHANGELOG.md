@@ -25,6 +25,9 @@
   - Type of `StopAmenities.car_parking` reverted to `str` (source data type) as the value may contain symbols (e.g. "+")
 - Breaking change in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
   - `call()` now returns the full server response (previously it didn't return the wrapping object that contained the metadata); to access the actual data, access the value at the `ResponseObject` or `responseObject` keys (whichever exists)
+- Breaking change in `tramtracker.types`:
+  - In `TramStop`, the field `stop_name_and_number` has been deleted; use fields `stop_name` and `stop_number` instead
+  - The following fields have been updated to return the response from the server as-is without converting zero or empty values to `None` so that consistency with the `ptv_timetable` modules is maintained: `TramDeparture.vehicle_id`, `TramDeparture.vehicle_class`, `TramDeparture.special_event_message`, `TramDeparture.planned_occupation_message`, `TramStop.location`, `TramStop.route_id` and `TramStop.distance_to_location`
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type aliases `RouteTypeType` (as renamed above) and `ExpandType` have been moved to `ptv_timetable.types` as part of the introduction of type annotations (but remain accessible from the base modules)
   - Added new parameter `include_advertised_interchange` to `list_stops()`
@@ -41,14 +44,19 @@
   - Notes about possible deprecation removed and type hints updated for some fields as usages, albeit rare, have been found
   - `VehiclePosition.direction` can be `None`
   - Added new possible value for `Disruption.disruption_type`
+- Other change in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
+  - Switched TramTracker API access from HTTP to HTTPS
+- Other change in `tramtracker.types`:
+  - In `TramDeparture`, added new API data fields: `location`, `occupancy_level` and `AVM_timestamp`
 - The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
-- Switched TramTracker API access from HTTP to HTTPS
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - A `None` argument check for the `date` parameter was missing in `get_run()`
   - Some URL parameter names in `get_fare_estimate()` were incorrect
   - `get_fare_estimate()` can return `None`
   - Corrected overload signatures in `search()`
+- Fixed bug in  `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+  - The data source of the `up_direction` field in the return value of `list_destinations()` has a new name
 - Fixed bugs in `ptv_timetable.types`:
   - `RunInterchange` was absent from `__all__`
   - `Run.interchange` `dict` values weren't converted to `RunInterchage` instances

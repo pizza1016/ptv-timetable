@@ -95,7 +95,7 @@ class TramTrackerAPI(object):
         response = cast(_responsetypes.DestinationsResponse, self.call("/GetAllRoutes.ashx"))
         return [TramDestination(route_id=element["InternalRouteNo"],
                                 route_number=element["AlphaNumericRouteNo"] if element["AlphaNumericRouteNo"] is not None else str(element["RouteNo"]),
-                                up_direction=element["IsUpDirection"],
+                                up_direction=element["IsUpDestination"],
                                 destination=element["Destination"],
                                 has_low_floor_trams=element["HasLowFloor"]
                                 ) for element in response["ResponseObject"]]
@@ -109,15 +109,14 @@ class TramTrackerAPI(object):
         """
 
         response = cast(_responsetypes.StopsResponse, self.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}"))
-        return [TramStop(stop_id=element["StopNo"] if element["StopNo"] != 0 else None,
+        return [TramStop(stop_id=element["StopNo"],
                          stop_name=element["Description"],
-                         stop_number=element["FlagStopNo"],
-                         stop_name_and_number=element["StopName"],
+                         stop_number=element["StopName"].split()[0],
                          locality=element["Suburb"],
-                         location=(element["Latitude"], element["Longitude"]) if element["Latitude"] != 0.0 and element["Longitude"] != 0.0 else None,
-                         route_id=element["RouteNo"] if element["RouteNo"] != 0 else None,
+                         location=(element["Latitude"], element["Longitude"]),
+                         route_id=element["RouteNo"],
                          destination=element["Destination"],
-                         distance_to_location=element["DistanceToLocation"] if element["DistanceToLocation"] != 0.0 else None,
+                         distance_to_location=element["DistanceToLocation"],
                          city_direction=element["CityDirection"]
                          ) for element in response["ResponseObject"]]
 
@@ -130,15 +129,14 @@ class TramTrackerAPI(object):
 
         response = cast(_responsetypes.StopResponse, self.call(f"/GetStopInformation.ashx?s={stop_id}"))
         element = response["ResponseObject"]
-        return TramStop(stop_id=element["StopNo"] if element["StopNo"] != 0 else None,
+        return TramStop(stop_id=stop_id,
                         stop_name=element["StopName"],
                         stop_number=element["FlagStopNo"],
-                        stop_name_and_number=None,
                         locality=element["Suburb"],
-                        location=(element["Latitude"], element["Longitude"]) if element["Latitude"] != 0.0 and element["Longitude"] != 0.0 else None,
-                        route_id=element["RouteNo"] if element["RouteNo"] != 0 else None,
+                        location=(element["Latitude"], element["Longitude"]),
+                        route_id=element["RouteNo"],
                         destination=element["Destination"],
-                        distance_to_location=element["DistanceToLocation"] if element["DistanceToLocation"] != 0.0 else None,
+                        distance_to_location=element["DistanceToLocation"],
                         city_direction=element["CityDirection"]
                         )
 
@@ -171,8 +169,8 @@ class TramTrackerAPI(object):
                               route_id=element["InternalRouteNo"],
                               route_number=element["HeadBoardRouteNo"],
                               primary_route_number=element["RouteNo"],
-                              vehicle_id=element["VehicleNo"] if element["VehicleNo"] != 0 else None,
-                              vehicle_class=element["TramClass"] if element["TramClass"] != "" else None,
+                              vehicle_id=element["VehicleNo"],
+                              vehicle_class=element["TramClass"],
                               destination=element["Destination"],
                               tt_available=element["IsTTAvailable"],
                               low_floor_tram=element["IsLowFloorTram"],
@@ -181,10 +179,13 @@ class TramTrackerAPI(object):
                               has_disruption=element["HasDisruption"],
                               disruptions=element["DisruptionMessage"]["Messages"],
                               has_special_event=element["HasSpecialEvent"],
-                              special_event_message=element["SpecialEventMessage"] if element["SpecialEventMessage"] != "" else None,
+                              special_event_message=element["SpecialEventMessage"],
                               has_planned_occupation=element["HasPlannedOccupation"],
-                              planned_occupation_message=element["PlannedOccupationMessage"] if element["PlannedOccupationMessage"] != "" else None,
-                              estimated_departure=(EPOCH + timedelta(milliseconds=int(TIMESTAMP_PATTERN.fullmatch(element["PredictedArrivalDateTime"]).group("timestamp")))).astimezone(TZ_MELBOURNE)
+                              planned_occupation_message=element["PlannedOccupationMessage"],
+                              estimated_departure=(EPOCH + timedelta(milliseconds=int(TIMESTAMP_PATTERN.fullmatch(element["PredictedArrivalDateTime"]).group("timestamp")))).astimezone(TZ_MELBOURNE),
+                              location=(element["Latitude"], element["Longitude"]),
+                              occupancy_level=element["OccupancyLevel"],
+                              AVM_timestamp=datetime.fromisoformat(element["AVMTimestamp"]).replace(tzinfo=TZ_MELBOURNE)
                               ) for element in response["responseObject"]]
 
     def get_route_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
