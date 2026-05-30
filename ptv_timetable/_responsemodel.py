@@ -767,7 +767,7 @@ class ResultOutlet(Outlet):
 
 
 class DeparturesResponse(TypedDict):
-    """Response from the departures API (:meth: `ptv_timetable.TimetableAPI.list_departures`); also contains any relevant route, service and stop details."""
+    """Response from the departures API (:meth:`ptv_timetable.TimetableAPI.list_departures`); also contains any relevant route, service and stop details."""
 
     departures: list[Departure]
     """Departures returned from the API request"""

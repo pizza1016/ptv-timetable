@@ -9,7 +9,7 @@ if platform.system() == "Windows":
     import tzdata
 
 from .types import *
-import _responsemodel
+from . import _responsemodel
 
 __all__ = ["AsyncTramTrackerAPI"]
 

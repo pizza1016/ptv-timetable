@@ -188,7 +188,7 @@ class ParseError(Exception):
 
 
 def _error_wrapper[**_P, _R](f: Callable[_P, _R]) -> Callable[_P, _R]:
-    """Wraps a callable in an exception handler so that :class:`ParserError` can be raised with context information.
+    """Wraps a callable in an exception handler so that :class:`ParseError` can be raised with context information.
 
     :param f: The callable to wrap
     :return: The wrapped callable
@@ -290,13 +290,13 @@ class PathGeometry(TimetableData):
     """Date geometry is valid from
     
     .. versionchanged:: 0.5.0
-        Converted to :class:`date` object (previously :class:`str`)
+        Converted to :class:`~datetime.date` object (previously :class:`str`)
     """
     valid_to: date
     """Date geometry is valid to
     
     .. versionchanged:: 0.5.0
-        Converted to :class:`date` object (previously :class:`str`)
+        Converted to :class:`~datetime.date` object (previously :class:`str`)
     """
     paths: list[list[tuple[LatitudeType, LongitudeType]]]
     """List of paths representing the route or run (each path is itself a list of coordinate pairs that draw the path)
@@ -387,7 +387,7 @@ class StopLocation(TimetableData):
         Renamed from ``second_stop_name``
     """
     road_type_secondary: str
-    """Road name suffix for :attr:`second_stop_name`
+    """Road name suffix for :attr:`secondary_stop_name`
     
     .. versionchanged:: 0.5.0
         Renamed from ``road_type_second``

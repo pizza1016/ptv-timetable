@@ -234,7 +234,7 @@ Classes & methods
             :type include_geopath:                 bool | None
             :param typing.Self self:
             :return:                               The requested departure information and any associated stop, route, run, direction and disruption data
-            :rtype:                                DeparturesResponse
+            :rtype:                                ~ptv_timetable.types.DeparturesResponse
 
         .. automethod:: list_disruption_modes
 
@@ -255,7 +255,7 @@ Classes & methods
             :type disruption_status:  ~typing.Literal["Current", "Planned"] | None
             :param typing.Self self:
             :return:                  A list of disruptions
-            :rtype:                   list[Disruption]
+            :rtype:                   list[~ptv_timetable.types.Disruption]
 
         .. py:method:: list_outlets(latitude=None, longitude=None, max_distance=None, max_results=None)
             :async:
@@ -272,7 +272,7 @@ Classes & methods
             :type max_results:       int | None
             :param typing.Self self:
             :return:                 A list of ticket outlets
-            :rtype:                  list[Outlet]
+            :rtype:                  list[~ptv_timetable.types.Outlet]
 
         .. automethod:: list_route_directions
         .. automethod:: list_route_types
@@ -307,4 +307,4 @@ Classes & methods
             :type match_stop_by_gtfs_stop_id:  bool | None
             :param typing.Self self:
             :return:                           All matching stops, routes and ticket outlets
-            :rtype:                            SearchResult
+            :rtype:                            ~ptv_timetable.types.SearchResult

@@ -19,7 +19,8 @@ Summary
     DestinationsResponse
     DisruptionMessage
     RoutesResponse
-    Stop
+    Stop1
+    Stop2
     StopResponse
     StopsResponse
     TramTrackerResponse
@@ -38,7 +39,8 @@ Classes & attributes
 
     .. autoclass:: Destination
     .. autoclass:: DestinationsResponse
-    .. autoclass:: Stop
+    .. autoclass:: Stop1
+    .. autoclass:: Stop2
     .. autoclass:: StopResponse
     .. autoclass:: StopsResponse
     .. autoclass:: RoutesResponse

@@ -26,6 +26,7 @@ _logger: Final = logging.getLogger("ptv-timetable.vline")
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
 
+
 @dataclass(kw_only=True, slots=True)
 class Departure(object):
     """Represents a V/Line departure from Southern Cross station."""
