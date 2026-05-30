@@ -58,14 +58,17 @@ class TramTrackerAPI(object):
         _logger.info("TramTrackerAPI instance deleted")
         return
 
-    def call(self: Self, request: str) -> _responsemodel.TramTrackerResponse:
+    def request(self: Self, path: str) -> _responsemodel.TramTrackerResponse:
         """Requests data from the TramTracker service and returns the response.
 
-        :param request: The request, which is appended to the base URL of the service
-        :return:        A :class:`list` or :class:`dict` of the response data, depending on the request
+        :param path: The request, which is appended to the base URL of the service
+        :return:     A :class:`list` or :class:`dict` of the response data, depending on the request
+
+        .. versionchanged:: 0.5.0
+            Renamed method from ``call``; now returns the whole server response including the enclosing object
         """
 
-        url = f"https://tramtracker.com.au/Controllers{request}"
+        url = f"https://tramtracker.com.au/Controllers{path}"
         _logger.debug("Requesting from: " + url)
         r: Response = self._get(url)
         try:
@@ -92,7 +95,7 @@ class TramTrackerAPI(object):
         :return: A list detailing each route terminus
         """
 
-        response = cast(_responsemodel.DestinationsResponse, self.call("/GetAllRoutes.ashx"))
+        response = cast(_responsemodel.DestinationsResponse, self.request("/GetAllRoutes.ashx"))
         return [TramDestination(route_id=element["InternalRouteNo"],
                                 route_number=element["AlphaNumericRouteNo"] if element["AlphaNumericRouteNo"] is not None else str(element["RouteNo"]),
                                 up_direction=element["IsUpDestination"],
@@ -108,7 +111,7 @@ class TramTrackerAPI(object):
         :return:             A list of stops on the route
         """
 
-        response = cast(_responsemodel.StopsResponse, self.call(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}"))
+        response = cast(_responsemodel.StopsResponse, self.request(f"/GetStopsByRouteAndDirection.ashx?r={route_id}&u={"true" if up_direction else "false"}"))
         return [TramStop(stop_id=element["StopNo"],
                          stop_name=element["Description"],
                          stop_number=element["StopName"].split()[0],
@@ -127,7 +130,7 @@ class TramTrackerAPI(object):
         :return:        The stop details
         """
 
-        response = cast(_responsemodel.StopResponse, self.call(f"/GetStopInformation.ashx?s={stop_id}"))
+        response = cast(_responsemodel.StopResponse, self.request(f"/GetStopInformation.ashx?s={stop_id}"))
         element = response["ResponseObject"]
         return TramStop(stop_id=stop_id,
                         stop_name=element["StopName"],
@@ -147,7 +150,7 @@ class TramTrackerAPI(object):
         :return:        A list of route numbers
         """
 
-        response = cast(_responsemodel.RoutesResponse, self.call(f"/GetPassingRoutes.ashx?s={stop_id}"))
+        response = cast(_responsemodel.RoutesResponse, self.request(f"/GetPassingRoutes.ashx?s={stop_id}"))
         return [element["RouteNo"] for element in response["ResponseObject"]]
 
     def next_trams(self: Self, stop_id: int, route_id: int | None = None, low_floor_tram: bool = False, as_of: datetime = datetime.now(tz=ZoneInfo("Australia/Melbourne"))) -> list[TramDeparture]:
@@ -163,7 +166,7 @@ class TramTrackerAPI(object):
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         as_of = as_of.astimezone(TZ_MELBOURNE)
         timestamp = round((as_of - EPOCH) / timedelta(milliseconds=1))
-        response = cast(_responsemodel.DeparturesResponse, self.call(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}"))
+        response = cast(_responsemodel.DeparturesResponse, self.request(f"/GetNextPredictionsForStop.ashx?stopNo={stop_id}&routeNo={route_id if route_id is not None else 0}&isLowFloor={"true" if low_floor_tram else "false"}&ts={timestamp}"))
         return [TramDeparture(stop_id=stop_id,
                               trip_id=element["TripID"],
                               route_id=element["InternalRouteNo"],
@@ -198,7 +201,7 @@ class TramTrackerAPI(object):
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = cast(_responsemodel.ColourResponse, self.call(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}"))
+        response = cast(_responsemodel.ColourResponse, self.request(f"/GetRouteColour.ashx?routeNo={route_id}&ts={timestamp}"))
         return "#" + response["responseObject"]["Colour"].lower()
 
     def get_route_text_colour(self: Self, route_id: int, as_of: datetime = datetime.now(tz=TZ_MELBOURNE)) -> str:
@@ -211,5 +214,5 @@ class TramTrackerAPI(object):
         if as_of.tzinfo is None:
             as_of = as_of.replace(tzinfo=TZ_MELBOURNE)
         timestamp = round((as_of - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
-        response = cast(_responsemodel.ColourResponse, self.call(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}"))
+        response = cast(_responsemodel.ColourResponse, self.request(f"/GetRouteTextColour.ashx?routeNo={route_id}&ts={timestamp}"))
         return "#" + response["responseObject"]["Colour"].lower()

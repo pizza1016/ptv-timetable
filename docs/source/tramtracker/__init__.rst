@@ -9,7 +9,6 @@ Summary
 .. autosummary::
 
     TramTrackerAPI
-    TramTrackerAPI.call
     TramTrackerAPI.get_route_colour
     TramTrackerAPI.get_route_text_colour
     TramTrackerAPI.get_stop
@@ -17,6 +16,7 @@ Summary
     TramTrackerAPI.list_routes_for_stop
     TramTrackerAPI.list_stops
     TramTrackerAPI.next_trams
+    TramTrackerAPI.request
 
 .. py:module:: tramtracker
     :synopsis: API wrapper for TramTracker
@@ -39,7 +39,7 @@ Classes & methods
         .. versionchanged:: 0.4.0
             Renamed from ``TramTrackerService`` to ``TramTrackerAPI``. Added the ``session`` parameter.
 
-        .. automethod:: call
+        .. automethod:: request
         .. automethod:: get_route_colour(route_id, as_of=datetime.datetime.now(tz=zoneinfo.ZoneInfo("Australia/Melbourne"))
         .. automethod:: get_route_text_colour(route_id, as_of=datetime.datetime.now(tz=zoneinfo.ZoneInfo("Australia/Melbourne"))
         .. automethod:: get_stop

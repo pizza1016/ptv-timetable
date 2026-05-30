@@ -7,7 +7,7 @@
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
   - Updated type hints and docstrings to reflect new metadata and observations
 - New internal module `tramtracker._responsemodel` to model the structure of the raw JSON response data transmitted by the server
-  - Updated return type of `tramtracker.TramTrackerAPI.call()` and `tramtracker.asyncapi.AsyncTramTrackerAPI.call()`
+  - Updated return type of `tramtracker.TramTrackerAPI.request()` and `tramtracker.asyncapi.AsyncTramTrackerAPI.request()`
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type alias `RouteType` has been renamed to `RouteTypeType` as it is the type of route types, not the type of routes
     - It has also been moved to `ptv_timetable.types`; see below
@@ -24,7 +24,8 @@
   - In data class `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
   - Type of `StopAmenities.car_parking` reverted to `str` (source data type) as the value may contain symbols (e.g. "+")
 - Breaking change in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
-  - `call()` now returns the full server response (previously it didn't return the wrapping object that contained the metadata); to access the actual data, access the value at the `ResponseObject` or `responseObject` keys (whichever exists)
+  - `call()` has been renamed to `request()`
+  - `request()` now returns the full server response (previously it didn't return the wrapping object that contained the metadata); to access the actual data, access the value at the `ResponseObject` or `responseObject` keys (whichever exists)
 - Breaking change in `tramtracker.types`:
   - In `TramStop`, the field `stop_name_and_number` has been deleted; use fields `stop_name` and `stop_number` instead
   - The following fields have been updated to return the response from the server as-is without converting zero or empty values to `None` so that consistency with the `ptv_timetable` modules is maintained: `TramDeparture.vehicle_id`, `TramDeparture.vehicle_class`, `TramDeparture.special_event_message`, `TramDeparture.planned_occupation_message`, `TramStop.location`, `TramStop.route_id` and `TramStop.distance_to_location`
