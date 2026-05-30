@@ -6,6 +6,7 @@ from functools import partial, Placeholder, wraps
 from typing import Annotated, Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
 from zoneinfo import ZoneInfo
 import enum
+import logging
 import operator
 import platform
 import re
@@ -123,6 +124,12 @@ EXPAND_NONE: Literal["None"] = "None"
 """Don't return any object properties. For use in ``expand`` parameters"""
 
 
+_logger: Final = logging.getLogger("ptv-timetable.ptv_timetable.types")
+"""Logger for this module"""
+_logger.setLevel(logging.DEBUG)
+_logger.addHandler(logging.NullHandler())
+
+
 @final
 @enum.unique
 class _NotProvidedType(enum.Enum):
@@ -195,6 +202,8 @@ def _error_wrapper[**_P, _R](f: Callable[_P, _R]) -> Callable[_P, _R]:
         except ParseError:
             raise  # Pass through any error already wrapped
         except Exception as exc:
+            _logger.error("", exc_info=True)
+            _logger.error(f"The following arguments were passed to {f.__qualname__}: {str(kwargs)}")
             raise ParseError(kwargs, f.__qualname__) from exc
     return wrapper
 
@@ -1426,7 +1435,7 @@ class SearchResult(TimetableData):
     routes: list[Route]
     """Routes matching the search parameters"""
     outlets: list[Outlet]
-    """Outlets matching the search parameters, if requested; [] (empty list) otherwise"""
+    """Outlets matching the search parameters, if requested; empty list otherwise"""
 
     @classmethod
     @override
