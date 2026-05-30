@@ -1,10 +1,10 @@
-``ptv_timetable._responsetypes`` — Raw JSON structure of PTV Timetable API server responses
+``ptv_timetable._responsemodel`` — Raw JSON structure of PTV Timetable API server responses
 ===========================================================================================
 
 
 .. versionadded:: 0.5.0
 
-.. py:currentmodule:: ptv_timetable._responsetypes
+.. py:currentmodule:: ptv_timetable._responsemodel
 
 Summary
 -------
@@ -83,7 +83,7 @@ Summary
     ZoneInfo
 
 
-.. py:module:: ptv_timetable._responsetypes
+.. py:module:: ptv_timetable._responsemodel
     :synopsis: Raw JSON structure of PTV Timetable API server responses
 
 Type aliases

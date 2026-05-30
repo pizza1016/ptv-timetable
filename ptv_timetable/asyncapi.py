@@ -9,7 +9,7 @@ import logging
 import urllib.parse
 
 from .types import *
-from . import _responsetypes
+import _responsemodel
 
 __all__ = ["AsyncTimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
@@ -125,7 +125,7 @@ class AsyncTimetableAPI(object):
             return ""
         return "?" + "&".join(parsed)
 
-    async def request(self: Self, path: str) -> _responsetypes.APIResponse:
+    async def request(self: Self, path: str) -> _responsemodel.APIResponse:
         """Requests the data at the specified path from the Timetable API. This will be rate-limited based on the options provided when this instance was created.
 
         :param path: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
@@ -260,7 +260,7 @@ class AsyncTimetableAPI(object):
         path = "/v3/routes" + await self.generate_url_params(route_types=route_types, route_name=route_name)
         return [await Route.aload(**item) for item in (await self.request(path))["routes"]]
 
-    async def list_route_types(self: Self) -> list[_responsetypes.RouteType]:
+    async def list_route_types(self: Self) -> list[_responsemodel.RouteType]:
         """Returns the names and identifiers of all route types.
 
         :return: A list of records containing the aforementioned fields
@@ -673,7 +673,7 @@ class AsyncTimetableAPI(object):
         res = (await self.request(f"/v3/disruptions/{disruption_id}"))["disruption"]
         return await Disruption.aload(**res)
 
-    async def list_disruption_modes(self: Self) -> list[_responsetypes.DisruptionMode]:
+    async def list_disruption_modes(self: Self) -> list[_responsemodel.DisruptionMode]:
         """Returns the names and identifiers of all disruption modes.
 
         :return: A list of disruption modes

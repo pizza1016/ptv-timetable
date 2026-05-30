@@ -10,7 +10,7 @@ import logging
 import urllib.parse
 
 from .types import *
-from . import _responsetypes
+import _responsemodel
 
 __all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
@@ -104,7 +104,7 @@ class TimetableAPI(object):
             return ""
         return "?" + "&".join(parsed)
 
-    def request(self: Self, path: str) -> _responsetypes.APIResponse:
+    def request(self: Self, path: str) -> _responsemodel.APIResponse:
         """Requests the data at the specified path from the Timetable API. This will be rate-limited based on the options provided when this instance was created.
 
         :param path: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
@@ -239,7 +239,7 @@ class TimetableAPI(object):
         path = "/v3/routes" + self.generate_url_params(route_types=route_types, route_name=route_name)
         return [Route.load(**item) for item in self.request(path)["routes"]]
 
-    def list_route_types(self: Self) -> list[_responsetypes.RouteType]:
+    def list_route_types(self: Self) -> list[_responsemodel.RouteType]:
         """Returns the names and identifiers of all route types.
 
         :return: A list of records containing the aforementioned fields
@@ -654,7 +654,7 @@ class TimetableAPI(object):
         res = self.request(f"/v3/disruptions/{disruption_id}")["disruption"]
         return Disruption.load(**res)
 
-    def list_disruption_modes(self: Self) -> list[_responsetypes.DisruptionMode]:
+    def list_disruption_modes(self: Self) -> list[_responsemodel.DisruptionMode]:
         """Returns the names and identifiers of all disruption modes.
 
         :return: A list of disruption modes

@@ -1,10 +1,10 @@
-``tramtracker._responsetypes`` — Raw JSON structure of TramTracker server responses
+``tramtracker._responsemodel`` — Raw JSON structure of TramTracker server responses
 ===========================================================================================
 
 
 .. versionadded:: 0.5.0
 
-.. py:currentmodule:: tramtracker._responsetypes
+.. py:currentmodule:: tramtracker._responsemodel
 
 Summary
 -------
@@ -25,7 +25,7 @@ Summary
     TramTrackerResponse
 
 
-.. py:module:: tramtracker._responsetypes
+.. py:module:: tramtracker._responsemodel
     :synopsis: Raw JSON structure of TramTracker server responses
 
 Type aliases

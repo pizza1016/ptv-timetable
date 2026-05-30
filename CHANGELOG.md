@@ -2,11 +2,11 @@
 
 ## 0.5.0 (2026-\_\_-\_\_)
 - Breaking change: Python minimum version requirement updated from 3.12 to 3.14.2
-- Breaking change: New internal module `ptv_timetable._responsetypes` to model the structure of the raw JSON response data transmitted by the server
-  - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsetypes` module
+- Breaking change: New internal module `ptv_timetable._responsemodel` to model the structure of the raw JSON response data transmitted by the server
+  - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsemodel` module
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted
   - Updated type hints and docstrings to reflect new metadata and observations
-- New internal module `tramtracker._responsetypes` to model the structure of the raw JSON response data transmitted by the server
+- New internal module `tramtracker._responsemodel` to model the structure of the raw JSON response data transmitted by the server
   - Updated return type of `tramtracker.TramTrackerAPI.call()` and `tramtracker.asyncapi.AsyncTramTrackerAPI.call()`
 - Breaking changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type alias `RouteType` has been renamed to `RouteTypeType` as it is the type of route types, not the type of routes
