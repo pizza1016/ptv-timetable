@@ -1,6 +1,8 @@
 ``ptv_timetable.asyncapi`` — Asynchronous I/O version of the PTV Timetable API wrapper
 ======================================================================================
 
+.. versionadded:: 0.4.0
+
 .. py:currentmodule:: ptv_timetable.asyncapi
 
 Summary
@@ -33,8 +35,6 @@ Summary
 
 .. py:module:: ptv_timetable.asyncapi
     :synopsis: Wrapper for the PTV Timetable API
-
-    .. versionadded:: 0.4.0
 
 Constants
 ---------

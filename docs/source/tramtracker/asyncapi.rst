@@ -1,6 +1,8 @@
 ``tramtracker.asyncapi`` — Asynchronous I/O version of the TramTracker API wrapper
 ==================================================================================
 
+.. versionadded:: 0.4.0
+
 .. py:currentmodule:: tramtracker.asyncapi
 
 Summary
@@ -21,8 +23,6 @@ Summary
 
 .. py:module:: tramtracker.asyncapi
     :synopsis: Asynchronous I/O version of the TramTracker API wrapper
-
-    .. versionadded:: 0.4.0
 
 Classes & methods
 -----------------
