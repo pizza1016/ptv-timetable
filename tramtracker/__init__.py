@@ -24,7 +24,7 @@ _logger.addHandler(logging.NullHandler())
 class TramTrackerAPI(object):
     """Interface class for the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
-    def __init__[**_P, _R](self: Self, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
+    def __init__[**_P, _R](self: Self, *, calls: int = 20, period: float = 60, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
         """Initialises a new :class:`TramTrackerAPI` instance.
 
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
@@ -32,6 +32,15 @@ class TramTrackerAPI(object):
         :param ratelimit_handler: Function decorator that handles :class:`~ratelimit.exception.RateLimitException` without re-raising it; defaults to :func:`~ratelimit.decorators.sleep_and_retry`. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
         :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~requests.sessions.Session` to be used as a context manager (default is to create a new :class:`~requests.sessions.Session` instance to be used internally)
         :return:                  ``None``
+
+        .. versionchanged:: 0.2.1
+            Added the ``calls``, ``period`` and ``ratelimit_handler`` parameters.
+
+        .. versionchanged:: 0.4.0
+            Renamed from ``TramTrackerService`` to ``TramTrackerAPI``. Added the ``session`` parameter.
+
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
         """
 
         self._session = session if session is not None else Session()
@@ -65,7 +74,7 @@ class TramTrackerAPI(object):
         :return:     A :class:`list` or :class:`dict` of the response data, depending on the request
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``call``; now returns the whole server response including the enclosing object
+            Renamed method from ``call``; now returns the whole server response including the enclosing object.
         """
 
         url = f"https://tramtracker.com.au/Controllers{path}"

@@ -22,6 +22,8 @@ Summary
 .. py:module:: tramtracker.asyncapi
     :synopsis: Asynchronous I/O version of the TramTracker API wrapper
 
+    .. versionadded:: 0.4.0
+
 Classes & methods
 -----------------
 
@@ -33,6 +35,9 @@ Classes & methods
         :type session:   ~aiohttp.ClientSession
         :param calls:    Maximum number of calls that can be made to the service within the specified ``period``
         :param period:   Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
 
         .. automethod:: create
         .. automethod:: request

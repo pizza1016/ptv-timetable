@@ -35,9 +35,4 @@ Classes & methods
     .. autoclass:: TramDestination
     .. autoclass:: TramStop
 
-    .. py:exception:: TramTrackerError
-
-        Constructs a new exception instance with the specified error message. This is used to raise an exception when the TramTracker data service responds with an error.
-
-        :param message: Error message to display
-        :param args:    Any other positional-only arguments to pass to the constructor of the parent class
+    .. autoexception:: TramTrackerError

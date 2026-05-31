@@ -169,13 +169,25 @@ Classes & methods
         .. versionchanged:: 0.4.0
             Added the ``session`` parameter.
 
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
+
         .. automethod:: generate_url_params
         .. automethod:: request
         .. automethod:: get_direction
         .. automethod:: get_disruption
         .. automethod:: get_fare_estimate
         .. automethod:: get_pattern
-        .. automethod:: get_route
+
+        .. py:method:: get_route(route_id, include_geopath=None, geopath_date=None)
+
+            Returns the details of the route with the specified route identifier.
+
+            :param route_id:        The route identifier
+            :param include_geopath: Include the route's path geometry (server default is ``False``)
+            :param geopath_date:    Retrieve the path geometry valid at the specified ``geopath_date`` (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+            :return:                Details of the specified route
+
         .. automethod:: get_run
 
         .. py:method:: get_stop(stop_id, route_type, stop_location=None, stop_amenities=None, stop_accessibility=None, stop_contact=None, stop_ticket=None, gtfs=None, stop_staffing=None, stop_disruptions=None)
@@ -239,6 +251,9 @@ Classes & methods
             :param typing.Self self:
             :return:                               The requested departure information and any associated stop, route, run, direction and disruption data
             :rtype:                                ~ptv_timetable.types.DeparturesResponse
+
+            .. versionchanged:: 0.5.0
+                Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned.
 
         .. automethod:: list_disruption_modes
 

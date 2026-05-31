@@ -28,12 +28,12 @@ extensions = [
 templates_path = ['_templates']
 exclude_patterns = []
 
+autoclass_content = "init"
 autodoc_default_options = {
     "members": True,
     "member-order": "groupwise",
     "show-inheritance": True
 }
-
 autodoc_typehints = "description"
 autodoc_use_type_comments = False
 

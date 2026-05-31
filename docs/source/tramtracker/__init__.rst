@@ -39,6 +39,9 @@ Classes & methods
         .. versionchanged:: 0.4.0
             Renamed from ``TramTrackerService`` to ``TramTrackerAPI``. Added the ``session`` parameter.
 
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
+
         .. automethod:: request
         .. automethod:: get_route_colour(route_id, as_of=datetime.datetime.now(tz=zoneinfo.ZoneInfo("Australia/Melbourne"))
         .. automethod:: get_route_text_colour(route_id, as_of=datetime.datetime.now(tz=zoneinfo.ZoneInfo("Australia/Melbourne"))

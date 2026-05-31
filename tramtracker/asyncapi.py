@@ -22,13 +22,16 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTramTrackerAPI(object):
     """Interface class for the TramTracker data service. Based on https://tramtracker.com.au/js/dataService.js."""
 
-    def __init__(self: Self, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
+    def __init__(self: Self, session: ClientSession, *, calls: int = 20, period: float = 60) -> None:
         """Creates a new :class:`AsyncTramTrackerAPI` instance.
 
         :param session:           Calls will be made using this HTTP session; this allows a :class:`~aiohttp.ClientSession` to be used as a context manager. If you wish to let the instance handle the session, use the alternative constructor method :meth:`create` instead
         :param calls:             Maximum number of calls that can be made to the service within the specified ``period``
         :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :return:                  ``None``
+
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
         """
 
         self._limiter: Final[AsyncLimiter] = AsyncLimiter(calls, period)
@@ -80,7 +83,7 @@ class AsyncTramTrackerAPI(object):
         :return:     A :class:`list` or :class:`dict` of the response data, depending on the request
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``call``; now returns the whole server response including the enclosing object
+            Renamed method from ``call``; now returns the whole server response including the enclosing object.
         """
 
         url = f"https://tramtracker.com.au/Controllers{path}"

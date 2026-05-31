@@ -261,7 +261,7 @@ class TimetableData(object, metaclass=ABCMeta):
         :return:       The newly constructed instance
 
         .. versionchanged:: 0.5.0
-            Updated parameter type signature
+            Updated parameter type signature.
         """
         raise NotImplementedError("This method is abstract and must be implemented in derived classes")
 
@@ -275,7 +275,7 @@ class TimetableData(object, metaclass=ABCMeta):
         .. versionadded:: 0.4.0
 
         .. versionchanged:: 0.5.0
-            Updated parameter type signature
+            Updated parameter type signature.
         """
         return cls.load(**kwargs)
 
@@ -290,19 +290,19 @@ class PathGeometry(TimetableData):
     """Date geometry is valid from
     
     .. versionchanged:: 0.5.0
-        Converted to :class:`~datetime.date` object (previously :class:`str`)
+        Converted to :class:`~datetime.date` object (previously :class:`str`).
     """
     valid_to: date
     """Date geometry is valid to
     
     .. versionchanged:: 0.5.0
-        Converted to :class:`~datetime.date` object (previously :class:`str`)
+        Converted to :class:`~datetime.date` object (previously :class:`str`).
     """
     paths: list[list[tuple[LatitudeType, LongitudeType]]]
     """List of paths representing the route or run (each path is itself a list of coordinate pairs that draw the path)
     
     .. versionchanged:: 0.5.0
-        Raw path strings have been parsed into :class:`list`\\s of coordinate pairs (:class:`tuple`\\s of :class:`float`\\s)
+        Raw path strings have been parsed into :class:`list`\\s of coordinate pairs (:class:`tuple`\\s of :class:`float`\\s).
     """
 
     @classmethod
@@ -384,13 +384,13 @@ class StopLocation(TimetableData):
     """Name of one of the roads near this stop (usually the road of travel, or "on" road); may be empty
     
     .. versionchanged:: 0.5.0
-        Renamed from ``second_stop_name``
+        Renamed from ``second_stop_name``.
     """
     road_type_secondary: str
     """Road name suffix for :attr:`secondary_stop_name`
     
     .. versionchanged:: 0.5.0
-        Renamed from ``road_type_second``
+        Renamed from ``road_type_second``.
     """
     bay_number: int
     """For bus interchanges, the bay number of the particular stop; ``0`` if not applicable"""
@@ -917,7 +917,7 @@ class VehiclePosition(TimetableData):
     """Vehicle's current direction of travel in degrees clockwise from geographic north; ``None`` if this information is unavailable
     
     .. versionchanged:: 0.5.0
-        Added annotation to type hint
+        Added annotation to type hint.
     """
     supplier: str
     """Source of vehicle information"""

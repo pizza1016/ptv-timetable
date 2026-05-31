@@ -92,7 +92,7 @@ class TramDeparture(TramTrackerData):
     """Trip identifier; currently unused
     
     .. versionchanged:: 0.5.0
-        Changed type hint from ``int | None`` to :class:`Literal[0] <typing.Literal>` as it currently only returns that value
+        Changed type hint from ``int | None`` to :class:`Literal[0] <typing.Literal>` as it currently only returns that value.
     """
     route_id: int
     """Route identifier for this departure"""
@@ -104,13 +104,13 @@ class TramDeparture(TramTrackerData):
     """Identifier of the tram operating this service, as printed on and inside the vehicle; ``0`` if information is not currently available
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for ``0``) for consistency with :mod:`ptv_timetable` definitions
+        Value returned as-is from server (instead of substituting ``None`` for ``0``) for consistency with :mod:`ptv_timetable` definitions.
     """
     vehicle_class: Literal["W", "Z3", "A1", "A2", "B2", "C1", "C2", "D1", "D2", "E", "G", ""]
     """Class/model of the tram operating this service; empty string if information is not currently available
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions
+        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions.
     """
     destination: str
     """Destination of this service"""
@@ -132,14 +132,16 @@ class TramDeparture(TramTrackerData):
     """Description of the special event; empty string if none
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions"""
+        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions.
+    """
     has_planned_occupation: bool
     """Whether planned service changes are affecting/will affect this route"""
     planned_occupation_message: str
     """Description of the planned service changes; empty string if none
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions"""
+        Value returned as-is from server (instead of substituting ``None`` for the empty string) for consistency with :mod:`ptv_timetable` definitions.
+    """
     estimated_departure: datetime
     """Estimated real-time departure time of this service from this stop"""
     location: tuple[float, float]
@@ -183,7 +185,7 @@ class TramStop(TramTrackerData):
     """This stop's TramTracker code
     
     .. versionchanged:: 0.5.0
-        Code modified so that this will no longer return ``None``
+        Code modified so that this will no longer return ``None``.
     """
     stop_name: str
     """Name of this stop"""
@@ -191,7 +193,7 @@ class TramStop(TramTrackerData):
     """Stop number of this stop as printed on the signage
     
     .. versionchanged:: 0.5.0
-        Code modified so that this will no longer return ``None``
+        Code modified so that this will no longer return ``None``.
     """
     locality: str | None
     """Locality (suburb/town) this stop is in; ``None`` if not provided"""
@@ -199,13 +201,13 @@ class TramStop(TramTrackerData):
     """Currently unused; will always return ``(0.0, 0.0)``
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for ``(0.0, 0.0)``) for consistency with :mod:`ptv_timetable` definitions
+        Value returned as-is from server (instead of substituting ``None`` for ``(0.0, 0.0)``) for consistency with :mod:`ptv_timetable` definitions.
     """
     route_id: Literal[0]
     """Currently unused
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for ``0``) for consistency with :mod:`ptv_timetable` definitions
+        Value returned as-is from server (instead of substituting ``None`` for ``0``) for consistency with :mod:`ptv_timetable` definitions.
     """
     destination: None
     """Currently unused"""
@@ -213,7 +215,7 @@ class TramStop(TramTrackerData):
     """Currently unused; will always return ``0.0``
     
     .. versionchanged:: 0.5.0
-        Value returned as-is from server (instead of substituting ``None`` for ``0.0``) for consistency with :mod:`ptv_timetable` definitions
+        Value returned as-is from server (instead of substituting ``None`` for ``0.0``) for consistency with :mod:`ptv_timetable` definitions.
     """
     city_direction: str | None
     """Descriptor of the direction of travel for this stop (e.g. towards or away from city); ``None`` if not provided"""

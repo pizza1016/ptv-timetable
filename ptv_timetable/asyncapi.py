@@ -22,7 +22,7 @@ _logger.addHandler(logging.NullHandler())
 class AsyncTimetableAPI(object):
     """Interface class for the PTV Timetable API."""
 
-    def __init__(self: Self, dev_id: str | int, key: UUIDType, session: ClientSession, *, calls: int = 1, period: float = 10) -> None:
+    def __init__(self: Self, dev_id: str | int, key: UUIDType, session: ClientSession, *, calls: int = 20, period: float = 60) -> None:
         """Creates a new :class:`AsyncTimetableAPI` instance with the supplied credentials.
 
         :param dev_id:  User ID
@@ -31,6 +31,9 @@ class AsyncTimetableAPI(object):
         :param calls:   Maximum number of calls that can be made to the API within the specified ``period``
         :param period:  Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
         :return:        ``None``
+
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
         """
 
         if type(dev_id) not in (str, int):
@@ -101,7 +104,7 @@ class AsyncTimetableAPI(object):
         :return:       The generated string, including the initial "?" (unless there are no parameters)
 
         .. versionadded:: 0.5.0
-            Replaced method ``build_arg_string``
+            Replaced method ``build_arg_string``.
         """
 
         parsed = []
@@ -132,7 +135,7 @@ class AsyncTimetableAPI(object):
         :return:     The result of the API request as a :class:`dict`
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``call``; updated return type signature to be more specific
+            Renamed method from ``call``; updated return type signature to be more specific.
         """
 
         url = await self._sign(path)
@@ -158,7 +161,7 @@ class AsyncTimetableAPI(object):
         :return:        The full API request URL
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``_encode_url``
+            Renamed method from ``_encode_url``.
         """
 
         raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
@@ -266,7 +269,7 @@ class AsyncTimetableAPI(object):
         :return: A list of records containing the aforementioned fields
 
         .. versionchanged:: 0.5.0
-            Updated return type signature
+            Updated return type signature.
         """
 
         return (await self.request("/v3/route_types"))["route_types"]
@@ -424,7 +427,7 @@ class AsyncTimetableAPI(object):
         :return:                               A list of all stops on the route
 
         .. versionchanged:: 0.5.0
-            Added new ``include_advertised_interchange`` parameter
+            Added new ``include_advertised_interchange`` parameter.
         """
 
         path = f"/v3/stops/route/{route_id}/route_type/{route_type}"
@@ -602,7 +605,7 @@ class AsyncTimetableAPI(object):
         :return:                  The requested departure information and any associated stop, route, run, direction and disruption data
 
         .. versionchanged:: 0.5.0
-            Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned
+            Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned.
         """
 
         if isinstance(date, str):
@@ -679,7 +682,7 @@ class AsyncTimetableAPI(object):
         :return: A list of disruption modes
 
         .. versionchanged:: 0.5.0
-            Updated return type signature
+            Updated return type signature.
         """
 
         return (await self.request("/v3/disruptions/modes"))["disruption_modes"]

@@ -23,7 +23,7 @@ _logger.addHandler(logging.NullHandler())
 class TimetableAPI(object):
     """Interface class for the PTV Timetable API."""
 
-    def __init__[**_P, _R](self: Self, dev_id: str | int, key: UUIDType, *, calls: int = 1, period: float = 10, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
+    def __init__[**_P, _R](self: Self, dev_id: str | int, key: UUIDType, *, calls: int = 20, period: float = 60, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry, session: Session | None = None) -> None:
         """Initialises a new :class:`TimetableAPI` instance with the supplied credentials.
 
         :param dev_id:            User ID
@@ -33,6 +33,18 @@ class TimetableAPI(object):
         :param ratelimit_handler: Function decorator that handles :class:`~ratelimit.exception.RateLimitException` without re-raising it; defaults to :func:`~ratelimit.decorators.sleep_and_retry`. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
         :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~requests.sessions.Session` to be used as a context manager (default is to create a new :class:`~requests.sessions.Session` instance to be used internally)
         :return:                  ``None``
+
+        .. versionchanged:: 0.2.0
+            Added the ``calls`` and ``period`` parameters.
+
+        .. versionchanged:: 0.2.1
+            Added the ``ratelimit_handler`` parameter.
+
+        .. versionchanged:: 0.4.0
+            Added the ``session`` parameter.
+
+        .. versionchanged:: 0.5.0
+            Increased default rate limit from 1 call per 10 seconds to 20 calls per 60 seconds.
         """
 
         if type(dev_id) not in (str, int):
@@ -80,7 +92,7 @@ class TimetableAPI(object):
         :return:       The generated string, including the initial "?" (unless there are no parameters)
 
         .. versionadded:: 0.5.0
-            Replaced method ``build_arg_string``
+            Replaced method ``build_arg_string``.
         """
 
         parsed = []
@@ -111,7 +123,7 @@ class TimetableAPI(object):
         :return:     The result of the API request as a :class:`dict`
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``call``; updated return type signature to be more specific
+            Renamed method from ``call``; updated return type signature to be more specific.
         """
 
         url = self._sign(path)
@@ -134,7 +146,7 @@ class TimetableAPI(object):
         :return:        The full API request URL
 
         .. versionchanged:: 0.5.0
-            Renamed method from ``_encode_url``
+            Renamed method from ``_encode_url``.
         """
 
         raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
@@ -245,10 +257,10 @@ class TimetableAPI(object):
         :return: A list of records containing the aforementioned fields
 
         .. versionchanged:: 0.3.0
-            Changed return type from :class:`dict` to :class:`~typing.TypedDict`
+            Changed return type from :class:`dict` to :class:`~typing.TypedDict`.
 
         .. versionchanged:: 0.5.0
-            Updated return type signature
+            Updated return type signature.
         """
 
         return self.request("/v3/route_types")["route_types"]
@@ -406,7 +418,7 @@ class TimetableAPI(object):
         :return:                               A list of all stops on the route
 
         .. versionchanged:: 0.5.0
-            Added new ``include_advertised_interchange`` parameter
+            Added new ``include_advertised_interchange`` parameter.
         """
 
         path = f"/v3/stops/route/{route_id}/route_type/{route_type}"
@@ -583,7 +595,7 @@ class TimetableAPI(object):
         :return:                  The requested departure information and any associated stop, route, run, direction and disruption data
 
         .. versionchanged:: 0.5.0
-            Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned
+            Removed ``include_advertised_interchange`` parameter as it is not longer supported by the API—run transition information will now always be returned.
         """
 
         if isinstance(date, str):
@@ -660,10 +672,10 @@ class TimetableAPI(object):
         :return: A list of disruption modes
 
         .. versionchanged:: 0.3.0
-            Changed return type from :class:`dict` to :class:`~typing.TypedDict`
+            Changed return type from :class:`dict` to :class:`~typing.TypedDict`.
 
         .. versionchanged:: 0.5.0
-            Updated return type signature
+            Updated return type signature.
         """
 
         return self.request("/v3/disruptions/modes")["disruption_modes"]
