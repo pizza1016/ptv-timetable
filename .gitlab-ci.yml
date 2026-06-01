@@ -65,10 +65,11 @@ publish:
   script:
     # Adapted from https://docs.pypi.org/trusted-publishers/using-a-publisher/
     # Install dependencies
+    - python -m pip install --upgrade pip
     - python -m pip install --upgrade twine
 
     # Upload to GitLab Package Registry
-    - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi --username gitlab-ci-token --password ${CI_JOB_TOKEN} --skip-existing --verbose dist/*
+    - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi --username gitlab-ci-token --password ${CI_JOB_TOKEN} --verbose dist/*
 
     # Upload to Python Package Index
     # With no token specified, twine will use Trusted Publishing
