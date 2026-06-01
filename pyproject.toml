@@ -21,12 +21,12 @@ maintainers = [
 ]
 description = "API wrappers for interacting with real-time public transport data in Victoria, Australia"
 readme = "README.md"
-license = {file = "LICENCE.md"}
+license = "Apache-2.0"
+license-files = ["LICENCE.md"]
 keywords = ["public transport", "transportation", "melbourne", "victoria", "australia", "ptv", "public transport victoria", "metro trains", "yarra trams", "vline", "library", "api wrapper"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.14",
