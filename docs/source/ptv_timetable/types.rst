@@ -166,7 +166,7 @@ Classes & methods
 -----------------
 
     .. autoclass:: _NotProvidedType
-    .. autoclass:: ParseError
+    .. autoexception:: ParseError
 
     .. py:class:: TimetableData
         :abstract:
