@@ -1,6 +1,8 @@
 ptv-timetable API reference
 ===========================
 
+*Version:* |release|
+
 Welcome! This is the full public API reference for the `ptv-timetable package <https://gitlab.com/pizza1016/ptv-timetable>`_.
 
 .. toctree::

@@ -45,7 +45,7 @@ class AsyncTramTrackerAPI(object):
         return
 
     @classmethod
-    async def create(cls: type[Self], session: ClientSession | None = None, *, calls: int = 1, period: float = 10) -> Self:
+    async def create(cls: type[Self], session: ClientSession | None = None, *, calls: int = 20, period: float = 60) -> Self:
         """Creates a new :class:`AsyncTramTrackerAPI` instance.
 
         :param session:           If specified, calls will be made using this HTTP session; this allows a :class:`~aiohttp.ClientSession` to be used as a context manager (default is to create a new :class:`~aiohttp.ClientSession` instance to be used internally)

@@ -1,7 +1,7 @@
 # Changelog
 
-## 0.5.0 (2026-\_\_-\_\_)
-- Breaking change: Python minimum version requirement updated from 3.12 to 3.14.2
+## 0.5.0 (2026-06-01)
+- Breaking change: Python minimum version requirement updated from 3.12 to 3.14
 - Breaking change: New internal module `ptv_timetable._responsemodel` to model the structure of the raw JSON response data transmitted by the server
   - Signatures and type hints in `ptv_timetable`, `ptv_timetable.asyncapi` and `ptv_timetable.types` modules modified to use the `_responsemodel` module
   - The `ptv_timetable._PTVResponseType`, `ptv_timetable._FareEstimateResponseType`, `ptv_timetable.asyncapi._PTVResponseType` and `ptv_timetable.asyncapi._FareEstimateResponseType` `TypedDict`s have all consequently been deleted

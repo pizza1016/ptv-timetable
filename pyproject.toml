@@ -6,13 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "ptv-timetable"
 version = "0.4.1"
 dependencies = [
-    "aiohttp >= 3.11.11",
+    "aiohttp >= 3.13.5",
     "aiolimiter >= 1.2.1",
     "ratelimit >= 2.2.1",
-    "requests >= 2.32.3",
-    "tzdata >= 2024.1; platform_system == 'Windows'"
+    "requests >= 2.34.2",
+    "tzdata >= 2026.2; platform_system == 'Windows'"
 ]
-requires-python = ">= 3.14.2"
+requires-python = ">= 3.14"
 authors = [
     {name = "pizza1016", email = "10370007-pizza1016@users.noreply.gitlab.com"}
 ]
@@ -44,4 +44,4 @@ Repository = "https://gitlab.com/pizza1016/ptv-timetable"
 Issues = "https://gitlab.com/pizza1016/ptv-timetable/-/issues"
 
 [tool.setuptools]
-packages = ["ptv_timetable", "tramtracker"]
+packages = ["ptv_timetable", "tramtracker", "vline"]

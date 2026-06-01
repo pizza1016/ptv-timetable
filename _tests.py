@@ -7,6 +7,7 @@ from ptv_timetable.types import *
 
 
 class ParserTest(unittest.TestCase):
+    """Unit tests for parsing raw Timetable API data"""
 
     def test_geometry_1(self: Self) -> None:
         """Tests parsing path geometry"""
