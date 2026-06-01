@@ -65,16 +65,14 @@ publish:
   script:
     # Adapted from https://docs.pypi.org/trusted-publishers/using-a-publisher/
     # Install dependencies
-    - apt-get update && apt-get install -y curl jq
-    - python -m pip install --upgrade twine id
+    - python -m pip install --upgrade twine
 
-    # Retrieve the OIDC token from GitLab CI/CD, and exchange it for a PyPI API token
-    - oidc_token=$(python -m id PYPI)
-    - resp=$(curl -X POST https://pypi.org/_/oidc/mint-token -d "{\"token\":\"${oidc_token}\"}")
-    - api_token=$(jq --raw-output '.token' <<< "${resp}")
+    # Upload to GitLab Package Registry
+    - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi --username gitlab-ci-token --password ${CI_JOB_TOKEN} --skip-existing --verbose dist/*
 
-    - python -m twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi --username gitlab-ci-token --password ${CI_JOB_TOKEN} --skip-existing --verbose dist/*  # upload to GitLab Package Registry
-    - python -m twine upload --repository-url https://upload.pypi.org/legacy/ --username __token__ --password ${api_token} --skip-existing --verbose dist/*  # upload to Python Package Index
+    # Upload to Python Package Index
+    # With no token specified, twine will use Trusted Publishing
+    - python -m twine upload --repository-url https://upload.pypi.org/legacy/ --skip-existing --verbose dist/*
   interruptible: false
   when: manual
   manual_confirmation: "Publish new version to Python Package Index and GitLab Package Registry?"
