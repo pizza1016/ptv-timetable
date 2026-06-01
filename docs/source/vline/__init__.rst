@@ -12,7 +12,7 @@ Summary
 
     Arrival
     Departure
-    next_services
+    next_services_factory
 
 .. py:module:: vline
     :synopsis: Interface for retrieving live passenger information from the V/Line website
@@ -79,4 +79,4 @@ Classes & methods
 Functions
 ---------
 
-    .. autofunction:: next_services
+    .. autofunction:: next_services_factory

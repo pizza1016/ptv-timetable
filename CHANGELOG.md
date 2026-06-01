@@ -23,12 +23,14 @@
   - In data class `PathGeometry`, fields `valid_from` and `valid_to` are now `date` objects, and the path strings in `paths` have been parsed into lists of coordinate pairs
   - In data class `StopLocation`, fields `second_stop_name` and `road_type_second` were renamed to `secondary_stop_name` and `road_type_secondary`, respectively
   - Type of `StopAmenities.car_parking` reverted to `str` (source data type) as the value may contain symbols (e.g. "+")
-- Breaking change in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
+- Breaking changes in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
   - `call()` has been renamed to `request()`
   - `request()` now returns the full server response (previously it didn't return the wrapping object that contained the metadata); to access the actual data, access the value at the `ResponseObject` or `responseObject` keys (whichever exists)
-- Breaking change in `tramtracker.types`:
+- Breaking changes in `tramtracker.types`:
   - In `TramStop`, the field `stop_name_and_number` has been deleted; use fields `stop_name` and `stop_number` instead
   - The following fields have been updated to return the response from the server as-is without converting zero or empty values to `None` so that consistency with the `ptv_timetable` modules is maintained: `TramDeparture.vehicle_id`, `TramDeparture.vehicle_class`, `TramDeparture.special_event_message`, `TramDeparture.planned_occupation_message`, `TramStop.location`, `TramStop.route_id` and `TramStop.distance_to_location`
+- Breaking change in `vline`:
+  - `next_services()` has been replaced with `next_services_factory()`, which produces a `next_services()` function but allows rate-limiting to be customised
 - Other changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - Type aliases `RouteTypeType` (as renamed above) and `ExpandType` have been moved to `ptv_timetable.types` as part of the introduction of type annotations (but remain accessible from the base modules)
   - Added new parameter `include_advertised_interchange` to `list_stops()`

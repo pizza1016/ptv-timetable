@@ -14,7 +14,7 @@ from ratelimit.decorators import sleep_and_retry
 if platform.system() == "Windows":
     import tzdata
 
-__all__ = ["next_services"]
+__all__ = ["next_services_factory"]
 
 type PlatformNumber = Literal["1", "2", "2A", "2B", "3", "3A", "3B", "4", "4A", "4B", "5", "5A", "5B", "6", "6A", "6B", "7", "7A", "7B", "8", "8A", "8B", "8S", "15", "15A", "15B", "16", "16A", "16B"]
 
@@ -164,7 +164,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_starttag(self: Self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data."""
+        """Method used by :class:`~html.HTMLParser` to process HTML data."""
         if tag == "div":
             attrs: defaultdict[str, str | None] = defaultdict(lambda: None, attrs)
             if attrs["class"] is not None and len(self._stack) == 0:
@@ -182,7 +182,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_data(self: Self, data: str) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data."""
+        """Method used by :class:`~html.HTMLParser` to process HTML data."""
         if self._current is not None and len(self._stack) > 0:
             # Departing services
             if "timeTableCell" in self._stack[-1]:
@@ -221,7 +221,7 @@ class _ServiceInfoScraper(HTMLParser):
 
     @override
     def handle_endtag(self: Self, tag: str) -> None:
-        """Method used by :class:`html.HTMLParser` to process HTML data."""
+        """Method used by :class:`~html.HTMLParser` to process HTML data."""
         if len(self._stack) > 0:
             html_class = self._stack.pop()
             if "depatureDesktopBrowser" in html_class:
@@ -234,12 +234,37 @@ class _ServiceInfoScraper(HTMLParser):
                 assert len(self._stack) == 0
         return
 
-@sleep_and_retry
-@limits(calls=1, period=10)
-def next_services() -> tuple[list[Departure], list[Arrival], datetime]:
-    """Returns real-time information for the V/Line services departing from and arriving at Southern Cross railway station within the next 30 minutes from the time of the request.
 
-    :return: A 3-tuple with a list of departing and arriving services, and the time of the response, respectively
+def next_services_factory[**_P, _R](calls: int = 3, period: float = 60, ratelimit_handler: Callable[[Callable[_P, _R]], Callable[_P, _R]] = sleep_and_retry) -> Callable[[], tuple[list[Departure], list[Arrival], datetime]]:
+    """Returns a new rate-limited function that retrieves real-time information for the V/Line services departing from and arriving at Southern Cross railway station within the next 30 minutes from the time of the request.
+
+    The returned function should be assigned to a variable before use so that the rate-limiting functions as intended. For example:
+
+    .. code-block:: python
+
+        next_services = next_services_factory()
+        departures, arrivals, as_at = next_services()
+        # Do something...
+        departures, arrivals, as_at = next_services()
+        # Do something else... etc.
+
+    :param calls:             Maximum number of calls that can be made to the API within the specified ``period``
+    :param period:            Number of seconds since the last reset (or initialisation) at which the rate limiter will reset its call count
+    :param ratelimit_handler: Function decorator that handles `ratelimit.exception.RateLimitException <https://github.com/tomasbasham/ratelimit>`_ without re-raising it; defaults to `ratelimit.decorators.sleep_and_retry <https://github.com/tomasbasham/ratelimit>`_. A custom handler should match the specified signature, otherwise the program's behaviour is undefined (there is no runtime checking of the suitability of the handler)
+    :return:                  A function with no arguments that returns a 3-tuple with a list of departing and arriving services, and the time of the response, in that order
+
+    .. versionadded:: 0.5.0
+        Replaces ``next_services()``, which is now produced by this function.
     """
-    s = _ServiceInfoScraper()
-    return s.departures, s.arrivals, s.as_at
+
+    @ratelimit_handler
+    @limits(calls=calls, period=period)
+    def next_services() -> tuple[list[Departure], list[Arrival], datetime]:
+        """Returns real-time information for the V/Line services departing from and arriving at Southern Cross railway station within the next 30 minutes from the time of the request.
+
+        :return: A 3-tuple with a list of departing and arriving services, and the time of the response, in that order
+        """
+        s = _ServiceInfoScraper()
+        return s.departures, s.arrivals, s.as_at
+
+    return next_services
