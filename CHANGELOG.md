@@ -51,15 +51,17 @@
   - Switched TramTracker API access from HTTP to HTTPS
 - Other change in `tramtracker.types`:
   - In `TramDeparture`, added new API data fields: `location`, `occupancy_level` and `AVM_timestamp`
-- The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
 - Increased API rate limits of `ptv_timetable` and `tramtracker` to 20 calls per 60 seconds
+- Fixed bugs (general):
+  - The first parameter (`cls`) of class methods is now of type `type[Self]` instead of the erroneous `Self`
+  - The `vline` module wasn't actually included in the published package
 - Fixed bugs in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
   - `geopath_date` value in `get_route()` was not converted to string before being sent to the API
   - A `None` argument check for the `date` parameter was missing in `get_run()`
   - Some URL parameter names in `get_fare_estimate()` were incorrect
   - `get_fare_estimate()` can return `None`
   - Corrected overload signatures in `search()`
-- Fixed bug in  `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`:
+- Fixed bug in `tramtracker.TramTrackerAPI` and `tramtracker.asyncapi.AsyncTramTrackerAPI`:
   - The data source of the `up_direction` field in the return value of `list_destinations()` has a new name
 - Fixed bugs in `ptv_timetable.types`:
   - `RunInterchange` was absent from `__all__`
