@@ -1034,7 +1034,7 @@ class Run(TimetableData):
         geometry = [PathGeometry.load(**item) for item in kwargs.pop("geopath")]
         vehicle_position = VehiclePosition.load(**kwargs.pop("vehicle_position")) if kwargs["vehicle_position"] is not None else kwargs.pop("vehicle_position")
         vehicle_descriptor = VehicleDescriptor.load(**kwargs.pop("vehicle_descriptor")) if kwargs["vehicle_descriptor"] is not None else kwargs.pop("vehicle_descriptor")
-        interchange = {k: RunInterchange.load(**v) for k, v in kwargs["interchange"].items()} if kwargs["interchange"] is not None else None
+        interchange = {k: RunInterchange.load(**v) if v is not None else None for k, v in kwargs["interchange"].items()} if kwargs["interchange"] is not None else None
         kwargs.pop("interchange")
         external_service = kwargs.pop("externalService")
         return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, interchange=interchange, external_service=external_service, **kwargs)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 (2026-__-__)
+- Fixed bug:
+  - In `ptv_timetable.types.Run.load()`, a `None` value in the raw response of the `interchange` dict was not handled and caused a `TypeError`
+
 ## 0.5.0 (2026-06-01)
 - Breaking change: Python minimum version requirement updated from 3.12 to 3.14
 - Breaking change: New internal module `ptv_timetable._responsemodel` to model the structure of the raw JSON response data transmitted by the server
