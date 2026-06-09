@@ -183,7 +183,7 @@ class ParseError(Exception):
         self.func = func
         """The name of the callable raising the error"""
 
-        super().__init__(f"error parsing the data{f" in callable `{func}`" if func is not None else ""}; the offending data follows:\n" + str(data) if data is not None else "error parsing the data", *args)
+        super().__init__(f"error parsing the data{f" in callable `{func}`" if func is not None else ""}, check exception chain for details; the offending data follows:\n" + str(data) if data is not None else "error parsing the data", *args)
         return
 
 
