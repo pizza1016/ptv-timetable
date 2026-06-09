@@ -9,10 +9,11 @@ from typing import Final, Literal, overload, Self
 import logging
 import urllib.parse
 
+from .asyncapi import AsyncTimetableAPI
 from .types import *
 from . import _responsemodel
 
-__all__ = ["TimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
+__all__ = ["TimetableAPI", "AsyncTimetableAPI", "METROPOLITAN_TRAIN", "METRO_TRAIN", "MET_TRAIN", "METRO", "TRAM", "BUS", "REGIONAL_TRAIN", "REG_TRAIN", "COACH", "VLINE", "EXPAND_ALL", "EXPAND_STOP", "EXPAND_ROUTE", "EXPAND_RUN", "EXPAND_DIRECTION", "EXPAND_DISRUPTION", "EXPAND_VEHICLE_DESCRIPTOR", "EXPAND_VEHICLE_POSITION", "EXPAND_NONE"]
 
 _logger: Final = logging.getLogger("ptv-timetable.ptv_timetable")
 """Logger for this module"""

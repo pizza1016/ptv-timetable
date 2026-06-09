@@ -4,6 +4,7 @@
 - Changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`
   - Renamed parameter `request` of `_sign()` to `path`
   - Modified type checks of `touch_on` and `touch_off` in `get_fare_estimate()`
+- Made `ptv_timetable.asyncapi.AsyncTimetableAPI` directly available from the `ptv_timetable` module and `tramtracker.asyncapi.AsyncTramTrackerAPI` directly available from the `tramtracker` module
 - Edited `ptv_timetable.types.ParserError` error message
 - `ptv_timetable.types.RunInterchange.destination_name` may return `None`
 - Cleaned up imports no longer being used

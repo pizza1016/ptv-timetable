@@ -10,10 +10,11 @@ import platform
 if platform.system() == "Windows":
     import tzdata
 
+from .asyncapi import AsyncTramTrackerAPI
 from .types import *
 from . import _responsemodel
 
-__all__ = ["TramTrackerAPI"]
+__all__ = ["TramTrackerAPI", "AsyncTramTrackerAPI"]
 
 _logger: Final = logging.getLogger("ptv-timetable.tramtracker")
 """Logger for this module"""

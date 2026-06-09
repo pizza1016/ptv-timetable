@@ -50,3 +50,9 @@ Classes & methods
         .. automethod:: list_routes_for_stop
         .. automethod:: list_stops
         .. automethod:: next_trams(stop_id, route_id=None, low_floor_tram=False, as_of=datetime.datetime.now(tz=zoneinfo.ZoneInfo("Australia/Melbourne"))
+
+
+    .. py:class:: AsyncTramTrackerAPI(dev_id, key, session, *, calls=1, period=10)
+        :canonical: tramtracker.asyncapi.AsyncTramTrackerAPI
+
+        Alias for :class:`tramtracker.asyncapi.AsyncTramTrackerAPI`. See there for class documentation.

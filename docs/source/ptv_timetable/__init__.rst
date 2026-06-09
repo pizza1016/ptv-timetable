@@ -326,3 +326,7 @@ Classes & methods
             :rtype:                            ~ptv_timetable.types.SearchResult
 
 
+    .. py:class:: AsyncTimetableAPI(dev_id, key, session, *, calls=1, period=10)
+        :canonical: ptv_timetable.asyncapi.AsyncTimetableAPI
+
+        Alias for :class:`ptv_timetable.asyncapi.AsyncTimetableAPI`. See there for class documentation.
