@@ -94,7 +94,7 @@ class StopAccessibility(TypedDict):
 class StopAmenityDetails(TypedDict):
     """Amenities at the attached stop."""
 
-    seat_type: Literal["", "Shelter"]
+    seat_type: Literal["", "Seat", "Shelter", "Both"]
     """Type of seating; empty string if none"""
     pay_phone: bool
     """Whether there is a public telephone at this stop"""
