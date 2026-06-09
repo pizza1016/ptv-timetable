@@ -976,8 +976,8 @@ class RunInterchange(TimetableData):
     """Identifier of the direction of travel of this run"""
     stop_id: IdentifierType
     """Identifier of the stop where the original run (which contains this RunInterchange instance in its interchange field) changes over to this run, or vice versa"""
-    destination_name: str
-    """Public-facing destination name of this run"""
+    destination_name: str | None
+    """Public-facing destination name of this run; sometimes returns ``None`` (unclear why)"""
     advertised: bool
     """Whether the service swap is intended to be shown to passengers on public-facing displays"""
 
