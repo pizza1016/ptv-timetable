@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.5.1 (2026-__-__)
+- Cleaned up imports no longer being used
 - Fixed bug:
   - In `ptv_timetable.types.Run.load()`, a `None` value in the raw response of the `interchange` dict was not handled and caused a `TypeError`
 

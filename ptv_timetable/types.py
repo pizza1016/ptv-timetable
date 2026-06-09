@@ -3,7 +3,7 @@ from collections.abc import Callable
 from dataclasses import asdict, astuple, dataclass
 from datetime import date, datetime
 from functools import partial, Placeholder, wraps
-from typing import Annotated, Any, Final, final, Literal, overload, override, Self, TypedDict, Unpack
+from typing import Annotated, Any, Final, final, Literal, overload, override, Self, Unpack
 from zoneinfo import ZoneInfo
 import enum
 import logging

@@ -1,6 +1,6 @@
 from aiohttp.client import ClientSession
 from aiolimiter.leakybucket import AsyncLimiter
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from hashlib import sha1
 from hmac import HMAC
