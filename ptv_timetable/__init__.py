@@ -139,17 +139,17 @@ class TimetableAPI(object):
         _logger.debug("Response: " + str(result))
         return result
 
-    def _sign(self: Self, request: str) -> str:
+    def _sign(self: Self, path: str) -> str:
         """Appends the credentials, signature and base URL to the request string.
 
-        :param request: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
-        :return:        The full API request URL
+        :param path: Relative URI of the data to be requested (i.e. "/v3/..."), including any parameters
+        :return:     The full API request URL
 
         .. versionchanged:: 0.5.0
             Renamed method from ``_encode_url``.
         """
 
-        raw = f"{request}{"&" if "?" in request else "?"}devid={self._dev_id}"
+        raw = f"{path}{"&" if "?" in path else "?"}devid={self._dev_id}"
         signature = HMAC(key=self._key, msg=raw.encode(encoding="ascii"), digestmod=sha1).hexdigest()
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
 

@@ -1,6 +1,8 @@
 # Changelog
 
 ## 0.5.1 (2026-__-__)
+- Changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`
+  - Renamed parameter `request` of `_sign()` to `path`
 - Edited `ptv_timetable.types.ParserError` error message
 - `ptv_timetable.types.RunInterchange.destination_name` may return `None`
 - Cleaned up imports no longer being used
