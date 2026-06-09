@@ -154,7 +154,7 @@ class TimetableAPI(object):
         return f"https://timetableapi.ptv.vic.gov.au{raw}&signature={signature}"
 
     def list_route_directions(self: Self, route_id: int) -> list[Direction]:
-        """Returns the directions of travel for a particular route.
+        """Returns the directions of travel for the specified route.
 
         :param route_id: The route identifier
         :return:         List of directions
@@ -163,7 +163,9 @@ class TimetableAPI(object):
         return [Direction.load(**item) for item in self.request(f"/v3/directions/route/{route_id}")["directions"]]
 
     def get_direction(self: Self, direction_id: IdentifierType, route_type: RouteTypeType | None = None) -> list[Direction]:
-        """Returns the direction(s) of travel in the database with the specified identifier and route type. If ``route_type`` isn't specified, this will return directions of travel with the same identifier for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
+        """Returns the direction(s) of travel in the database with the specified identifier and route type.
+
+         If ``route_type`` isn't specified, this will return directions of travel with the same identifier for all modes (which are likely unrelated to one another). Note that this returns a :class:`list` in both cases.
 
         If the direction is shared by multiple routes (e.g. Flinders Street), a :class:`~ptv_timetable.types.Direction` object will be added to the :class:`list` for *each* route.
 
@@ -226,8 +228,8 @@ class TimetableAPI(object):
         """Returns the details of the route with the specified route identifier.
 
         :param route_id:        The route identifier
-        :param include_geopath: Include the route's path geometry (server default is ``False``)
-        :param geopath_date:    Retrieve the path geometry valid at the specified ``geopath_date`` (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param include_geopath: If ``True``, includes the route's path geometry (server default is ``False``)
+        :param geopath_date:    If specified, retrieves the path geometry valid at the specified ``geopath_date`` (ISO 8601 formatted if :class:`str`). Defaults to current server time. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :return:                Details of the specified route
         """
 
@@ -242,9 +244,9 @@ class TimetableAPI(object):
     def list_routes(self: Self, route_types: Iterable[RouteTypeType] | RouteTypeType | None = None, route_name: str | None = None) -> list[Route]:
         """Returns all routes of all (or specified) types.
 
-        :param route_types: Return only the routes of the specified type(s)
+        :param route_types: If specified, returns only the routes of the specified type(s)
         :type route_types:  ~collections.abc.Iterable[~typing.Literal[0, 1, 2, 3]] | ~typing.Literal[0, 1, 2, 3] | None
-        :param route_name:  Return the routes with names containing the specified substring
+        :param route_name:  If specified, returns only the routes with names containing the specified substring
         :return:            A list of routes
         """
 
@@ -275,11 +277,11 @@ class TimetableAPI(object):
         """Returns a list of all runs with the specified run identifier and, optionally, the specified route type.
 
         :param run_ref:         The run identifier
-        :param route_type:      If specified, return runs of the specified type only
+        :param route_type:      If specified, returns runs of the specified type only
         :type route_type:       ~typing.Literal[0, 1, 2, 3] | None
         :param expand:          Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
-        :param date:            If specified, return only data from the specified date.. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
-        :param include_geopath: Include the run's path geometry (server default is ``False``)
+        :param date:            If specified, returns only data from the specified date. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param include_geopath: If ``True``, includes the run's path geometry (server default is ``False``)
         :return:                A list of runs (this will still be a list even if there's only one exact match)
         """
 
@@ -306,7 +308,7 @@ class TimetableAPI(object):
         :param route_type: The transport type of the specified route
         :type route_type:  ~typing.Literal[0, 1, 2, 3] | None
         :param expand:     Optional data to include in the response (server default is :const:`~ptv_timetable.types.EXPAND_NONE`)
-        :param date:       Return only data from the specified date. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
+        :param date:       If specified, returns only data from the specified date. Defaults to :class:`ZoneInfo("Australia/Melbourne") <zoneinfo.ZoneInfo>` if time zone not specified
         :return:           A list of runs
         """
 
@@ -437,7 +439,7 @@ class TimetableAPI(object):
 
         :param latitude:         Latitude coordinate of the search location
         :param longitude:        Longitude coordinate of the search location
-        :param route_types:      If specified, only return stops for the specified travel mode(s)
+        :param route_types:      If specified, only returns stops for the specified travel mode(s)
         :type route_types:       ~collections.abc.Iterable[~typing.Literal[0, 1, 2, 3]] | ~typing.Literal[0, 1, 2, 3] | None
         :param max_results:      Maximum number of stops to be returned (server default is 30)
         :param max_distance:     Maximum radius from the specified location to search, in metres (server default is 300 metres)
@@ -638,8 +640,8 @@ class TimetableAPI(object):
                          ) -> list[Disruption]:
         """Returns a list of all disruptions or, if specified, the disruptions for the specified route and/or stop.
 
-        :param route_id:          If route identifier is specified, list only disruptions for the specified route. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
-        :param stop_id:           If stop identifier is specified, list only disruptions for the specified stop. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
+        :param route_id:          If specified, list only disruptions for the specified route. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
+        :param stop_id:           If specified, list only disruptions for the specified stop. If both ``route_id`` and ``stop_id`` are specified, list only disruptions for the specified route and stop
         :param route_types:       If specified, list only disruptions for the specified travel modes. Does not work with ``route_id`` or ``stop_id``
         :param disruption_modes:  If specified, list only disruptions for the specified disruption modes. Does not work with ``route_id`` or ``stop_id``
         :param disruption_status: If specified, list only disruptions with the specified status

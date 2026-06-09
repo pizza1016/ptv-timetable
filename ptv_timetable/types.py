@@ -355,7 +355,7 @@ class StopContact(TimetableData):
     feedback: str | None
     """Phone number to provide feedback"""
     lost_property_contact_number: None
-    """Appears to be deprecated/unused (always returns None)"""
+    """Appears to be deprecated/unused (always returns ``None``)"""
 
     @classmethod
     @override
@@ -686,7 +686,8 @@ class Route(TimetableData):
     direction_name: str | None | _NotProvidedType = NOT_PROVIDED
     """For a disruption, destination of travel direction affected by the disruption; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
     service_time: str | None | _NotProvidedType = NOT_PROVIDED
-    """For a disruption, time of the run/service affected by the disruption; ``""`` (empty string) if disruption affects multiple or no runs/services; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
+    """Appears to be deprecated/unused (always returns ``None`` or empty string).
+    For a disruption, time of the run/service affected by the disruption; ``""`` (empty string) if disruption affects multiple or no runs/services; ``None`` if direction information is not provided; :const:`NOT_PROVIDED` if not applicable"""
 
     @classmethod
     @override
@@ -1001,7 +1002,7 @@ class Run(TimetableData):
     final_stop_id: IdentifierType
     """Identifier of the terminating stop of this run"""
     destination_name: str | None
-    """Public-facing destination name of this run; sometimes returns None (unclear why)"""
+    """Public-facing destination name of this run; sometimes returns ``None`` (unclear why)"""
     status: Literal["scheduled", "updated"]
     """Status of this metropolitan train service; "scheduled" for all other modes"""
     direction_id: IdentifierType
@@ -1098,7 +1099,7 @@ class Disruption(TimetableData):
     from_date: datetime
     """Date and time this disruption began/will begin"""
     to_date: datetime | None
-    """Date and time this disruption will end; None if unknown or uncertain"""
+    """Date and time this disruption will end; ``None`` if unknown or uncertain"""
     routes: list[Route]
     """Routes affected by this disruption"""
     stops: list[Stop]
@@ -1290,16 +1291,14 @@ class FareEstimate(TimetableData):
     """List of fare zones this fare estimate is valid for"""
 
     full_2_hour_peak: FareType
-    """
-    Standard fare for 2 hours of travel at any time of day.
+    """Standard fare for 2 hours of travel at any time of day.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
     full_2_hour_off_peak: FareType
-    """
-    Standard fare for 2 hours of travel if tap on occurs outside designated peak periods.
+    """Standard fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 
@@ -1320,16 +1319,14 @@ class FareEstimate(TimetableData):
     full_pass_70_plus_days: FareType
     """Standard fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
     concession_2_hour_peak: FareType
-    """
-    Concession fare for 2 hours of travel at any time of day.
+    """Concession fare for 2 hours of travel at any time of day.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
     concession_2_hour_off_peak: FareType
-    """
-    Concession fare for 2 hours of travel if tap on occurs outside designated peak periods.
+    """Concession fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 
@@ -1350,16 +1347,14 @@ class FareEstimate(TimetableData):
     concession_pass_70_plus_days: FareType
     """Concession fare, per day, for unlimited travel for 70 to 325 days; passes for 326 to 365 days cost the same total amount as a 325-day pass"""
     senior_2_hour_peak: FareType
-    """
-    Senior fare for 2 hours of travel at any time of day.
+    """Senior fare for 2 hours of travel at any time of day.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 
     For first tap-ons after 6 pm, the 2-hour fare is valid until 3 am the next morning.
     """
     senior_2_hour_off_peak: FareType
-    """
-    Senior fare for 2 hours of travel if tap on occurs outside designated peak periods.
+    """Senior fare for 2 hours of travel if tap on occurs outside designated peak periods.
 
     Time limit extends to 2.5 hours if travelling across 3-5 zones, 3 hours for 6-8 zones, 3.5 hours for 9-11 zones, 4 hours for 12-14 zones and 4.5 hours for 15 zones.
 

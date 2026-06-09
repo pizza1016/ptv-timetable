@@ -12,7 +12,7 @@ class Status(TypedDict):
     version: str
     """API version string"""
     health: Literal[0, 1]
-    """API health status; 0 indicates API is offline, 1 indicates API is online"""
+    """API health status; ``0`` indicates API is offline, ``1`` indicates API is online"""
 
 
 class Error(TypedDict):
@@ -556,7 +556,7 @@ class BaseRun(TypedDict):
     direction_id: int
     """Identifier of the direction of travel of this run"""
     destination_name: str | None
-    """Public-facing destination name of this run"""
+    """Public-facing destination name of this run; sometimes returns ``None`` (unclear why)"""
 
 
 class InterchangeRun(BaseRun):
