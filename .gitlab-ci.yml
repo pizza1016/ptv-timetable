@@ -14,6 +14,7 @@ include:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  SAST_EXCLUDED_PATHS: "$DEFAULT_SAST_EXCLUDED_PATHS, venv"
 
 stages:
   - build
