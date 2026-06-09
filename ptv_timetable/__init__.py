@@ -707,11 +707,11 @@ class TimetableAPI(object):
             Renamed method from ``fare_estimate``. Added ``is_overlap_zone`` parameter.
         """
 
-        if type(touch_on) is str:
+        if isinstance(touch_on, str):
             touch_on = datetime.fromisoformat(touch_on)
         if touch_on is not None and touch_on.tzinfo is None:
             touch_on = touch_on.replace(tzinfo=TZ_MELBOURNE)
-        if type(touch_off) is str:
+        if isinstance(touch_off, str):
             touch_off = datetime.fromisoformat(touch_off)
         if touch_off is not None and touch_off.tzinfo is None:
             touch_off = touch_off.replace(tzinfo=TZ_MELBOURNE)
