@@ -7,8 +7,8 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "schedule"
 
-# include:
-#   - template: Jobs/SAST.gitlab-ci.yml
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -17,7 +17,7 @@ variables:
 
 stages:
   - build
-  # - test
+  - test
   - deploy
 
 default:
