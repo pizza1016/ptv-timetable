@@ -97,6 +97,8 @@ release_job:
     - job: publish
       artifacts: true
   before_script: []
+  script:
+    - echo
   release:
     tag_name: "${PACKAGE_VERSION}"
     description: "./CHANGELOG.md"
