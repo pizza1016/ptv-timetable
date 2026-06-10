@@ -79,6 +79,28 @@ publish:
   when: manual
   manual_confirmation: "Publish new version to Python Package Index and GitLab Package Registry?"
 
+release_job:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  needs:
+    - job: publish
+  script:
+    - export PACKAGE_VERSION=$(python -c "import tomllib; f = open(\"pyproject.toml\", \"rb\"); print(tomllib.load(f)[\"project\"][\"version\"]); f.close();")
+    - curl -s -S --fail-with-body "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages?package_version=${PACKAGE_VERSION}&sort=desc" -o "registry.json"
+    - export PACKAGE_ID=$(python -c "import json; f = open(\"registry.json\", \"r\", encoding=\"utf-8\"); print(json.load(f)[0][\"id\"]); f.close();")
+  release:
+    tag_name: "${PACKAGE_VERSION}"
+    description: "CHANGELOG.md"
+    assets:
+      links:
+        - name: "GitLab Package Registry"
+          url: "${CI_PROJECT_URL}/-/packages/${PACKAGE_ID}"
+          link_type: package
+        - name: "Python Package Index"
+          url: "https://pypi.org/project/ptv-timetable/${PACKAGE_VERSION}"
+          link_type: package
+  interruptible: true
+
 docs:
   stage: deploy
   needs: []
