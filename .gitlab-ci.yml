@@ -101,7 +101,7 @@ release_job:
     - echo
   release:
     tag_name: "${PACKAGE_VERSION}"
-    description: "./CHANGELOG.md"
+    description: "[to be copied from `CHANGELOG.md`]"
     assets:
       links:
         - name: "GitLab Package Registry"
