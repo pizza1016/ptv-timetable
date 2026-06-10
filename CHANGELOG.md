@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.1 (2026-__-__)
+## 0.5.1 (2026-06-10)
 - Changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`
   - Renamed parameter `request` of `_sign()` to `path`
   - Modified type checks of `touch_on` and `touch_off` in `get_fare_estimate()`
