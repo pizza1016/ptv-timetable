@@ -66,7 +66,7 @@ class TimetableAPI(object):
         self._is_user_session: Final[bool] = True if session is not None else False
         """Whether the session is user-supplied (and therefore whether to auto-close on instance deletion)"""
 
-        self._get: Callable[..., Response] = ratelimit_handler(limits(calls, period)(self._session.get))
+        self._get = ratelimit_handler(limits(calls, period).__call__(self._session.get))
         """Session.get() method but rate-limited"""
 
         _logger.info("TimetableAPI instance created")
