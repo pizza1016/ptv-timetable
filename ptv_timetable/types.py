@@ -263,7 +263,7 @@ class TimetableData(object, metaclass=ABCMeta):
         .. versionchanged:: 0.5.0
             Updated parameter type signature.
         """
-        raise NotImplementedError("This method is abstract and must be implemented in derived classes")
+        raise NotImplementedError("TimetableData.load() is abstract and must be implemented in derived classes")
 
     @classmethod
     async def aload(cls: type[Self], **kwargs: Any) -> Self:
