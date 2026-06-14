@@ -1,6 +1,6 @@
 from traceback import format_exception
 from types import TracebackType
-from typing import Any, cast, Final, Literal, override, Self
+from typing import Any, Final, Literal, override, Self
 from unittest import TextTestResult
 from xml.etree.ElementTree import Element, ElementTree
 
@@ -31,7 +31,7 @@ class XMLTestResult(TextTestResult):
         _id = test.id().rpartition(".")
         method = _id[-1]
         _id = _id[0].rpartition(".")
-        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]})
+        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"})
         self.tree.getroot().append(case)
         if self.last_elapsed is not None:
             case.set("time", str(self.last_elapsed))
@@ -47,7 +47,7 @@ class XMLTestResult(TextTestResult):
         _id = test.id().rpartition(".")
         method = _id[-1]
         _id = _id[0].rpartition(".")
-        self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]}))
+        self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"}))
         if self.last_elapsed is not None:
             self.tree.getroot()[-1].set("time", str(self.last_elapsed))
             self.last_elapsed = None
@@ -71,7 +71,7 @@ class XMLTestResult(TextTestResult):
         _id = test.id().rpartition(".")
         method = _id[-1]
         _id = _id[0].rpartition(".")
-        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]})
+        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"})
         self.tree.getroot().append(case)
         if self.last_elapsed is not None:
             case.set("time", str(self.last_elapsed))
@@ -87,7 +87,7 @@ class XMLTestResult(TextTestResult):
         _id = test.id().rpartition(".")
         method = _id[-1]
         _id = _id[0].rpartition(".")
-        self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]}))
+        self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"}))
         if self.last_elapsed is not None:
             self.tree.getroot()[-1].set("time", str(self.last_elapsed))
             self.last_elapsed = None
@@ -99,7 +99,7 @@ class XMLTestResult(TextTestResult):
         _id = test.id().rpartition(".")
         method = _id[-1]
         _id = _id[0].rpartition(".")
-        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]})
+        case = Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"})
         self.tree.getroot().append(case)
         if self.last_elapsed is not None:
             case.set("time", str(self.last_elapsed))
@@ -121,7 +121,7 @@ class XMLTestResult(TextTestResult):
             _id = subtest.id().rpartition(".")
             method = _id[-1]
             _id = _id[0].rpartition(".")
-            self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": _id[0]}))
+            self.tree.getroot().append(Element(_TEST_CASE_TAG, {"classname": _id[-1], "name": method, "file": str.join("/", _id[0].split(".")) + ".py"}))
             if self.last_elapsed is not None:
                 self.tree.getroot()[-1].set("time", str(self.last_elapsed))
                 self.last_elapsed = None

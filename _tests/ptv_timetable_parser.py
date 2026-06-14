@@ -1,9 +1,14 @@
 from datetime import date, datetime
 from typing import Self
 from zoneinfo import ZoneInfo
+
+import logging
 import unittest
 
 from ptv_timetable.types import *
+
+
+logging.getLogger("ptv-timetable.ptv_timetable.types").addHandler(logging.FileHandler("debug.log", encoding="utf-8"))
 
 
 class ParserTest(unittest.TestCase):

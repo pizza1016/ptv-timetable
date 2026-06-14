@@ -65,6 +65,7 @@ unit-tests:
     when: always
     paths:
       - test_report.xml
+      - debug.log
     reports:
       junit:
         - test_report.xml
