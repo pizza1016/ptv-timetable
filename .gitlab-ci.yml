@@ -32,9 +32,9 @@ default:
       - .cache/pip
 
   before_script:
-    - python --version ; pip --version  # For debugging
+    - python --version ; python -m pip --version  # For debugging
     - python -m pip install --upgrade pip
-    - pip install virtualenv
+    - python -m pip install virtualenv
     - virtualenv venv
     - source venv/bin/activate
 
@@ -55,6 +55,19 @@ build:
       allow_failure: true
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: on_success
+
+unit-tests:
+  stage: test
+  script:
+    - python ./_tests_launcher.py
+  artifacts:
+    when: always
+    paths:
+      - test_report.xml
+    reports:
+      junit:
+        - test_report.xml
+  interruptible: true
 
 publish:
   stage: deploy

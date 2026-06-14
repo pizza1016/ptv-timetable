@@ -3560,6 +3560,3 @@ class ParserTest(unittest.TestCase):
                          )
         return
 
-
-if __name__ == "__main__":
-    unittest.main(catchbreak=True)
