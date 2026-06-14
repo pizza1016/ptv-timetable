@@ -59,6 +59,7 @@ build:
 unit-tests:
   stage: test
   script:
+    - python -m pip install aiohttp aiolimiter ratelimit requests tzdata
     - python ./_tests_launcher.py
   artifacts:
     when: always
