@@ -1,6 +1,8 @@
 if __name__ == "__main__":
-    from _tests.common import XMLTestResult
-    import _tests.ptv_timetable_parser
+    from functools import partial
     import unittest
 
-    unittest.main(module=_tests.ptv_timetable_parser, testRunner=unittest.TextTestRunner(resultclass=XMLTestResult), verbosity=2, catchbreak=True, tb_locals=True)
+    from _tests.common import XMLTestResult
+    import _tests.ptv_timetable_parser
+
+    unittest.main(module=_tests.ptv_timetable_parser, testRunner=unittest.TextTestRunner(resultclass=partial(XMLTestResult, outpath="test_report.xml")), verbosity=2, catchbreak=True, tb_locals=True)

@@ -1,3 +1,4 @@
+from os import PathLike
 from traceback import format_exception
 from types import TracebackType
 from typing import Any, Final, Literal, override, Self
@@ -16,15 +17,14 @@ _SKIPPED_TAG: Final = "skipped"
 _SYSTEM_OUT_TAG: Final = "system-out"
 _SYSTEM_ERR_TAG: Final = "system-err"
 
-REPORT_PATH: Final = "test_report.xml"
-
 
 class XMLTestResult(TextTestResult):
 
-    def __init__(self: Self, stream: unittest.runner._StreamT, descriptions: bool, verbosity: int, *, durations: int | None = None, **kwargs: Any) -> None:
+    def __init__(self: Self, stream: unittest.runner._StreamT, descriptions: bool, verbosity: int, *, durations: int | None = None, outpath: str, **kwargs: Any) -> None:
         super().__init__(stream=stream, descriptions=descriptions, verbosity=verbosity, durations=durations, **kwargs)
         self.tree: Final[ElementTree[Element[str]]] = ElementTree(Element(_TEST_SUITE_TAG))
         self.last_elapsed: float | None = None
+        self.outpath = outpath
         return
 
     def _add_failure_entry(self: Self, test: unittest.TestCase, err: tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None], tag: Literal["failure", "error"]) -> None:
@@ -136,7 +136,7 @@ class XMLTestResult(TextTestResult):
     @override
     def stopTestRun(self: Self) -> None:
         super().stopTestRun()
-        with open(REPORT_PATH, mode="w", encoding="utf-8") as f:
+        with open(self.outpath, mode="w", encoding="utf-8") as f:
             self.tree.write(f, encoding="unicode", xml_declaration=True, method="xml")
         return
 

@@ -8,7 +8,7 @@ import unittest
 from ptv_timetable.types import *
 
 
-logging.getLogger("ptv-timetable.ptv_timetable.types").addHandler(logging.FileHandler("debug.log", encoding="utf-8"))
+logging.getLogger("ptv-timetable.ptv_timetable.types").addHandler(logging.FileHandler("debug.log", encoding="utf-8", delay=True))
 
 
 class ParserTest(unittest.TestCase):
