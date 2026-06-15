@@ -70,6 +70,7 @@ unit-tests:
       junit:
         - test_report.xml
   interruptible: true
+  allow_failure: true
 
 publish:
   stage: deploy

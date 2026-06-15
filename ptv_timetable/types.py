@@ -126,7 +126,7 @@ EXPAND_NONE: Literal["None"] = "None"
 
 _logger: Final = logging.getLogger("ptv-timetable.ptv_timetable.types")
 """Logger for this module"""
-_logger.setLevel(logging.WARNING)
+_logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.NullHandler())
 
 
@@ -206,22 +206,6 @@ def _error_wrapper[**_P, _R](f: Callable[_P, _R]) -> Callable[_P, _R]:
             _logger.error(f"The following arguments were passed to {f.__qualname__}: {str(kwargs)}")
             raise ParseError(kwargs, f.__qualname__) from exc
     return wrapper
-
-
-def _debug__eq__[_T](cls: type[_T]) -> type[_T]:
-    if "__eq__" in cls.__dict__:
-        __eq__ = cls.__eq__
-
-        @wraps(cls.__eq__)
-        def wrapper(self: _T, other: object, /) -> bool:
-            result = __eq__(self, other)
-            if result is False:
-                _logger.warning(f"{self} != {other}", stack_info=True)
-            else:
-                _logger.debug(f"{self} == {other}")
-            return result
-        cls.__eq__ = wrapper
-    return cls
 
 
 @dataclass(kw_only=True, slots=True)
@@ -334,7 +318,6 @@ class PathGeometry(TimetableData):
         return cls(valid_from=valid_from, valid_to=valid_to, paths=paths, **kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class StopTicket(TimetableData):
     """Ticketing information for the attached stop."""
@@ -669,7 +652,6 @@ class RouteServiceStatus(TimetableData):
         return cls(description=kwargs["description"], timestamp=datetime.fromisoformat(kwargs["timestamp"]).astimezone(TZ_MELBOURNE))
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Route(TimetableData):
     """Represents a route on the network."""
@@ -758,7 +740,6 @@ class Route(TimetableData):
         return cls(route_name=route_name, geometry=geometry, route_service_status=route_service_status, route_direction_id=route_direction_id, direction_id=direction_id, direction_name=direction_name, service_time=service_time, **kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Stop(TimetableData):
     """Represents a particular transport stop."""
@@ -851,7 +832,6 @@ class Stop(TimetableData):
         return cls(stop_name=stop_name, locality=locality, stop_ticket=stop_ticket, routes=routes, stop_contact=stop_contact, stop_location=stop_location, stop_amenities=stop_amenities, stop_accessibility=stop_accessibility, stop_staffing=stop_staffing, **kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Departure(TimetableData):
     """Represents a specific departure from a specific stop."""
@@ -1009,7 +989,6 @@ class RunInterchange(TimetableData):
         return cls(**kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Run(TimetableData):
     """Represents a particular run or service along a route."""
@@ -1075,7 +1054,6 @@ class Run(TimetableData):
         return cls(destination_name=destination_name, geometry=geometry, vehicle_position=vehicle_position, vehicle_descriptor=vehicle_descriptor, **kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Direction(TimetableData):
     """Represents a direction of travel on a particular route."""
@@ -1098,7 +1076,6 @@ class Direction(TimetableData):
         return cls(**kwargs)
 
 
-@_debug__eq__
 @dataclass(kw_only=True, slots=True)
 class Disruption(TimetableData):
     """Represents a service disruption."""
