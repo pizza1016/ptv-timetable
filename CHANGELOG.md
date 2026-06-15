@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2 (2026-__-__)
+- Fixed bug:
+  - The raw source timestamps used to fill the `as_of` and `expires` fields in `ptv_timetable.types.VehiclePostion` can be either naive (without a time zone) or aware (with a time zone) *based on the system supplying the vehicle position*, but my code previously assumed that they were always aware, resulting in `datetime` objects that are sometimes different based on the user's system time 😑
+
 ## 0.5.1 (2026-06-10)
 - Changes in `ptv_timetable.TimetableAPI` and `ptv_timetable.asyncapi.AsyncTimetableAPI`
   - Renamed parameter `request` of `_sign()` to `path`

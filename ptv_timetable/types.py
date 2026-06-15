@@ -931,8 +931,24 @@ class VehiclePosition(TimetableData):
     @override
     @_error_wrapper
     def load(cls: type[Self], **kwargs: Unpack[_responsemodel.VehiclePosition]) -> Self:
-        as_of = datetime.fromisoformat(kwargs.pop("datetime_utc")).astimezone(TZ_MELBOURNE) if kwargs["datetime_utc"] is not None else kwargs.pop("datetime_utc")
-        expires = datetime.fromisoformat(kwargs.pop("expiry_time")).astimezone(TZ_MELBOURNE) if kwargs["expiry_time"] is not None else kwargs.pop("expiry_time")
+        if kwargs["datetime_utc"] is not None:
+            datetime_utc = datetime.fromisoformat(kwargs.pop("datetime_utc"))
+            if datetime_utc.tzinfo is not None:  # Time zone aware
+                as_of = datetime_utc.astimezone(TZ_MELBOURNE)
+            else:  # Time zone naive - assume time returned is Melbourne time
+                as_of = datetime_utc.replace(tzinfo=TZ_MELBOURNE)
+        else:
+            as_of: None = kwargs.pop("datetime_utc")
+
+        if kwargs["expiry_time"] is not None:
+            expiry_time = datetime.fromisoformat(kwargs.pop("expiry_time"))
+            if expiry_time.tzinfo is not None:
+                expires = expiry_time.astimezone(TZ_MELBOURNE)
+            else:
+                expires = expiry_time.replace(tzinfo=TZ_MELBOURNE)
+        else:
+            expires: None = kwargs.pop("expiry_time")
+
         return cls(as_of=as_of, expires=expires, **kwargs)
 
 
