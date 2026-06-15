@@ -63,9 +63,10 @@ unit-tests:
     - python ./_tests_launcher.py
   artifacts:
     when: always
+    expire_in: never
     paths:
       - test_report.xml
-      - debug.log
+      - debug.log  # not always present
     reports:
       junit:
         - test_report.xml
